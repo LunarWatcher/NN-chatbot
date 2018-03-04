@@ -1,16 +1,17 @@
-ownerName = "Your name" # Required
-ownerIds = [ { "stackexchange.com": 1234, "stackoverflow.com": 1234, "meta.stackexchange.com": 1234 } ] # Your ID(s) here
-botName = "Meh namegit " # Required
-ghRepo = "https://github.com/LunarWatcher/NN-chatbot"
-trigger = "//"
-netTrigger = "@TriggerfortheNet"
-email = "email"
-sePassword = "1234"
-discordToken = "1234"
+ownerName = "Olivia" # Required
+ownerIds = [ { "stackexchange.com": [0], "stackoverflow.com": [0], "meta.stackexchange.com": [0] } ] # At least one is required
+botName = "Alisha" # Required
+ghRepo = "https://github.com/LunarWatcher/NN-chatbot"# Path to github repo
+trigger = "//"# The command trigger
+netTrigger = "@" + botName# Stack Exchange net trigger. Currently case sensitive, will be fixed later
+email = "your email here"
+sePassword = "Your password here"
+discordToken = "Your token here"
 homes = {
-    "stackoverflow.com": [1, 139],
-    "stackexchange.com": [1, 72535],# 36
+    "stackoverflow.com": [1]
+    "stackexchange.com": [1],
     "meta.stackexchange.com": [721]
 }
-
+storageDir = "botStorage/"
 startQuiet = True
+leaveQuiet = True
