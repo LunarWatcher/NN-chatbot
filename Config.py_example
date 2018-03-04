@@ -1,0 +1,16 @@
+ownerName = "Your name" # Required
+ownerIds = [ { "stackexchange.com": 1234, "stackoverflow.com": 1234, "meta.stackexchange.com": 1234 } ] # Your ID(s) here
+botName = "Meh namegit " # Required
+ghRepo = "https://github.com/LunarWatcher/NN-chatbot"
+trigger = "//"
+netTrigger = "@TriggerfortheNet"
+email = "email"
+sePassword = "1234"
+discordToken = "1234"
+homes = {
+    "stackoverflow.com": [1, 139],
+    "stackexchange.com": [1, 72535],# 36
+    "meta.stackexchange.com": [721]
+}
+
+startQuiet = True

@@ -1,0 +1,13 @@
+Config.py
+conversationData.txt
+vocab.txt
+raw_data/
+dataset/
+*.npy
+*.npz
+.idea/
+.ipynb_checkpoints/
+__pycache__/
+dataset/
+logdir/
+model/
