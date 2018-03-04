@@ -48,14 +48,10 @@ Train more.
 
 * No memory
 
-![desc][1]
+![desc](https://www.marutitech.com/wp-content/uploads/2017/04/Chatbot-conversation-framework.png)
 
 General chatbots are incredibly hard to make. Creating knowledge-based generative models isn't exactly something that's documented in the tensorflow documentation (or keras for that matter). For now, getting sensible replies is the top priority, along with expandable vocabulary. Adding generative memory (not retrieval-based) with context is a task for later
 
 * Training is slow
 
 Use a GPU if possible. If you already are, use more. Or decrease the vocab size, it speeds it up a little.
-
-
-
-   [1]: https://www.marutitech.com/wp-content/uploads/2017/04/Chatbot-conversation-framework.png
