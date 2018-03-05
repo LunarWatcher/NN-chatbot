@@ -1,16 +1,3 @@
-EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz ' # space is included in whitelist
-EN_BLACKLIST = '"$\'()/<=>@[\\]{|}~\'+.,!?*-^_'
-
-limit = {
-    'maxq' : 25,
-    'minq' : 2,
-    'maxa' : 25,
-    'mina' : 2
-}
-
-UNK = 'unk'
-VOCAB_SIZE = 29999
-
 import random
 
 import nltk
@@ -18,6 +5,26 @@ import itertools
 import numpy as np
 import pickle
 import os
+import re
+
+EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_' # space is included in the whitelistt
+EN_BLACKLIST = '"$`()/<=>@[\\]{|}~'
+
+limit = {
+    'maxq' : 30,
+    'minq' : 2,
+    'maxa' : 30,
+    'mina' : 2
+}
+
+UNK = 'unk'
+VOCAB_SIZE = 37647# TODO add safeguards for changing values
+
+# vocab size explanation: with token splitting at tokens like .,;:-"' etc
+# the vocab size drastically decreased from an unknown size > 60000 to 37k.
+# Note that this assumes the cornell dataset, which is why the to-do is present;
+# because it has to be fixed to handle changes in the dataset size while grabbing
+# as many words as it can.
 
 '''
     1. Read from 'movie-lines.txt'
@@ -116,12 +123,14 @@ def prepare_seq2seq_files(questions, answers, path='',TESTSET_SIZE = 30000):
 
 
 
-'''
- remove anything that isn't in the vocabulary
-    return str(pure en)
-'''
+
 def filter_line(line, whitelist):
-    return ''.join([ ch for ch in line if ch in whitelist ])
+    reformatted = re.sub(r'(?P<group>[\'\"])', r" \g<group> ", line.lower())
+    reformatted = re.sub(r'(?P<group>[?!.,^:;\-+_])', r" \g<group> ", reformatted)
+    reformatted = re.sub(r'( - - )', r' -- ', reformatted)
+    reformatted = " ".join(reformatted.split())
+
+    return ''.join([ ch for ch in reformatted.strip() if ch in whitelist ])
 '''
  filter too long and too short sequences
     return tuple( filtered_ta, filtered_en )
@@ -367,6 +376,19 @@ def load_data(PATH=''):
     idx_q = np.load(PATH + 'idx_q.npy')
     idx_a = np.load(PATH + 'idx_a.npy')
     return metadata, idx_q, idx_a
+
+def clean(string: str):
+    # TODO fix this mess... *talks to self* Also, what the hell were you thinking? xD
+    string = string.replace(" , ", ", ")
+    string = string.replace(" ? ", "? ")
+    string = string.replace(" ! ", "! ")
+    string = string.replace(" . ", ". ")
+    string = string.replace(" - ", "-")
+    string = string.replace(" : ", ": ")
+    string = string.replace(" ; ", "; ")
+    string = string.replace(" _ ", "_ ")
+    string = string.replace(" i ", " I ")
+    return string
 
 def saveVocab(idx2w, w2idx, path='dataset/', filename="vocab{}.npy"):
     np.save(path + filename.format("idx2w"), arr=idx2w)

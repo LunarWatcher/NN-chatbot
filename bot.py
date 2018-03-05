@@ -1,5 +1,4 @@
 import tensorflow as tf
-import pickle
 import numpy as np
 import tensorlayer as tl
 from tensorlayer.layers import *
@@ -11,13 +10,14 @@ from multiprocessing.dummy import Pool
 from sklearn.utils import shuffle
 import os
 import tensorboard as tb
-
+import Commands as cmd
 
 # noinspection PyShadowingNames
 class Bot():
     batchSize = 32
     embedDim = 512
     def __init__(self, training=False):
+        tf.reset_default_graph()
         if training:
             # TODO not implemented: custom datasets
             dataset = "y" #input("Use the default dataset (y) or a custom one (filename, dataset/ is appended automatically)")
@@ -130,20 +130,17 @@ class Bot():
         tl.layers.initialize_global_variables(self.sess)
         tl.files.load_and_assign_npz(sess=self.sess, name="n.npz", network=self.net)
         if not training:
-            startNet = input("Console? (y/n): ")
-            if startNet == "y":
+            mode = getIntInput("")
+
+            if mode == 0:
                 while True:
                     message = input("You >> ")
                     print("Bot >> " + self.predict(message))
                 pass
+            elif mode == 1:
+                self.bootElsewhere()
             else:
-                stackexchange.Stackexchange.nnFun = self.predict
-
-                discord = discordBot.Discord()
-                pool = Pool(processes=1)
-                pool.apply_async(discord.start, args=[self.predict])
-
-                stackexchange.start()  # contains thread blocking, meaning the script doesn't stop
+                print("Unknown mode")
         else:
             epochs = self.getEpochs()
             self.train(epochs)
@@ -154,20 +151,17 @@ class Bot():
     def getEpochs():
         while True:
             try:
-                epochs = int(input("How many epochs do you want to train for?"))
+                epochs = int(input("How many epochs do you want to train for?: "))
                 break
             except ValueError:
                 print("Invalid int")
         return epochs
     @staticmethod
     def cleanInput(string: str):
-        string = string.replace("!", "").replace(".", "").replace(",", "").replace("?", "") \
-            .replace("@", "").replace("<", "").replace(">", "").replace("\"", "").replace("\'", "") \
-            .lower().strip()
-
-        return string
+        return data.filter_line(string, data.EN_WHITELIST)
 
     def train(self, epochs: int):
+        print("Training started: " + str(epochs) + " epochs")
         for epoch in range(epochs):
             epochTime = time.time()
             trainX, trainY = shuffle(self.trainX, self.trainY)# Passing random_state with a value != None gives a seed
@@ -227,7 +221,7 @@ class Bot():
                                     break;
                                 sentence = sentence + [w]
 
-                            print("> ", ' '.join(sentence))
+                            print("> ", data.clean(' '.join(sentence)))
             print("Epoch[%d/%d] with average loss:%f took:%.5fs" % (epoch, epochs, avgLoss/iterations, time.time()-epochTime))
 
             tl.files.save_npz(self.net.all_params, name='n.npz', sess=self.sess)
@@ -290,13 +284,41 @@ class Bot():
             netOut = DenseLayer(netRnn, n_units=self.xVocabSize, act=tf.identity, name="output")
         return netOut, netRnn
 
+    def bootElsewhere(self):
+
+        cmd.PermissionManager.assumeAllAndInject()# Inject all the permissions before site boot
+        stackexchange.Stackexchange.nnFun = self.predict
+
+        discord = discordBot.Discord()
+        pool = Pool(processes=1)
+        pool.apply_async(discord.start, args=[self.predict])
+
+        stackexchange.start()  # contains thread blocking, meaning the script doesn't stop
+        discord.bot.logout()
+
 def getBooleanInput(prompt):
     while True:
         try:
             return {"true":True,"false":False, "t": True, "f": False, "1": True, "0": False,
-                    "True": True, "False" : False, "y" : True, "n": False}[input(prompt).lower()]
+                    "True": True, "False" : False, "y" : True, "n": False, "yes" : True, "no" : False}[input(prompt).lower()]
         except KeyError:
             print("Invalid input please enter True or False!")
+
+def getIntInput(prompt):
+    while True:
+        try:
+            inp = input(prompt).lower()
+            try:
+                intVal = int(inp)
+                return intVal
+            except ValueError:
+                pass
+
+            return {"console": 0, "c": 0, "o": 1}[inp]
+
+        except KeyError:
+            print("Invalid int")
+
 
 if __name__ == '__main__':
     print("#########################################")
@@ -306,10 +328,11 @@ if __name__ == '__main__':
         training = getBooleanInput("Am I training?: ")
     else:
         print("Dataset directory not found!")
+        os.mkdir("dataset/")
         data.process_data()
         print("Dataset prepared")
         print("Training is forced, in order to get the necessary files for the net")
-        training = False
+        training = True
 
     print("I'm gonna be " + ("training!" if training else "chatting!"))
     bot = Bot(training=training)

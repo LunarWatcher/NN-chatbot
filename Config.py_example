@@ -1,5 +1,5 @@
 ownerName = "Olivia" # Required
-ownerIds = [ { "stackexchange.com": [0], "stackoverflow.com": [0], "meta.stackexchange.com": [0] } ] # At least one is required
+ownerIds =  { "stackexchange.com": [0], "stackoverflow.com": [0], "meta.stackexchange.com": [0] }  # At least one is required
 botName = "Alisha" # Required
 ghRepo = "https://github.com/LunarWatcher/NN-chatbot"# Path to github repo
 trigger = "//"# The command trigger

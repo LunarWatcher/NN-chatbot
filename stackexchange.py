@@ -22,12 +22,14 @@ def start():
     Stackexchange.sites.append(SESite("meta.stackexchange.com", password))
     Stackexchange.sites.append(SESite("stackexchange.com", password))
     Stackexchange.sites.append(SESite("stackoverflow.com", password))
-    Commands.Command.sites.append("meta.stackexchange.com")
-    Commands.Command.sites.append("stackexchange.com")
-    Commands.Command.sites.append("stackoverflow.com")
+
+
     while True:
         message = input(">> ")
+        if message == "~!save":
+            Commands.PermissionManager.saveAll()
         if(message == "~!stop" or message == "~!break"):
+            Commands.PermissionManager.saveAll()
             break
 
 
@@ -35,13 +37,14 @@ def start():
         site.stop()
 
 def onMessage(message, client):
+
     if not isinstance(message, MessagePosted) and not isinstance(message, MessageEdited):
         logger.debug("Ignored event: %r", message)
         return;
 
     print("")
     print("!>> (%s) %s" % (message.user.name, Commands.Commands.cleanMessage(message.content)))
-    Commands.delegate(message, client, message.user.id, Stackexchange.nnFun)
+    Commands.delegate(message, message.user.id, client, Stackexchange.nnFun)
 
 class SESite(object):
 

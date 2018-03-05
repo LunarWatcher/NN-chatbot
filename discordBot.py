@@ -11,9 +11,7 @@ class Discord():
         print("Discord created")
 
     def start(self, nnFun):
-        print("And away we go!")
-        print("vars set")
-        Commands.Command.sites.append("discord")
+
         print("Booting Discord!")
         @self.bot.event
         async def on_ready():

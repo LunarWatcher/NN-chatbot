@@ -3,6 +3,7 @@ conversationData.txt
 vocab.txt
 raw_data/
 dataset/
+botStorage/
 *.npy
 *.npz
 .idea/

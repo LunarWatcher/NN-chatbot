@@ -16,8 +16,34 @@ import time
 
 r.seed = time.time()
 
+class PermissionManager:
+    sites: list() = []
+
+    @staticmethod
+    def addSite(name: str):
+        site = Site(name)
+        PermissionManager.sites.append(site)
+
+    @staticmethod
+    def assumeAllAndInject():
+        PermissionManager.addSite("stackoverflow.com")
+        PermissionManager.addSite("stackexchange.com")
+        PermissionManager.addSite("meta.stackexchange.com")
+        PermissionManager.addSite("discord")
+
+    @staticmethod
+    def getSite(name: str):
+        for site in PermissionManager.sites:
+            if name == site.name:
+                return site
+        return None
+    @staticmethod
+    def saveAll():
+        for site in PermissionManager.sites:
+            site.save()
+
 class Command():
-    sites = []
+
     def __init__(self, name: str, aliases: [], help: str, desc: str, handlerMethod, rankReq: int = 1):
         self.name = name;
         self.aliases = aliases
@@ -26,10 +52,12 @@ class Command():
         self.rankReq = rankReq
         self.handlerMethod = handlerMethod
 
-    def onMessage(self, specificCommand, message, userId: int, indentBased=True):
-        # TODO implement rank system
-        userRank = 1
-        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank)
+    def onMessage(self, specificCommand, message, userId: int, site: str, indentBased=True):
+        ste = PermissionManager.getSite(site)
+        userRank = ste.getUserRank(userId)
+        if userRank < self.rankReq:
+            return True, "You don't have permission to use this command"
+        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank, site)
         return reply, response
 
 class StaticResponses:
@@ -49,12 +77,16 @@ async def delegateDiscord(message: discord.Message, dClient: discord.Client, uid
     cmdName = triggerless.split()[0]
     messageContent = triggerless[len(cmdName):].strip()
     try:
-        _, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid, False)
+        _, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid, "discord", False)
         await dClient.send_message(message.channel, replyContent)
     except KeyError:
         await dClient.send_message(message.channel, "Sorry, that's not a command I know");
 
 def delegate(message, uid: int, client, nnFun):
+    site = client.host
+    if PermissionManager.getSite(site).getUserRank(uid) == 0:
+        return
+
     if message.content.startswith(Config.netTrigger):
         message.message.reply(nnFun(Commands.cleanMessage(message.content.replace(Config.netTrigger, "").strip())))
         return
@@ -68,7 +100,7 @@ def delegate(message, uid: int, client, nnFun):
     messageContent = triggerless[len(cmdName) + 1:]
 
     try:
-        reply, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid)
+        reply, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid, site)
         if(reply):
             message.message.reply(replyContent)
         else:
@@ -76,7 +108,7 @@ def delegate(message, uid: int, client, nnFun):
     except KeyError:
         message.message.reply("Sorry, that's not a command I know");
 
-def helpCommand(specificCommand, message, indentBased, userRank: int):
+def helpCommand(specificCommand, message, indentBased, userRank: int, site: str):
     commandNames = list(Commands.commands.keys())
     commandDescriptions = [cmd.desc for name, cmd in Commands.commands.items()]
     res = ""
@@ -89,19 +121,75 @@ def helpCommand(specificCommand, message, indentBased, userRank: int):
 
     return False, fixedFormat(res, not indentBased)
 
-def lickCommand(specificCommand, message, discord: bool, userRank: int):
+def lickCommand(specificCommand, message, discord: bool, userRank: int, site: str):
     message = message.strip()
     if message == "":
         return "You have to tell me who to lick"
     return True, "*licks " + message + "*. " + StaticResponses.licks[r.randint(0, len(StaticResponses.licks) - 1)]
 
-def killCommand(specificCommand, message, discord: bool, userRank: int):
+def killCommand(specificCommand, message, discord: bool, userRank: int, site: str):
     message = message.strip()
     print(">>:" + message)
     if message == "":
         return "You have to tell me who to kill"
     return True, StaticResponses.kills[r.randint(0, len(StaticResponses.kills) - 1)].format(message)
 
+def rankUpdate(specificCommand, message, discord: bool, userRank : int, site: str):
+    try:
+        split = message.split(" ")
+        if len(split) != 2 and specificCommand != "ban" and specificCommand != "unban":
+            return True, "Arguments required: userId newRank"
+        id = int(split[0].strip())
+        if specificCommand != "ban" and specificCommand != "unban":
+            newRank = int(split[1].strip())
+        elif specificCommand == "ban":
+            newRank = 0
+        else:
+            newRank = 1
+    except ValueError:
+        return True, "Invalid ID"
+
+    currentRank = PermissionManager.getSite(site).getUserRank(id)
+
+    if specificCommand == "ban":
+        if userRank < 7:
+            return True, "Not high enough rank!"
+        if(userRank <= currentRank):
+            return True, "You cannot ban someone with an equal higher rank than you"
+        if currentRank == 10:
+            return True, "You cannot ban admins. Please remove them manually from Config.py before trying to ban"
+        PermissionManager.getSite(site).setUserRank(id, newRank)
+        return True, "User {} has been banned".format(id)
+    elif specificCommand == "setRank":
+        if userRank < 8:# If the requesting user's rank is < 8
+            return True, "Not high enough rank!"
+        if currentRank >= userRank \
+                and not userRank == 10 and not currentRank == 10:# if the rank of the updating user >= the user and the users rank != 10 and the current rank != 10
+            return True, "You cannot change the rank of someone with a higher or the same rank as you"
+        if newRank == 10:
+            return True, "Rank 10 is bot admin. These can only be added in Config.py"
+        if currentRank == 10:
+            if id in Config.ownerIds[site]:
+                return True, "You cannot change the ranks of bot admins. Please remove them manually"
+            if userRank < 10:
+                return True, "You have to be a bot admin to remove rank 10 users"
+        PermissionManager.getSite(site).setUserRank(id, newRank)
+        return True, "User {}'s rank changed to {}".format(id, newRank)
+    return True, "Unimplemented call: {}".format(specificCommand)
+
+def getRank(specificCommand, message, discord: bool, userRank : int, site: str):
+    try:
+        id = int(message.strip())
+    except ValueError:
+        return True, "Invalid ID"
+
+    currentRank = PermissionManager.getSite(site).getUserRank(id)
+
+    return True, "User {} has the rank {}".format(id, currentRank)
+
+def aboutCommand(specificCommand, message, discord: bool, userRank : int, site: str):
+    return True, "Hiya! I'm {}. I'm a chatbot created by [Olivia](https://github.com/LunarWatcher). I'm written in Python, in order to use Tensorflow and use it for" \
+                 " machine learning, which allows me to talk when you mention me. In addition, there are commands you can use. See the list by doing {}help. My source is available on [GitHub]({})".format(Config.botName, Config.trigger, Config.ghRepo)
 # Utils
 
 def fixedFormat(stringToFormat: str, discord: bool):
@@ -115,55 +203,53 @@ def fixedFormat(stringToFormat: str, discord: bool):
         result += "```"
     return result
 
-class UserInfo:
-
-    def __init__(self, uid: int, initialRank = 1):
-        self.uid = uid;
-        self.rank = initialRank
-
-    def ban(self):
-        self.rank = 0
-    def unban(self):
-        self.rank = 1
-    def setRank(self, rank: int):
-        if(rank < 0):
-            rank = 0;
-        if rank > 10:
-            rank = 10
-
-        self.rank = rank
-
 class Site:
 
     def __init__(self, name: str):
         self.name = name
         self.users = dict()
-        if os.path.isfile(Config.storageDir + "privs_" + name.replace(".", "_") + ".dat"):
-            try:
-                with open(Config.storageDir + "privs_" + name.replace(".", "_") + ".dat", "r") as f:
-                    unr = [s.strip() for s in f.readline().split("+++$+++")]
-                    if(len(unr) != 2):
-                        print(unr)
-                    else:
-                        self.users.update({str(unr[0]) : int(unr[1])})
-            except:
-                # Something IO-related went to hell, most likely that the file is empty
-                # Ignore it, it doesn't matter
-                pass
+
+        for site, ownerList in Config.ownerIds.items():
+            if site == name:
+                for ownerId in ownerList:
+                    self.users.update({ownerId : 10})
+
+        self.fileName = "privs_" + self.name.replace(".", "_") + ".dat"
+        if os.path.isfile(Config.storageDir + self.fileName):
+            with open(Config.storageDir + self.fileName, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line != "":
+                        split = line.split(" +++$+++ ")
+                        uid = int(split[0].strip())
+                        rank = int(split[1].strip())
+                        self.setUserRank(uid, rank)
 
     def save(self):
-        fileName = "privs_" + self.name.replace(".", "_") + ".dat"
-        with open(Config.storageDir + fileName, "w") as f:
-            for username, idx in self.users.items():
-                f.write(username + " +++$+++ " + idx)
+        if not os.path.isdir(Config.storageDir):
+            os.makedirs(Config.storageDir)
+        with open(Config.storageDir + self.fileName, "w") as f:
+            for uid, rank in self.users.items():
+                f.write(str(uid) + " +++$+++ " + str(rank) + "\n")
 
+    def getUserRank(self, userId):
+        if not userId in self.users:
+            # Avoid crash on unknown users, + index more users
+            self.users.update({userId: 1})
+        return self.users[userId]
 
+    def setUserRank(self, userId, newRank):
+        self.users.update({userId : newRank})
 
 class Commands:
     commands = {
+        "about" : Command("about", ["whoareyou"], "", "Let me tell you a little about myself...", handlerMethod=aboutCommand, rankReq=1),
         "help" : Command("help", ["halp", "hilfe", "help"], "", "Lists the bots commands", handlerMethod=helpCommand, rankReq=1),
         "lick" : Command("lick", [], "", "Licks someone", handlerMethod=lickCommand, rankReq=1),
         "kill" : Command("kill", ["assassinate"], "", "Disposes of someone", handlerMethod=killCommand, rankReq=1),
+        "ban"  : Command("ban", ["exterminate"], "", "Bans someone. Rank 8+", handlerMethod=rankUpdate, rankReq=8),
+        "getRank" : Command("getRank", [], "", "Gets someone's rank. Rank 7+", handlerMethod=getRank, rankReq=7),
+        "setRank" : Command("setRank", [], "", "Changs someone's rank. Rank 8+", handlerMethod=rankUpdate, rankReq=8)
     }
 
     @staticmethod
