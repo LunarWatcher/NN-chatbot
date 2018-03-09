@@ -1,4 +1,4 @@
-import tensorflow as tf
+
 import numpy as np
 import tensorlayer as tl
 from tensorlayer.layers import *
@@ -12,12 +12,16 @@ import os
 import tensorboard as tb
 import Commands as cmd
 
+
 # noinspection PyShadowingNames
 class Bot():
     batchSize = 32
     embedDim = 512
+    # This is true by default to make it possible to run on 2 gig VRAM systems.
+    embeddingCpu = True
     def __init__(self, training=False):
-        tf.reset_default_graph()
+        print("Using CPU for embedding? " + str(self.embeddingCpu))
+        print("Change the variable in the Bot class to use either the GPU exclusively")
         if training:
             # TODO not implemented: custom datasets
             dataset = "y" #input("Use the default dataset (y) or a custom one (filename, dataset/ is appended automatically)")
@@ -26,7 +30,6 @@ class Bot():
                 pass
             else:
                 pass
-            data.process_data()#Data setup. May require file moving afterward to work with
             self.meta, self.idx_q, self.idx_a = data.load_data(PATH="dataset/")# This path
             (trainX, trainY), (testX, testY), (validX, validY) = data.split_dataset(self.idx_q, self.idx_a)
 
@@ -101,21 +104,19 @@ class Bot():
         self.endId = self.idx("end_id")
         self.nameId = self.idx("name_id")
         self.xVocabSize = len(self.idx2w)
+        if self.embeddingCpu:
+            with tf.device("/cpu:0"):
+                self.createPlaceholders()
+        else:
+           self.createPlaceholders()
 
-        self.encodeSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
-                                         name="encodeSequences")
-        self.decodeSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
-                                         name="decodeSequences")
-        self.targetSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
-                                         name="targetSequences")
-        self.targetMask = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None], name="targetMask")
         self.outputLayer, _ = self.model(self.encodeSequences, self.decodeSequences, False, False)
 
-        self.encodeSequences2 = tf.placeholder(dtype=tf.int64, shape=[1, None], name="encodeSequences")
-        self.decodeSequences2 = tf.placeholder(dtype=tf.int64, shape=[1, None], name="decodeSequences")
-
-        self.net, self.netRnn = self.model(self.encodeSequences2, self.decodeSequences2, False, True)
-        self.sm = tf.nn.softmax(self.net.outputs)
+        if self.embeddingCpu:
+            with tf.device("/cpu:0"):
+                self.createInference()
+        else:
+            self.createInference()
 
         self.loss = tl.cost.cross_entropy_seq_with_mask(logits=self.outputLayer.outputs,
                                                    target_seqs=self.targetSequences, input_mask=self.targetMask,
@@ -124,17 +125,23 @@ class Bot():
         self.outputLayer.print_params(False)
 
         learningRate = 0.0001
+
         self.optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(self.loss)
 
-        self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False))
+        self.sess = tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True), log_device_placement=False))
         tl.layers.initialize_global_variables(self.sess)
         tl.files.load_and_assign_npz(sess=self.sess, name="n.npz", network=self.net)
+
         if not training:
-            mode = getIntInput("")
+            mode = getIntInput("Mode: ")
 
             if mode == 0:
                 while True:
                     message = input("You >> ")
+                    if message == "~!exit":
+                        self.sess.close()
+
+                        exit()
                     print("Bot >> " + self.predict(message))
                 pass
             elif mode == 1:
@@ -143,7 +150,24 @@ class Bot():
                 print("Unknown mode")
         else:
             epochs = self.getEpochs()
+
             self.train(epochs)
+
+    def createInference(self):
+        self.encodeSequences2 = tf.placeholder(dtype=tf.int64, shape=[1, None], name="encodeSequences")
+        self.decodeSequences2 = tf.placeholder(dtype=tf.int64, shape=[1, None], name="decodeSequences")
+
+        self.net, self.netRnn = self.model(self.encodeSequences2, self.decodeSequences2, False, True)
+        self.sm = tf.nn.softmax(self.net.outputs)
+
+    def createPlaceholders(self):
+        self.encodeSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
+                                              name="encodeSequences")
+        self.decodeSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
+                                              name="decodeSequences")
+        self.targetSequences = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None],
+                                              name="targetSequences")
+        self.targetMask = tf.placeholder(dtype=tf.int64, shape=[self.batchSize, None], name="targetMask")
 
     def idx(self, n: str):
         return self.w2idx[n]
@@ -164,13 +188,12 @@ class Bot():
         print("Training started: " + str(epochs) + " epochs")
         for epoch in range(epochs):
             epochTime = time.time()
+            print("Time taken")
             trainX, trainY = shuffle(self.trainX, self.trainY)# Passing random_state with a value != None gives a seed
-
+            print("Data shuffled")
             avgLoss, iterations = 0,0
 
             for X, Y in tl.iterate.minibatches(inputs=trainX, targets=trainY, batch_size=self.batchSize, shuffle = False):
-
-                stepTime = time.time()
 
                 X = tl.prepro.pad_sequences(X)
                 targetSeqs = tl.prepro.sequences_add_end_id(Y, end_id=self.endId)
@@ -185,43 +208,12 @@ class Bot():
                                                                        self.targetMask: tMask})
 
                 if iterations % 100 == 0:
-                    print("Epoch[%d/%d] step:[%d/%d] loss=%f took=%.5fs" %(epoch, epochs, iterations,
-                                                                           self.iterationsPerEpoch, iLoss, time.time() - stepTime))
+                    print("Epoch[%d/%d] step:[%d/%d] loss=%f" %(epoch, epochs, iterations,
+                                                                           self.iterationsPerEpoch, iLoss))
 
                 avgLoss += iLoss
                 iterations += 1
 
-                # Inference - this is heavy compared to the other stuff, so only do it once per epoch
-                if iterations % 500 == 0:
-                    seeds = [
-                        "Great!",
-                        "Trump won in the polls last night",
-                        "Im a programmer. What about you?",
-                        "Hi!",
-                        "nice to meet you",
-                    ]
-                    for seed in seeds:
-                        seed = self.cleanInput(seed)
-                        print ("Input: ", seed)
-                        try:
-                            seedId = [self.w2idx[w] for w in seed.split(" ")]
-                        except KeyError:
-                            continue
-                        for _ in range (5):
-                            state = self.sess.run(self.netRnn.final_state_encode, {self.encodeSequences2: [seedId]})
-                            o, state = self.sess.run([self.sm, self.netRnn.final_state_decode], {self.netRnn.initial_state_decode: state, self.decodeSequences2: [[self.startId]]})
-                            wId = tl.nlp.sample_top(o[0], top_k=3)
-                            w = self.idx2w[wId]
-                            sentence = [w]
-                            for __ in range(30):
-                                o, state = self.sess.run([self.sm, self.netRnn.final_state_decode], {self.netRnn.initial_state_decode: state, self.decodeSequences2:[[wId]]})
-                                wId = tl.nlp.sample_top(o[0], top_k=2)
-                                w = self.idx2w[wId]
-                                if wId == self.endId:
-                                    break;
-                                sentence = sentence + [w]
-
-                            print("> ", data.clean(' '.join(sentence)))
             print("Epoch[%d/%d] with average loss:%f took:%.5fs" % (epoch, epochs, avgLoss/iterations, time.time()-epochTime))
 
             tl.files.save_npz(self.net.all_params, name='n.npz', sess=self.sess)
@@ -267,12 +259,11 @@ class Bot():
     def model(self, encodeSequences, decodeSequences, training=True, reuse=False):
         with tf.variable_scope("model", reuse=reuse):
             with tf.variable_scope("embedding") as emb:
-                netEncode = EmbeddingInputlayer(inputs=encodeSequences, vocabulary_size=self.xVocabSize,
-                                                embedding_size=self.embedDim, name="seqEmbedding")
-                emb.reuse_variables()
-                tl.layers.set_name_reuse(True)
-                netDecode = EmbeddingInputlayer(inputs=decodeSequences, vocabulary_size=self.xVocabSize,
-                                                embedding_size=self.embedDim, name="seqEmbedding")
+                if self.embeddingCpu:
+                    with tf.device("/cpu:0"):
+                        netEncode, netDecode = self.createEncDec(emb, encodeSequences, decodeSequences)
+                else:
+                    netEncode, netDecode = self.createEncDec(emb, encodeSequences, decodeSequences)
             netRnn = Seq2Seq(netEncode, netDecode,
                              cell_fn=tf.contrib.rnn.BasicLSTMCell,
                              n_hidden=self.embedDim, initializer=tf.random_uniform_initializer(-.1, .1),
@@ -281,8 +272,17 @@ class Bot():
                              initial_state_encode=None,
                              dropout=(0.5 if training else None), n_layer=3, return_seq_2d=True,
                              name="seq2seq")
-            netOut = DenseLayer(netRnn, n_units=self.xVocabSize, act=tf.identity, name="output")
+            netOut = DenseLayer(netRnn, n_units=data.VOCAB_SIZE, act=tf.identity, name="output")
         return netOut, netRnn
+
+    def createEncDec(self, emb, encodeSequences, decodeSequences):
+        netEncode = EmbeddingInputlayer(inputs=encodeSequences, vocabulary_size=data.VOCAB_SIZE,
+                                        embedding_size=self.embedDim, name="seqEmbedding")
+        emb.reuse_variables()
+        tl.layers.set_name_reuse(True)
+        netDecode = EmbeddingInputlayer(inputs=decodeSequences, vocabulary_size=data.VOCAB_SIZE,
+                                        embedding_size=self.embedDim, name="seqEmbedding")
+        return netEncode, netDecode
 
     def bootElsewhere(self):
 
@@ -335,5 +335,7 @@ if __name__ == '__main__':
         training = True
 
     print("I'm gonna be " + ("training!" if training else "chatting!"))
+    import tensorflow as tf
+    tf.reset_default_graph()
     bot = Bot(training=training)
 

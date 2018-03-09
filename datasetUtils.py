@@ -8,23 +8,25 @@ import os
 import re
 
 EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_' # space is included in the whitelistt
-EN_BLACKLIST = '"$`()/<=>@[\\]{|}~'
+EN_BLACKLIST = '$`()/<=>@[\\]{|}~'
 
 limit = {
-    'maxq' : 30,
+    'maxq' : 25,
     'minq' : 2,
-    'maxa' : 30,
+    'maxa' : 25,
     'mina' : 2
 }
 
 UNK = 'unk'
-VOCAB_SIZE = 37647# TODO add safeguards for changing values
+VOCAB_SIZE = 45000#37652 # Last number is a reference for other models
 
 # vocab size explanation: with token splitting at tokens like .,;:-"' etc
 # the vocab size drastically decreased from an unknown size > 60000 to 37k.
-# Note that this assumes the cornell dataset, which is why the to-do is present;
-# because it has to be fixed to handle changes in the dataset size while grabbing
-# as many words as it can.
+# Currently, the entire system relies on the cornell dataset, which is why
+# the current dev efforts go to custom datasets with cornell as a backing one
+# (the initial dataset, until data is collected). Obviously, custom dataset
+# from the beginning will be supported eventually, but progress is slow when
+# life comes in the way
 
 '''
     1. Read from 'movie-lines.txt'
@@ -86,45 +88,7 @@ def gather_dataset(convs, id2line):
 
     return questions, answers
 
-
-'''
-    We need 4 files
-    1. train.enc : Encoder input for training
-    2. train.dec : Decoder input for training
-    3. test.enc  : Encoder input for testing
-    4. test.dec  : Decoder input for testing
-'''
-def prepare_seq2seq_files(questions, answers, path='',TESTSET_SIZE = 30000):
-
-    # open files
-    train_enc = open(path + 'train.enc','w')
-    train_dec = open(path + 'train.dec','w')
-    test_enc  = open(path + 'test.enc', 'w')
-    test_dec  = open(path + 'test.dec', 'w')
-
-    # choose 30,000 (TESTSET_SIZE) items to put into testset
-    test_ids = random.sample([i for i in range(len(questions))],TESTSET_SIZE)
-
-    for i in range(len(questions)):
-        if i in test_ids:
-            test_enc.write(questions[i]+'\n')
-            test_dec.write(answers[i]+ '\n' )
-        else:
-            train_enc.write(questions[i]+'\n')
-            train_dec.write(answers[i]+ '\n' )
-        if i%10000 == 0:
-            print('\n>> written {} lines'.format(i))
-
-    # close files
-    train_enc.close()
-    train_dec.close()
-    test_enc.close()
-    test_dec.close()
-
-
-
-
-def filter_line(line, whitelist):
+def filter_line(line, whitelist=EN_WHITELIST):
     reformatted = re.sub(r'(?P<group>[\'\"])', r" \g<group> ", line.lower())
     reformatted = re.sub(r'(?P<group>[?!.,^:;\-+_])', r" \g<group> ", reformatted)
     reformatted = re.sub(r'( - - )', r' -- ', reformatted)
@@ -313,9 +277,6 @@ def process_data():
     print('% unknown : {0}'.format(100 * (unk_count/word_count)))
     print('Dataset count : ' + str(idx_q.shape[0]))
 
-
-    #print '>> gathered questions and answers.\n'
-    #prepare_seq2seq_files(questions,answers)
 
 
 from random import sample
