@@ -15,6 +15,10 @@ This is a chatbot both designed for neural network interraction in addition to t
 * asyncio
 * Python 3.6 (anything under 3.5 requires code edits because of the async keyword. 3.6 is the only tested version)
 
+### Please note:
+
+In some cases, the dependencies for the depencencies of this project doesn't get installed. I.e. Tensorlayer requires Scipy, which for some reason doesn't get installed. Should this happen, `pip install` the missing packages. Using `pip` on the package installs should be enough to avoid missing dependencies. However, should there still be missing dependencies, manually install them. 
+
 ## Dataset
 
 The [Corell Movie Dialog Corpus](http://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html) is the dataset the bot is designed for at the moment. There will be support for custom dataset (and conversation scrapping for personalized conversations), but that's an issue for later.
