@@ -64,13 +64,16 @@ Use a GPU if possible. If you already are, use more. Or decrease the vocab size,
 
 # Licensing
 
-Licensed under either of
+   Copyright 2018 LunarWatcher
 
-* Apache License, Version 2.0, ([LICENSE-APACHE](https://github.com/LunarWatcher/NN-chatbot/blob/master/LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-* MIT license ([LICENSE-MIT](https://github.com/LunarWatcher/NN-chatbot/blob/master/LICENSE-MIT) or http://opensource.org/licenses/MIT)
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-at your option.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-## Contribution Licensing
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
