@@ -13,6 +13,7 @@ This is a chatbot both designed for neural network interraction in addition to t
 * sklearn
 * tensorboard (will be added layer)
 * asyncio
+* nltk
 * Python 3.6 (anything under 3.5 requires code edits because of the async keyword. 3.6 is the only tested version)
 
 ### Please note:
