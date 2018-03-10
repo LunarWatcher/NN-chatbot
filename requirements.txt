@@ -1,0 +1,13 @@
+pytest==3.4.1
+numpy==1.14.1
+nltk==3.2.5
+discord.py==0.16.12
+setuptools==38.5.1
+requests==2.18.4
+tensorflow-gpu==1.5.0
+tensorlayer==1.7.4
+httmock==1.2.6
+beautifulsoup4==4.6.0
+scikit_learn==0.19.1
+tensorboard==1.6.0
+websocket-client==0.47.0

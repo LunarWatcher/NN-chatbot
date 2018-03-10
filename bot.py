@@ -1,5 +1,3 @@
-
-import numpy as np
 import tensorlayer as tl
 from tensorlayer.layers import *
 import datasetUtils as data
@@ -9,11 +7,10 @@ import discordBot
 from multiprocessing.dummy import Pool
 from sklearn.utils import shuffle
 import os
-import tensorboard as tb
 import Commands as cmd
 
 
-# noinspection PyShadowingNames
+# noinspection PyShadowingNames,PyAttributeOutsideInit
 class Bot():
     batchSize = 32
     embedDim = 512
@@ -30,8 +27,8 @@ class Bot():
                 pass
             else:
                 pass
-            self.meta, self.idx_q, self.idx_a = data.load_data(PATH="dataset/")# This path
-            (trainX, trainY), (testX, testY), (validX, validY) = data.split_dataset(self.idx_q, self.idx_a)
+            self.meta, self.idx_q, self.idx_a = data.loadData(PATH="dataset/")# This path
+            (trainX, trainY), (testX, testY), (validX, validY) = data.splitDataset(self.idx_q, self.idx_a)
 
             self.trainX = tl.prepro.remove_pad_sequences(trainX.tolist())
             self.trainY = tl.prepro.remove_pad_sequences(trainY.tolist())
@@ -182,7 +179,7 @@ class Bot():
         return epochs
     @staticmethod
     def cleanInput(string: str):
-        return data.filter_line(string, data.EN_WHITELIST)
+        return data.filterLine(string, data.EN_WHITELIST)
 
     def train(self, epochs: int):
         print("Training started: " + str(epochs) + " epochs")
@@ -329,7 +326,7 @@ if __name__ == '__main__':
     else:
         print("Dataset directory not found!")
         os.mkdir("dataset/")
-        data.process_data()
+        data.processData()
         print("Dataset prepared")
         print("Training is forced, in order to get the necessary files for the net")
         training = True

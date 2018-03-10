@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 import os
 import re
+import grammarRules as grammar
 
 EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_' # space is included in the whitelistt
 EN_BLACKLIST = '$`()/<=>@[\\]{|}~'
@@ -32,7 +33,7 @@ VOCAB_SIZE = 45000#37652 # Last number is a reference for other models
     1. Read from 'movie-lines.txt'
     2. Create a dictionary with ( key = line_id, value = text )
 '''
-def get_id2line():
+def getId2line():
     lines=open('raw_data/movie_lines.txt', encoding='utf-8', errors='ignore').read().split('\n')
     id2line = {}
     for line in lines:
@@ -45,7 +46,7 @@ def get_id2line():
     1. Read from 'movie_conversations.txt'
     2. Create a list of [list of line_id's]
 '''
-def get_conversations():
+def getConversations():
     conv_lines = open('raw_data/movie_conversations.txt', encoding='utf-8', errors='ignore').read().split('\n')
     convs = [ ]
     for line in conv_lines[:-1]:
@@ -59,7 +60,7 @@ def get_conversations():
     2. Get each line from conversation
     3. Save each conversation to file
 '''
-def extract_conversations(convs,id2line,path=''):
+def extractConversations(convs,id2line,path=''):
     idx = 0
     for conv in convs:
         f_conv = open(path + str(idx)+'.txt', 'w')
@@ -74,7 +75,7 @@ def extract_conversations(convs,id2line,path=''):
     1. [questions]
     2. [answers]
 '''
-def gather_dataset(convs, id2line):
+def gatherDataset(convs, id2line):
     questions = []; answers = []
 
     for conv in convs:
@@ -88,18 +89,18 @@ def gather_dataset(convs, id2line):
 
     return questions, answers
 
-def filter_line(line, whitelist=EN_WHITELIST):
+def filterLine(line, whitelist=EN_WHITELIST):
     reformatted = re.sub(r'(?P<group>[\'\"])', r" \g<group> ", line.lower())
     reformatted = re.sub(r'(?P<group>[?!.,^:;\-+_])', r" \g<group> ", reformatted)
     reformatted = re.sub(r'( - - )', r' -- ', reformatted)
     reformatted = " ".join(reformatted.split())
-
+    reformatted = grammar.fix(reformatted)
     return ''.join([ ch for ch in reformatted.strip() if ch in whitelist ])
 '''
  filter too long and too short sequences
     return tuple( filtered_ta, filtered_en )
 '''
-def filter_data(qseq, aseq):
+def filterData(qseq, aseq):
     filtered_q, filtered_a = [], []
     raw_data_len = len(qseq)
 
@@ -140,7 +141,7 @@ def index_(tokenized_sentences, vocab_size):
  filter based on number of unknowns (words not in vocabulary)
   filter out the worst sentences
 '''
-def filter_unk(qtokenized, atokenized, w2idx):
+def filterUnk(qtokenized, atokenized, w2idx):
     data_len = len(qtokenized)
 
     filtered_q, filtered_a = [], []
@@ -171,7 +172,7 @@ def filter_unk(qtokenized, atokenized, w2idx):
   - add zero padding
       return ( [array_en([indices]), array_ta([indices]) )
 '''
-def zero_pad(qtokenized, atokenized, w2idx):
+def zeroPad(qtokenized, atokenized, w2idx):
     # num of rows
     data_len = len(qtokenized)
 
@@ -180,8 +181,8 @@ def zero_pad(qtokenized, atokenized, w2idx):
     idx_a = np.zeros([data_len, limit['maxa']], dtype=np.int32)
 
     for i in range(data_len):
-        q_indices = pad_seq(qtokenized[i], w2idx, limit['maxq'])
-        a_indices = pad_seq(atokenized[i], w2idx, limit['maxa'])
+        q_indices = padSeq(qtokenized[i], w2idx, limit['maxq'])
+        a_indices = padSeq(atokenized[i], w2idx, limit['maxa'])
 
         #print(len(idx_q[i]), len(q_indices))
         #print(len(idx_a[i]), len(a_indices))
@@ -196,7 +197,7 @@ def zero_pad(qtokenized, atokenized, w2idx):
   replace with unknown if word not in lookup
     return [list of indices]
 '''
-def pad_seq(seq, lookup, maxlen):
+def padSeq(seq, lookup, maxlen):
     indices = []
     for word in seq:
         if word in lookup:
@@ -205,14 +206,14 @@ def pad_seq(seq, lookup, maxlen):
             indices.append(lookup[UNK])
     return indices + [0]*(maxlen - len(seq))
 
-def process_data():
+def processData():
 
-    id2line = get_id2line()
+    id2line = getId2line()
     print('>> gathered id2line dictionary.\n')
-    convs = get_conversations()
+    convs = getConversations()
     print(convs[121:125])
     print('>> gathered conversations.\n')
-    questions, answers = gather_dataset(convs,id2line)
+    questions, answers = gatherDataset(convs,id2line)
 
     # change to lower case (just for en)
     questions = [ line.lower() for line in questions ]
@@ -220,12 +221,12 @@ def process_data():
 
     # filter out unnecessary characters
     print('\n>> Filter lines')
-    questions = [ filter_line(line, EN_WHITELIST) for line in questions ]
-    answers = [ filter_line(line, EN_WHITELIST) for line in answers ]
+    questions = [ filterLine(line, EN_WHITELIST) for line in questions ]
+    answers = [ filterLine(line, EN_WHITELIST) for line in answers ]
 
     # filter out too long or too short sequences
     print('\n>> 2nd layer of filtering')
-    qlines, alines = filter_data(questions, answers)
+    qlines, alines = filterData(questions, answers)
 
     for q,a in zip(qlines[141:145], alines[141:145]):
         print('q : [{0}]; a : [{1}]'.format(q,a))
@@ -245,12 +246,12 @@ def process_data():
 
     # filter out sentences with too many unknowns
     print('\n >> Filter Unknowns')
-    qtokenized, atokenized = filter_unk(qtokenized, atokenized, w2idx)
+    qtokenized, atokenized = filterUnk(qtokenized, atokenized, w2idx)
     print('\n Final raw_data len : ' + str(len(qtokenized)))
 
 
     print('\n >> Zero Padding')
-    idx_q, idx_a = zero_pad(qtokenized, atokenized, w2idx)
+    idx_q, idx_a = zeroPad(qtokenized, atokenized, w2idx)
 
     print('\n >> Save numpy arrays to disk')
     # save them
@@ -288,7 +289,7 @@ from random import sample
 
 
 # noinspection PyDefaultArgument
-def split_dataset(x, y, ratio = [0.7, 0.15, 0.15] ):
+def splitDataset(x, y, ratio = [0.7, 0.15, 0.15] ):
     # number of examples
     data_len = len(x)
     lens = [ int(data_len*item) for item in ratio ]
@@ -299,13 +300,7 @@ def split_dataset(x, y, ratio = [0.7, 0.15, 0.15] ):
 
     return (trainX,trainY), (testX,testY), (validX,validY)
 
-
-'''
- generate batches from raw_data
-    yield (x_gen, y_gen)
-    TODO : fix needed
-'''
-def batch_gen(x, y, batch_size):
+def batchGen(x, y, batch_size):
     # infinite while
     while True:
         for i in range(0, len(x), batch_size):
@@ -316,7 +311,7 @@ def batch_gen(x, y, batch_size):
  generate batches, by random sampling a bunch of items
     yield (x_gen, y_gen)
 '''
-def rand_batch_gen(x, y, batch_size):
+def randBatchGen(x, y, batch_size):
     while True:
         sample_idx = sample(list(np.arange(len(x))), batch_size)
         yield x[sample_idx].T, y[sample_idx].T
@@ -329,7 +324,7 @@ def rand_batch_gen(x, y, batch_size):
 def decode(sequence, lookup, separator=''): # 0 used for padding, is ignored
     return separator.join([ lookup[element] for element in sequence if element ])
 
-def load_data(PATH=''):
+def loadData(PATH=''):
     # read data control dictionaries
     with open(PATH + 'metadata.pkl', 'rb') as f:
         metadata = pickle.load(f)
@@ -337,6 +332,7 @@ def load_data(PATH=''):
     idx_q = np.load(PATH + 'idx_q.npy')
     idx_a = np.load(PATH + 'idx_a.npy')
     return metadata, idx_q, idx_a
+
 eosSymbols = r"\s+(?P<match>[?!.,])"
 doubleDash = r"( - - )"
 completeRemoval = r"(\s+(?P<match>['-])\s+)"
