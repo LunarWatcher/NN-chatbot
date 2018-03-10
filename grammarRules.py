@@ -29,7 +29,14 @@ complexRules = {
 
 }
 
+eosSymbols = r"\s+(?P<match>[?!.,])"
+doubleDash = r"( - - )"
+completeRemoval = r"(\s+(?P<match>['-])\s+)"
+
+
 def fix(input: str):
+    input = clean(input)
+
     for rule, replacement in complexRules.items():
         input = replacement(rule, input)
     for rule, replacement in basicRules.items():
@@ -37,10 +44,16 @@ def fix(input: str):
 
     return input
 
+def clean(input: str):
+    cleaned = re.sub(eosSymbols, r"\g<match>", input)
+    cleaned = re.sub(doubleDash, " -- ", cleaned)
+    cleaned = re.sub(completeRemoval, r"\g<match>", cleaned)
+    return cleaned
+
 # Debug testing
 if __name__ == "__main__":
     testSentences = [
-        "hi, i'm Olivia. I don't have a life",
+        "hi , i ' m Olivia. i don ' t have a life .",
         "omg, this is sooooo fun! i hope we can do this again!",
         "lol, I agree"
     ]

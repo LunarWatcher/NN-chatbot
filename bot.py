@@ -1,14 +1,13 @@
 import tensorlayer as tl
 from tensorlayer.layers import *
 import datasetUtils as data
-
-import stackexchange
-import discordBot
+import Config
 from multiprocessing.dummy import Pool
 from sklearn.utils import shuffle
 import os
 import Commands as cmd
-
+import sys
+import grammarRules as grammar
 
 # noinspection PyShadowingNames,PyAttributeOutsideInit
 class Bot():
@@ -16,11 +15,12 @@ class Bot():
     embedDim = 512
     # This is true by default to make it possible to run on 2 gig VRAM systems.
     embeddingCpu = True
-    def __init__(self, training=False):
+    def __init__(self, training=False, forced = False):
         print("Using CPU for embedding? " + str(self.embeddingCpu))
         print("Change the variable in the Bot class to use either the GPU exclusively")
         if training:
             # TODO not implemented: custom datasets
+            # y if forced else input
             dataset = "y" #input("Use the default dataset (y) or a custom one (filename, dataset/ is appended automatically)")
 
             if dataset == "y":
@@ -205,17 +205,17 @@ class Bot():
                                                                        self.targetMask: tMask})
 
                 if iterations % 100 == 0:
-                    print("Epoch[%d/%d] step:[%d/%d] loss=%f" %(epoch, epochs, iterations,
+                    print("Epoch[%d/%d] step:[%d/%d] loss=%f" %(epoch + 1, epochs, iterations,
                                                                            self.iterationsPerEpoch, iLoss))
 
                 avgLoss += iLoss
                 iterations += 1
 
-            print("Epoch[%d/%d] with average loss:%f took:%.5fs" % (epoch, epochs, avgLoss/iterations, time.time()-epochTime))
+            print("Epoch[%d/%d] with average loss:%f took:%.5fs" % (epoch + 1, epochs, avgLoss/iterations, time.time()-epochTime))
 
             tl.files.save_npz(self.net.all_params, name='n.npz', sess=self.sess)
 
-            # TODO tensorboard
+        # TODO tensorboard
 
     def predict(self, input: str):
         if input.strip() == "":
@@ -250,7 +250,7 @@ class Bot():
 
         # Parse "unk"-only messages to "I don't understand" in some or another form.
         answer = ' '.join(sentence)
-        return answer
+        return grammar.fix(answer)
 
 
     def model(self, encodeSequences, decodeSequences, training=True, reuse=False):
@@ -284,14 +284,44 @@ class Bot():
     def bootElsewhere(self):
 
         cmd.PermissionManager.assumeAllAndInject()# Inject all the permissions before site boot
-        stackexchange.Stackexchange.nnFun = self.predict
+        if not Config.isAnyEnabled(list(Config.enabledSites.keys())):
+            print("No sites are enabled! Shutting off...")
+            exit(-1)
 
-        discord = discordBot.Discord()
-        pool = Pool(processes=1)
-        pool.apply_async(discord.start, args=[self.predict])
+        if Config.isSiteEnabled("discord"):
+            import discordBot
+            discord = discordBot.Discord()
+            pool = Pool(processes=1)
+            pool.apply_async(discord.start, args=[self.predict])
+        if Config.isAnyEnabled(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"]):
+            import stackexchange
+            stackexchange.Stackexchange.nnFun = self.predict
+            stackexchange.start()
 
-        stackexchange.start()  # contains thread blocking, meaning the script doesn't stop
-        discord.bot.logout()
+        while True:
+            message = input(">> ")
+            if message == "~!save":
+                cmd.PermissionManager.saveAll()
+            elif(message == "~!stop" or message == "~!break"):
+                cmd.PermissionManager.saveAll()
+                break
+            else:
+                print("Unknown command.")
+
+
+        if Config.isAnyEnabled(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"]):
+            if "stackexchange" in sys.modules:
+                for site in stackexchange.Stackexchange.sites:
+                    site.stop()
+            else:
+                print("Site (stackexchange) enabled, but not imported!")
+
+        if Config.isSiteEnabled("discord"):
+            if "discord" in sys.modules:
+                discord.bot.logout()
+            else:
+                print("Site (discord) enabled, but not imported!")
+
 
 def getBooleanInput(prompt):
     while True:
@@ -323,6 +353,7 @@ if __name__ == '__main__':
     if os.path.isdir("dataset/"):
         print("Dataset directory found!")
         training = getBooleanInput("Am I training?: ")
+        forced = False
     else:
         print("Dataset directory not found!")
         os.mkdir("dataset/")
@@ -330,9 +361,10 @@ if __name__ == '__main__':
         print("Dataset prepared")
         print("Training is forced, in order to get the necessary files for the net")
         training = True
+        forced = True
 
     print("I'm gonna be " + ("training!" if training else "chatting!"))
     import tensorflow as tf
     tf.reset_default_graph()
-    bot = Bot(training=training)
+    bot = Bot(training=training, forced=forced)
 

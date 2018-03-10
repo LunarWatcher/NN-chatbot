@@ -94,7 +94,6 @@ def filterLine(line, whitelist=EN_WHITELIST):
     reformatted = re.sub(r'(?P<group>[?!.,^:;\-+_])', r" \g<group> ", reformatted)
     reformatted = re.sub(r'( - - )', r' -- ', reformatted)
     reformatted = " ".join(reformatted.split())
-    reformatted = grammar.fix(reformatted)
     return ''.join([ ch for ch in reformatted.strip() if ch in whitelist ])
 '''
  filter too long and too short sequences
@@ -332,16 +331,6 @@ def loadData(PATH=''):
     idx_q = np.load(PATH + 'idx_q.npy')
     idx_a = np.load(PATH + 'idx_a.npy')
     return metadata, idx_q, idx_a
-
-eosSymbols = r"\s+(?P<match>[?!.,])"
-doubleDash = r"( - - )"
-completeRemoval = r"(\s+(?P<match>['-])\s+)"
-
-def clean(input: str):
-    cleaned = re.sub(eosSymbols, r"\g<match>", input)
-    cleaned = re.sub(doubleDash, " -- ", cleaned)
-    cleaned = re.sub(completeRemoval, r"\g<match>", cleaned)
-    return cleaned
 
 def saveVocab(idx2w, w2idx, path='dataset/', filename="vocab{}.npy"):
     np.save(path + filename.format("idx2w"), arr=idx2w)

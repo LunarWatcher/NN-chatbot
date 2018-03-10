@@ -1,15 +1,12 @@
 
 # Google command
-# Kill command
-# Lick command
 # Give command
 
-# Ban, unban, promote, demote
 # wikipedia
 # xkcd
 
-import discord
 import Config
+
 import random as r
 import os
 import time
@@ -25,11 +22,13 @@ class PermissionManager:
         PermissionManager.sites.append(site)
 
     @staticmethod
+    def inject(sites: []):
+        for site in sites:
+            if Config.isSiteEnabled(site):
+                PermissionManager.addSite(site)
+    @staticmethod
     def assumeAllAndInject():
-        PermissionManager.addSite("stackoverflow.com")
-        PermissionManager.addSite("stackexchange.com")
-        PermissionManager.addSite("meta.stackexchange.com")
-        PermissionManager.addSite("discord")
+        PermissionManager.inject(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com", "discord"])
 
     @staticmethod
     def getSite(name: str):
@@ -71,7 +70,7 @@ class StaticResponses:
              "I can't dispose of {}. They're already disposed of", "It's all over the news today, {} was killed by an angry mob!",
              "*sending poisoned dinner to {}...*"]
 
-async def delegateDiscord(message: discord.Message, dClient: discord.Client, uid: int, nnFun):
+async def delegateDiscord(message, dClient, uid: int, nnFun):
     # The discord part checks for the presence of the trigger before callig this method
     triggerless = str(message.content)[len(Config.trigger):]
     cmdName = triggerless.split()[0]
@@ -121,20 +120,20 @@ def helpCommand(specificCommand, message, indentBased, userRank: int, site: str)
 
     return False, fixedFormat(res, not indentBased)
 
-def lickCommand(specificCommand, message, discord: bool, userRank: int, site: str):
+def lickCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str):
     message = message.strip()
     if message == "":
         return "You have to tell me who to lick"
     return True, "*licks " + message + "*. " + StaticResponses.licks[r.randint(0, len(StaticResponses.licks) - 1)]
 
-def killCommand(specificCommand, message, discord: bool, userRank: int, site: str):
+def killCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str):
     message = message.strip()
     print(">>:" + message)
     if message == "":
         return "You have to tell me who to kill"
     return True, StaticResponses.kills[r.randint(0, len(StaticResponses.kills) - 1)].format(message)
 
-def rankUpdate(specificCommand, message, discord: bool, userRank : int, site: str):
+def rankUpdate(specificCommand, message, isDiscord: bool, userRank : int, site: str):
     try:
         split = message.split(" ")
         if len(split) != 2 and specificCommand != "ban" and specificCommand != "unban":
@@ -149,6 +148,9 @@ def rankUpdate(specificCommand, message, discord: bool, userRank : int, site: st
     except ValueError:
         return True, "Invalid ID"
 
+    if newRank < 0 or newRank > 10:
+        return True, "Invalid rank range!"
+
     currentRank = PermissionManager.getSite(site).getUserRank(id)
 
     if specificCommand == "ban":
@@ -160,24 +162,25 @@ def rankUpdate(specificCommand, message, discord: bool, userRank : int, site: st
             return True, "You cannot ban admins. Please remove them manually from Config.py before trying to ban"
         PermissionManager.getSite(site).setUserRank(id, newRank)
         return True, "User {} has been banned".format(id)
-    elif specificCommand == "setRank":
+    elif specificCommand == "setRank" or specificCommand == "promote" or specificCommand == "demote":
         if userRank < 8:# If the requesting user's rank is < 8
             return True, "Not high enough rank!"
         if currentRank >= userRank \
-                and not userRank == 10 and not currentRank == 10:# if the rank of the updating user >= the user and the users rank != 10 and the current rank != 10
+                and not userRank == 10 and not currentRank == 10:# if the rank of the updating user >=
+                                                                 # the user and the users rank != 10 and the current rank != 10
             return True, "You cannot change the rank of someone with a higher or the same rank as you"
-        if newRank == 10:
-            return True, "Rank 10 is bot admin. These can only be added in Config.py"
+
         if currentRank == 10:
             if id in Config.ownerIds[site]:
-                return True, "You cannot change the ranks of bot admins. Please remove them manually"
+                return True, "You cannot change the ranks of hard-coded bot admins. " \
+                             "Please remove them from Config.py manually"
             if userRank < 10:
                 return True, "You have to be a bot admin to remove rank 10 users"
         PermissionManager.getSite(site).setUserRank(id, newRank)
         return True, "User {}'s rank changed to {}".format(id, newRank)
     return True, "Unimplemented call: {}".format(specificCommand)
 
-def getRank(specificCommand, message, discord: bool, userRank : int, site: str):
+def getRank(specificCommand, message, isDiscord: bool, userRank : int, site: str):
     try:
         id = int(message.strip())
     except ValueError:
@@ -187,14 +190,14 @@ def getRank(specificCommand, message, discord: bool, userRank : int, site: str):
 
     return True, "User {} has the rank {}".format(id, currentRank)
 
-def aboutCommand(specificCommand, message, discord: bool, userRank : int, site: str):
+def aboutCommand(specificCommand, message, isDiscord: bool, userRank : int, site: str):
     return True, "Hiya! I'm {}. I'm a chatbot created by [Olivia](https://github.com/LunarWatcher). I'm written in Python, in order to use Tensorflow and use it for" \
                  " machine learning, which allows me to talk when you mention me. In addition, there are commands you can use. See the list by doing {}help. My source is available on [GitHub]({})".format(Config.botName, Config.trigger, Config.ghRepo)
 # Utils
 
-def fixedFormat(stringToFormat: str, discord: bool):
+def fixedFormat(stringToFormat: str, isDiscord: bool):
     result = ""
-    if not discord:
+    if not isDiscord:
         for line in stringToFormat.split("\n"):
             result += ''.join([" " for i in range(4)]) + line + "\n"
     else:
@@ -249,7 +252,7 @@ class Commands:
         "kill" : Command("kill", ["assassinate"], "", "Disposes of someone", handlerMethod=killCommand, rankReq=1),
         "ban"  : Command("ban", ["exterminate"], "", "Bans someone. Rank 8+", handlerMethod=rankUpdate, rankReq=8),
         "getRank" : Command("getRank", [], "", "Gets someone's rank. Rank 7+", handlerMethod=getRank, rankReq=7),
-        "setRank" : Command("setRank", [], "", "Changs someone's rank. Rank 8+", handlerMethod=rankUpdate, rankReq=8)
+        "setRank" : Command("setRank", ["promote", "demote"], "", "Changs someone's rank. Rank 8+", handlerMethod=rankUpdate, rankReq=8)
     }
 
     @staticmethod
@@ -268,7 +271,7 @@ class Commands:
             for alias in command.aliases:#... iterate the aliases ...
                 if foundName == alias:# ... and if the alias matches...
                     return cmdN #... return the name of the command.
-        return None# Otherwise, all options are exhausted. Return None
+        return None# Otherwise, all options are exhausted. Return None.
 
     cleaning = {"&quot;": "\"", "&#39;" : '\'',
                 "&gt;": ">", "&lt;": "<"}

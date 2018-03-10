@@ -15,3 +15,23 @@ homes = {
 storageDir = "botStorage/"
 startQuiet = True
 leaveQuiet = True
+
+enabledSites = {
+    "stackoverflow.com" : True,
+    "stackexchange.com" : True,
+    "meta.stackexchange.com" : True,
+    "discord" : True
+}
+
+def isSiteEnabled(site: str):
+    try:
+        return enabledSites[site]
+    except KeyError:
+        print("Site not found in enabledSites. False is returned when this happens")
+        return False
+
+def isAnyEnabled(sites: []):
+    for site in sites:
+        if(isSiteEnabled(site)):
+            return True
+    return False

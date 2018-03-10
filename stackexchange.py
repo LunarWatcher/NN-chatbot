@@ -16,26 +16,13 @@ class Stackexchange():
     nnFun = None
 
 def start():
-    email = Config.email
     password = Config.sePassword
+    startSites(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"], password)
 
-    Stackexchange.sites.append(SESite("meta.stackexchange.com", password))
-    Stackexchange.sites.append(SESite("stackexchange.com", password))
-    Stackexchange.sites.append(SESite("stackoverflow.com", password))
-
-
-    while True:
-        message = input(">> ")
-        if message == "~!save":
-            Commands.PermissionManager.saveAll()
-        if(message == "~!stop" or message == "~!break"):
-            Commands.PermissionManager.saveAll()
-            break
-
-
-    for site in Stackexchange.sites:
-        site.stop()
-
+def startSites(sites: [], password):
+    for site in sites:
+        if Config.isSiteEnabled(site):
+            Stackexchange.sites.append(SESite(site, password))
 def onMessage(message, client):
 
     if not isinstance(message, MessagePosted) and not isinstance(message, MessageEdited):
