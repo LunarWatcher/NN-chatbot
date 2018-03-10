@@ -8,7 +8,7 @@ email = "your email here"
 sePassword = "Your password here"
 discordToken = "Your token here"
 homes = {
-    "stackoverflow.com": [1]
+    "stackoverflow.com": [1],
     "stackexchange.com": [1],
     "meta.stackexchange.com": [721]
 }
