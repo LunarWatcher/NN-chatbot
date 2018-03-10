@@ -250,6 +250,7 @@ class Bot():
 
         # Parse "unk"-only messages to "I don't understand" in some or another form.
         answer = ' '.join(sentence)
+        print(answer)
         return grammar.fix(answer)
 
 

@@ -11,7 +11,12 @@ def capitalization(rule, string):
     recompiled = []
     for matchId, match in enumerate(found):
         fullMatch = match.group(0).split()
-        fullMatch[0] = fullMatch[0].title()
+        if "'" in fullMatch[0]:
+            splitMatch = fullMatch[0].split("'")
+            splitMatch[0] = splitMatch[0].title()
+            fullMatch[0] = "'".join(splitMatch)
+        else:
+            fullMatch[0] = fullMatch[0].title()
         recompiled.append(' '.join(fullMatch))
 
     return ' '.join(recompiled)
@@ -25,7 +30,7 @@ basicRules = {
 }
 
 complexRules = {
-    r"(([A-Za-z]|\d(?!\d*\. )|[.$_]\w+)(\S*))((?:(?:etc\.|i\.e\.|e\.g\.|vs\.|\.\.\.|\w*\.(?![\s\")])|[*-]+|\n(?![ \t]*\n| *(?:[*-]|\d+\.))|[^.?!\n]?))+(?:([.?!]+)(?=[\s\")]|$)|\n\n|\n(?= *[*-])|\n(?= *\d+\.)|$))": capitalization,
+    r'(([A-Za-z]|\d(?!\d*\. )|[.$_]\w+)(\S*))((?:(?:etc\.|i\.e\.|e\.g\.|vs\.|\.\.\.|\w*\.(?![\s")])|[*-]+|\n(?![ \t]*\n| *(?:[*-]|\d+\.))|[^.?!\n]?))+(?:([.?!]+)(?=[\s")]|$)|\n\n|\n(?= *[*-])|\n(?= *\d+\.)|$))': capitalization,
 
 }
 
@@ -55,7 +60,8 @@ if __name__ == "__main__":
     testSentences = [
         "hi , i ' m Olivia. i don ' t have a life .",
         "omg, this is sooooo fun! i hope we can do this again!",
-        "lol, I agree"
+        "lol, I agree",
+        "how ' s it going?"
     ]
     for sentence in testSentences:
         print(fix(sentence))
