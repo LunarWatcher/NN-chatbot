@@ -36,6 +36,7 @@ def onMessage(message, client):
 class SESite(object):
 
     def __init__(self, siteName: str, password: str):
+        self.name = siteName
         self.client = Client(siteName)
         self.client.login(Config.email, password)
         self.rooms = []

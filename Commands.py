@@ -11,11 +11,14 @@ import random as r
 import os
 import time
 
+if Config.isAnyEnabled(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"]):
+    import stackexchange as stack
+
 r.seed = time.time()
 
 class PermissionManager:
     sites: list() = []
-
+    NECESSARY_VOTES = 3
     @staticmethod
     def addSite(name: str):
         site = Site(name)
@@ -56,7 +59,7 @@ class Command():
         userRank = ste.getUserRank(userId)
         if userRank < self.rankReq:
             return True, "You don't have permission to use this command"
-        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank, site)
+        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank, site, userId)
         return reply, response
 
 class StaticResponses:
@@ -76,10 +79,15 @@ async def delegateDiscord(message, dClient, uid: int, nnFun):
     cmdName = triggerless.split()[0]
     messageContent = triggerless[len(cmdName):].strip()
     try:
-        _, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid, "discord", False)
-        await dClient.send_message(message.channel, replyContent)
+        _, replyContent = Commands.commands[Commands.getCommandName(cmdName, Commands.commands)].onMessage(cmdName, messageContent, uid, "discord", False)
+        await dClient.send_message(message.channel, ("" if not _ else "<@{}>".format(uid)) + replyContent)
     except KeyError:
-        await dClient.send_message(message.channel, "Sorry, that's not a command I know");
+        try:
+            _, replyContent = Commands.commands[Commands.getCommandName(cmdName, Commands.commands)].onMessage(cmdName, messageContent, uid, "discord", False)
+            await dClient.send_message(message.channel, ("" if not _ else "<@{}>".format(uid)) + replyContent)
+        except KeyError:
+            await dClient.send_message(message.channel, "Sorry, that's not a command I know");
+
 
 def delegate(message, uid: int, client, nnFun):
     site = client.host
@@ -99,41 +107,66 @@ def delegate(message, uid: int, client, nnFun):
     messageContent = triggerless[len(cmdName) + 1:]
 
     try:
-        reply, replyContent = Commands.commands[Commands.getCommandName(cmdName)].onMessage(cmdName, messageContent, uid, site)
-        if(reply):
-            message.message.reply(replyContent)
-        else:
-            message.room.send_message(replyContent)
+        reply, replyContent = Commands.commands[Commands.getCommandName(cmdName, Commands.commands)].onMessage(cmdName, messageContent, uid, site)
     except KeyError:
-        message.message.reply("Sorry, that's not a command I know");
+        try:
+            reply, replyContent = Commands.stackExchangeCommands[Commands.getCommandName(cmdName, Commands.stackExchangeCommands)].onMessage(cmdName, messageContent, uid, site)
+        except KeyError:
+            message.message.reply("Sorry, that's not a command I know");
+            return
+    if replyContent is None:
+        return
+    if(reply):
+        message.message.reply(replyContent)
+    else:
+        message.room.send_message(replyContent)
 
-def helpCommand(specificCommand, message, indentBased, userRank: int, site: str):
+def helpCommand(specificCommand, message, indentBased, userRank: int, site: str, uid):
     commandNames = list(Commands.commands.keys())
     commandDescriptions = [cmd.desc for name, cmd in Commands.commands.items()]
     res = ""
     maxLen = 0
+
+    if site == "discord":
+        siteCommands = list(Commands.discordCommands.keys())
+        siteCommandDescriptions = [cmd.desc for name, cmd in Commands.discordCommands.items()]
+        for item in siteCommands:
+            commandNames.append(item)
+        for item in siteCommandDescriptions:
+            commandDescriptions.append(item)
+    elif site == "stackoverflow.com" or site == "stackexchange.com" or site == "meta.stackexchange.com":
+        siteCommands = list(Commands.stackExchangeCommands.keys())
+        siteCommandDescriptions = [cmd.desc for name, cmd in Commands.stackExchangeCommands.items()]
+        for item in siteCommands:
+            commandNames.append(item)
+        for item in siteCommandDescriptions:
+            commandDescriptions.append(item)
+
+    res += "#################### Commands ####################\n"
     for n in commandNames:
         maxLen = max(maxLen, len(n))
     for i in range(len(commandNames)):
         adjustedLen: int = (maxLen) - len(commandNames[i])
         res = res + commandNames[i] + "".join([" " for i in range(adjustedLen)]) + " | " + commandDescriptions[i] + "\n"
 
+
+
     return False, fixedFormat(res, not indentBased)
 
-def lickCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str):
+def lickCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
     message = message.strip()
     if message == "":
         return "You have to tell me who to lick"
     return True, "*licks " + message + "*. " + StaticResponses.licks[r.randint(0, len(StaticResponses.licks) - 1)]
 
-def killCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str):
+def killCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
     message = message.strip()
     print(">>:" + message)
     if message == "":
         return "You have to tell me who to kill"
     return True, StaticResponses.kills[r.randint(0, len(StaticResponses.kills) - 1)].format(message)
 
-def rankUpdate(specificCommand, message, isDiscord: bool, userRank : int, site: str):
+def rankUpdate(specificCommand, message, isDiscord: bool, userRank : int, site: str, uid):
     try:
         split = message.split(" ")
         if len(split) != 2 and specificCommand != "ban" and specificCommand != "unban":
@@ -180,7 +213,7 @@ def rankUpdate(specificCommand, message, isDiscord: bool, userRank : int, site: 
         return True, "User {}'s rank changed to {}".format(id, newRank)
     return True, "Unimplemented call: {}".format(specificCommand)
 
-def getRank(specificCommand, message, isDiscord: bool, userRank : int, site: str):
+def getRank(specificCommand, message, isDiscord: bool, userRank : int, site: str, uid):
     try:
         id = int(message.strip())
     except ValueError:
@@ -190,9 +223,102 @@ def getRank(specificCommand, message, isDiscord: bool, userRank : int, site: str
 
     return True, "User {} has the rank {}".format(id, currentRank)
 
-def aboutCommand(specificCommand, message, isDiscord: bool, userRank : int, site: str):
+def aboutCommand(specificCommand, message, isDiscord: bool, userRank : int, site: str, uid):
     return True, "Hiya! I'm {}. I'm a chatbot created by [Olivia](https://github.com/LunarWatcher). I'm written in Python, in order to use Tensorflow and use it for" \
                  " machine learning, which allows me to talk when you mention me. In addition, there are commands you can use. See the list by doing {}help. My source is available on [GitHub]({})".format(Config.botName, Config.trigger, Config.ghRepo)
+
+def summon(specificCommand, message, isDiscord: bool, userRank : int, site: str, uid):
+    if site != "stackoverflow.com" and site != "stackexchange.com" and site != "meta.stackexchange.com":
+        return False, None
+
+    ints = getIntegersFromMessage(message)
+    if len(ints) == 0:
+        return True, "You have to tell me where to go -_-"
+    room = ints[0]
+    if room == -1:
+        return True, "That's not a valid room ID!"
+    try:
+        seSite = [s for s in stack.Stackexchange.sites if s.name == site][0]
+    except IndexError:
+        return True, "An IndexError occured while trying to get the site"
+    if room in seSite.rooms:
+        return True, "I'm already there..."
+
+    necessaryVotes = 1 if userRank >= 8 else PermissionManager.NECESSARY_VOTES
+    currentVotes = PermissionManager.getSite(site).votes.joinVotes
+    currentVotesI = len(currentVotes)
+    try:
+        currentVotes[room]# try to access
+    except KeyError:
+        PermissionManager.getSite(site).votes.joinVotes[room] = []
+    if userRank >= 8:
+        seSite.join(room)
+    else:
+        remainingVotes = necessaryVotes - currentVotesI
+        if uid in currentVotes[room]:
+            return True, "You've already voted for me to join this room"
+        else:
+            if remainingVotes <= 1:
+                seSite.join(room)
+                PermissionManager.getSite(site).votes.joinVotes[room] = []
+            else:
+                PermissionManager.getSite(site).votes.joinVotes[room].append(uid)
+                return True, "Vote registered. I will leave in " + str(remainingVotes - 1) + "vote" if remainingVotes - 1 == 1 else "votes"
+    return True, "Joined."
+
+def unsummon(specificCommand, message, isDiscord: bool, userRank : int, site: str, uid):
+    if site != "stackoverflow.com" and site != "stackexchange.com" and site != "meta.stackexchange.com":
+        return False, None
+
+    ints = getIntegersFromMessage(message)
+    if len(ints) == 0:
+        rm = -1
+    else:
+        rm = ints[0]
+    if rm == -1:
+        return True, "That's not a valid room ID!"
+    if rm in Config.homes[site]:
+        return True, "I cannot leave a home room"
+    try:
+        seSite = [s for s in stack.Stackexchange.sites if s.name == site][0]
+    except IndexError:
+        return True, "An IndexError occured while trying to get the site"
+    if not rm in seSite.rooms:
+        return True, "I'm not there..."
+
+    necessaryVotes = 1 if userRank >= 8 else PermissionManager.NECESSARY_VOTES
+    currentVotes = PermissionManager.getSite(site).votes.leaveVotes
+    try:
+        currentVotes[rm]# try to access
+    except KeyError:
+        PermissionManager.getSite(site).votes.leaveVotes[rm] = [] # create vote array if it doesn't exist
+    currentVotesI = len(currentVotes)
+
+    if userRank >= 8:
+        seSite.leave(rm)
+    else:
+        remainingVotes = necessaryVotes - currentVotesI
+        if uid in currentVotes[rm]:
+            return True, "You've already voted for me to leave this room"
+        else:
+            if remainingVotes <= 1:
+                seSite.leave(rm)
+                PermissionManager.getSite(site).votes.leaveVotes[rm] = []
+            else:
+                PermissionManager.getSite(site).votes.leaveVotes[rm].append(uid)
+                return True, "Vote registered. I will leave in " + str(remainingVotes - 1) + "vote" if remainingVotes - 1 == 1 else "votes"
+    return False, None
+
+def getIntegersFromMessage(message):
+    split = message.split(" ")
+    split = [i.strip() for i in split]
+    rv = []
+    for num in split:
+        try:
+            rv.append(int(num))
+        except:
+            rv.append(-1)
+    return rv
 # Utils
 
 def fixedFormat(stringToFormat: str, isDiscord: bool):
@@ -206,11 +332,17 @@ def fixedFormat(stringToFormat: str, isDiscord: bool):
         result += "```"
     return result
 
+class Votes:
+    def __init__(self):
+        self.joinVotes: {str, []} = {}
+        self.leaveVotes: {str, []} = {}
+
 class Site:
 
     def __init__(self, name: str):
         self.name = name
         self.users = dict()
+        self.votes = Votes()
 
         for site, ownerList in Config.ownerIds.items():
             if site == name:
@@ -255,10 +387,18 @@ class Commands:
         "setRank" : Command("setRank", ["promote", "demote"], "", "Changs someone's rank. Rank 8+", handlerMethod=rankUpdate, rankReq=8)
     }
 
+    stackExchangeCommands = {
+        "summon" : Command("summon", ["join"], "", "Summons me to a specified room", handlerMethod=summon, rankReq=1),
+        "unsummon" : Command("unsummon", ["leave"], "", "Makes me leave this room or a specified room", handlerMethod=unsummon, rankReq=1)
+    }
+    discordCommands = {
+
+    }
+
     @staticmethod
-    def getCommandName(foundName: str):
+    def getCommandName(foundName: str, commands: []):
         try:
-            cmd = Commands.commands[foundName.strip()]#This throws an exception if not found
+            cmd = commands[foundName.strip()]#This throws an exception if not found
             if cmd is None:
                 raise KeyError()
             return foundName# Meaning if it gets here, it is found and the command name is this name
@@ -267,7 +407,7 @@ class Commands:
             pass
         # Since the key isn't the obvious one (the name itself), it is most likely an alias
         # So iterate the commands dict...
-        for cmdN, command in Commands.commands.items():
+        for cmdN, command in commands.items():
             for alias in command.aliases:#... iterate the aliases ...
                 if foundName == alias:# ... and if the alias matches...
                     return cmdN #... return the name of the command.
