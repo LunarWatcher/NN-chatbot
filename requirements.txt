@@ -8,6 +8,6 @@ tensorflow-gpu==1.5.0
 tensorlayer==1.7.4
 httmock==1.2.6
 beautifulsoup4==4.6.0
-scikit_learn==0.19.1
+scikit-learn==0.19.1
 tensorboard==1.6.0
 websocket-client==0.47.0
