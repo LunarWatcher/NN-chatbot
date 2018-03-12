@@ -2,6 +2,7 @@ import tensorlayer as tl
 from tensorlayer.layers import *
 import datasetUtils as data
 import Config
+import tensorflow as tf
 from multiprocessing.dummy import Pool
 from sklearn.utils import shuffle
 import os
@@ -365,7 +366,6 @@ if __name__ == '__main__':
         forced = True
 
     print("I'm gonna be " + ("training!" if training else "chatting!"))
-    import tensorflow as tf
     tf.reset_default_graph()
     bot = Bot(training=training, forced=forced)
 
