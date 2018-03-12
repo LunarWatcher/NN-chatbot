@@ -23,7 +23,7 @@ class PermissionManager:
     @staticmethod
     def addSite(name: str):
         site = Site(name)
-        PermissionManager.sites.update({name: site})
+        PermissionManager.sites[name] = site
 
     @staticmethod
     def inject(sites: []):
