@@ -365,7 +365,7 @@ if __name__ == '__main__':
         training = True
         forced = True
 
-    print("I'm gonna be " + ("training!", "chatting!")[training]) #Little optimization example
+    print("I'm gonna be " + ("chatting!", "training!")[training]) #Little optimization example
     tf.reset_default_graph()
     bot = Bot(training=training, forced=forced)
 
