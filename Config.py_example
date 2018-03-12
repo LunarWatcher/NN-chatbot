@@ -1,12 +1,29 @@
+import configparser
+
 ownerName = "Olivia" # Required
-ownerIds =  { "stackexchange.com": [0], "stackoverflow.com": [0], "meta.stackexchange.com": [0] }  # At least one is required
+ownerIds =  { "stackexchange.com": [],
+              "stackoverflow.com": [],
+              "meta.stackexchange.com": [],
+              "discord" : []}  # you can add multiple owners
 botName = "Alisha" # Required
-ghRepo = "https://github.com/LunarWatcher/NN-chatbot"# Path to github repo
-trigger = "//"# The command trigger
-netTrigger = "@" + botName# Stack Exchange net trigger. Currently case sensitive, will be fixed later
-email = "your email here"
-sePassword = "Your password here"
-discordToken = "Your token here"
+ghRepo = "https://github.com/LunarWatcher/NN-chatbot"
+
+trigger = "//"
+netTrigger = "@" + botName
+
+config = configparser.ConfigParser()
+config.read("private.ini")
+
+CONFIG_KEY = "creds"
+
+email = config[CONFIG_KEY]["seEmail"]
+sePassword = config[CONFIG_KEY]["sePassword"]
+discordToken = config[CONFIG_KEY]["discordToken"]
+
+twitchName = ""
+twitchChannel = ""
+
+
 homes = {
     "stackoverflow.com": [1],
     "stackexchange.com": [1],

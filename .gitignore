@@ -12,3 +12,4 @@ __pycache__/
 dataset/
 logdir/
 model/
+private.ini
