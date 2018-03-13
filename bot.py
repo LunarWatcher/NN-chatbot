@@ -65,7 +65,7 @@ class Bot():
                 # name ID, this check is here to make sure it's present
                 print("Name ID not found. Appending and saving the dictionary...")
                 self.nameId = len(self.idx2w) + 1
-                self.w2idx.update({"name_id" : self.nameId})
+                self.w2idx["name_id"] = self.nameId
                 self.idx2w = self.idx2w + ["name_id"]
                 data.saveVocab(self.idx2w, self.w2idx)
             else:
@@ -86,9 +86,9 @@ class Bot():
             self.startId = self.xVocabSize
             self.endId = self.xVocabSize + 1
             self.nameId = self.xVocabSize + 2
-            self.w2idx.update({"start_id": self.startId})
-            self.w2idx.update({"end_id": self.endId})
-            self.w2idx.update({"name_id" : self.nameId})# The name ID is the one used in replies to be replaced with the bots name
+            self.w2idx["start_id"] = self.startId
+            self.w2idx["end_id"] = self.endId
+            self.w2idx["name_id"] = self.nameId# The name ID is the one used in replies to be replaced with the bots name
 
             self.idx2w = self.idx2w + ["start_id", "end_id", "name_id"]
             self.xVocabSize = self.yVocabSize = self.xVocabSize + 3
@@ -365,7 +365,7 @@ if __name__ == '__main__':
         training = True
         forced = True
 
-    print("I'm gonna be " + ("chatting!", "training!")[training]) #Little optimization example
+    print("I'm gonna be " + ("training!" if training else "chatting"))
     tf.reset_default_graph()
     bot = Bot(training=training, forced=forced)
 

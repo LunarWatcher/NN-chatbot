@@ -5,6 +5,7 @@ ownerIds =  { "stackexchange.com": [],
               "stackoverflow.com": [],
               "meta.stackexchange.com": [],
               "discord" : []}  # you can add multiple owners
+
 botName = "Alisha" # Required
 ghRepo = "https://github.com/LunarWatcher/NN-chatbot"
 
@@ -13,20 +14,15 @@ netTrigger = "@" + botName
 
 config = configparser.ConfigParser()
 config.read("private.ini")
-
 CONFIG_KEY = "creds"
 
-email = config[CONFIG_KEY]["seEmail"]
-sePassword = config[CONFIG_KEY]["sePassword"]
-discordToken = config[CONFIG_KEY]["discordToken"]
-
-twitchName = ""
-twitchChannel = ""
-
+email = str(config[CONFIG_KEY]["seEmail"])
+sePassword = str(config[CONFIG_KEY]["sePassword"])
+discordToken = str(config[CONFIG_KEY]["discordToken"])
 
 homes = {
     "stackoverflow.com": [1],
-    "stackexchange.com": [1],
+    "stackexchange.com": [1],# 36
     "meta.stackexchange.com": [721]
 }
 storageDir = "botStorage/"
@@ -52,3 +48,4 @@ def isAnyEnabled(sites: []):
         if(isSiteEnabled(site)):
             return True
     return False
+

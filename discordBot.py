@@ -24,9 +24,9 @@ class Discord():
             if message.author == self.bot.user:
                 return;
 
-            if message.content.startswith("<@!{}>".format(self.bot.user.id)):
+            if message.content.startswith("<@{}>".format(self.bot.user.id)):
 
-                content = message.content.replace("<@!{}>".format(self.bot.user.id), "")
+                content = message.content.replace("<@{}>".format(self.bot.user.id), "")
                 await self.bot.send_message(message.channel, nnFun(content))
             elif message.content.startswith(Config.trigger):
                 await Commands.delegateDiscord(message, self.bot, message.author.id, nnFun)

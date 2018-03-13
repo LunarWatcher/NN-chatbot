@@ -2,5 +2,3 @@
 seEmail=None
 sePassword=None
 discordToken=None
-twitchClientId=None
-twitchOauth=None

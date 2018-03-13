@@ -7,6 +7,7 @@ from ChatExchange.chatexchange.messages import Message
 import Config
 import Commands
 import traceback
+import os
 
 
 logger = logging.getLogger(__name__)
@@ -42,14 +43,28 @@ class SESite(object):
         self.rooms = []
         for room in Config.homes[siteName]:
             self.join(room)
+        if os.path.isfile(Config.storageDir + self.name + ".rooms"):
+            with open(Config.storageDir + self.name + ".rooms", "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    try:
+                        self.join(int(line))
+                    except ValueError:
+                        print("Invalid room ID: " + line)
 
     def stop(self):
+        with open(Config.storageDir + self.name + ".rooms", "w") as f:
+            for room in self.rooms:
+                f.write(str(room) + "\n")
+
         for room in self.rooms:
             self.leave(room)
         self.client.logout()
 
 
     def join(self, room: int):
+        if room in self.rooms:
+            return
         r = self.client.get_room(room)
         r.join()
         if not Config.startQuiet:
@@ -59,6 +74,9 @@ class SESite(object):
         self.rooms.append(room)
 
     def leave(self, room: int):
+        if room not in self.rooms:
+            return
+
         rm = self.client.get_room(room)
         if not Config.leaveQuiet:
             rm.send_message("Adios! I'm off to the tavern")
