@@ -16,6 +16,10 @@ class Stackexchange():
     sites = []
     nnFun = None
 
+    @staticmethod
+    def getSite(target):
+        return [site for site in Stackexchange.sites if site.name == target]
+
 def start():
     password = Config.sePassword
     startSites(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"], password)

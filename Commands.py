@@ -15,8 +15,11 @@ if Config.isAnyEnabled(["stackoverflow.com",
                         "meta.stackexchange.com"]):
     import stackexchange as stack
 
-r.seed = time.time()
+if Config.isSiteEnabled("discord"):
+    import discordBot as dBot, discord
 
+r.seed = time.time()
+import asyncio
 
 class PermissionManager:
     sites = {}
@@ -90,16 +93,19 @@ class StaticResponses:
 
 
 async def delegateDiscord(message, dClient, uid: int, nnFun):
-    # The discord part checks for the presence of the trigger before callig this method
+    try:
+        uid = int(uid)
+    except ValueError:
+        pass
+    # The discord part checks for the presence of the trigger before calling this method
     triggerless = str(message.content)[len(Config.trigger):]
     cmdName = triggerless.split()[0]
     messageContent = triggerless[len(cmdName):].strip()
     try:
-        _, replyContent = Commands.commands[
-            Commands.getCommandName(cmdName, Commands.commands)].onMessage(cmdName, messageContent,
-                                                                           uid, "discord", False)
+        _, replyContent = Commands.commands[Commands.getCommandName(cmdName, Commands.commands)]\
+            .onMessage(cmdName, messageContent, uid, "discord", False)
         await dClient.send_message(message.channel,
-                                   ("" if not _ else "<@{}>".format(uid)) + replyContent)
+                                   ("" if not _ else "<@{}> ".format(uid)) + replyContent)
     except KeyError:
         try:
             _, replyContent = Commands.commands[
@@ -107,7 +113,7 @@ async def delegateDiscord(message, dClient, uid: int, nnFun):
                                                                                messageContent, uid,
                                                                                "discord", False)
             await dClient.send_message(message.channel,
-                                       ("" if not _ else "<@{}>".format(uid)) + replyContent)
+                                       ("" if not _ else "<@{}> ".format(uid)) + replyContent)
         except KeyError:
             await dClient.send_message(message.channel, "Sorry, that's not a command I know");
 
@@ -254,8 +260,14 @@ def getRank(specificCommand, message, isDiscord: bool, userRank: int, site: str,
         return True, "Invalid ID"
 
     currentRank = PermissionManager.getSite(site).getUserRank(id)
+    userName = None
 
-    return True, "User {} has the rank {}".format(id, currentRank)
+    if site == "stackexchange.com" or site == "meta.stackexchange.com" or site == "stackoverflow.com":
+        site = stack.Stackexchange.getSite(site)
+        site = None if site is None else \
+            None if len(site) == 0 else site[0]
+        userName = None if site is None else site.client.get_user(id).name
+    return True, "User {} has the rank {}".format(id if userName is None else userName, currentRank)
 
 
 def aboutCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
@@ -298,10 +310,11 @@ def summon(specificCommand, message, isDiscord: bool, userRank: int, site: str, 
             if remainingVotes <= 1:
                 seSite.join(room)
                 PermissionManager.getSite(site).votes.joinVotes[room] = []
+                return True, "Joined."
             else:
                 PermissionManager.getSite(site).votes.joinVotes[room].append(uid)
-                return True, "Vote registered. I will leave in " + str(
-                    remainingVotes - 1) + "vote" if remainingVotes - 1 == 1 else "votes"
+                return True, "Vote registered. I will join in " + str(
+                    remainingVotes - 1) + (" vote" if remainingVotes - 1 == 1 else " votes")
     return True, "Joined."
 
 
@@ -344,12 +357,16 @@ def unsummon(specificCommand, message, isDiscord: bool, userRank: int, site: str
             if remainingVotes <= 1:
                 seSite.leave(rm)
                 PermissionManager.getSite(site).votes.leaveVotes[rm] = []
+                return True, "Left."
             else:
                 PermissionManager.getSite(site).votes.leaveVotes[rm].append(uid)
                 return True, "Vote registered. I will leave in " + str(
-                    remainingVotes - 1) + "vote" if remainingVotes - 1 == 1 else "votes"
+                    remainingVotes - 1) + (" vote" if remainingVotes - 1 == 1 else " votes")
     return False, None
 
+
+
+# Utils
 
 def getIntegersFromMessage(message):
     split = message.split(" ")
@@ -362,8 +379,6 @@ def getIntegersFromMessage(message):
             rv.append(-1)
     return rv
 
-
-# Utils
 
 def fixedFormat(stringToFormat: str, isDiscord: bool):
     result = ""
@@ -406,8 +421,6 @@ class Site:
                             rank = int(split[1].strip())
                             self.setUserRank(uid, rank)
 
-        for u in self.users:
-            print(u)
 
     def save(self):
         if not os.path.isdir(Config.storageDir):
@@ -417,9 +430,14 @@ class Site:
                 f.write(str(uid) + " +++$+++ " + str(rank) + "\n")
 
     def getUserRank(self, userId):
-        if not userId in self.users:
+        try:
+            userId = int(userId)
+        except ValueError:
+            return 1
+        if userId not in self.users:
+            print("UID not found")
             # Avoid crash on unknown users, + index more users
-            self.users.update({userId: 1})
+            self.users[userId] = 1
         return self.users[userId]
 
     def setUserRank(self, userId, newRank):

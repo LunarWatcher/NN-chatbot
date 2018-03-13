@@ -366,6 +366,10 @@ if __name__ == '__main__':
         forced = True
 
     print("I'm gonna be " + ("training!" if training else "chatting"))
+    # if not training:
+    #     mode = getIntInput("Mode: ")
+
+
     tf.reset_default_graph()
     bot = Bot(training=training, forced=forced)
 
