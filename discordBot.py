@@ -29,7 +29,10 @@ class Discord():
                 content = message.content.replace("<@{}>".format(self.bot.user.id), "")
                 await self.bot.send_message(message.channel, nnFun(content))
             elif message.content.startswith(Config.trigger):
-                await Commands.delegateDiscord(message, self.bot, message.author.id, nnFun)
+                if message.content[2:].startswith("summon"):
+                    await self.bot.send_message(message.channel, "To add me to a server, you need the appropriate privileges to do so. In order to add me, you have to authorize me, which can be done at this link: https://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=0".format(self.bot.user.id))
+                else:
+                    await Commands.delegateDiscord(message, self.bot, message.author.id, nnFun)
 
         self.bot.run(Config.discordToken)
 

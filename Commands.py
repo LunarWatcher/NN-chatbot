@@ -10,7 +10,9 @@ import random as r
 import os
 import time
 
-if Config.isAnyEnabled(["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com"]):
+if Config.isAnyEnabled(["stackoverflow.com",
+                        "stackexchange.com",
+                        "meta.stackexchange.com"]):
     import stackexchange as stack
 
 r.seed = time.time()
@@ -33,8 +35,10 @@ class PermissionManager:
 
     @staticmethod
     def assumeAllAndInject():
-        PermissionManager.inject(
-            ["stackoverflow.com", "stackexchange.com", "meta.stackexchange.com", "discord"])
+        PermissionManager.inject(["stackoverflow.com",
+                                  "stackexchange.com",
+                                  "meta.stackexchange.com",
+                                  "discord"])
 
     @staticmethod
     def getSite(name: str):
@@ -388,7 +392,7 @@ class Site:
         for site, ownerList in Config.ownerIds.items():
             if site == name:
                 for ownerId in ownerList:
-                    self.users.update({ownerId: 10})
+                    self.users[ownerId] = 10
 
         self.fileName = "privs_" + self.name.replace(".", "_") + ".dat"
         if os.path.isfile(Config.storageDir + self.fileName):
@@ -398,8 +402,12 @@ class Site:
                     if line != "":
                         split = line.split(" +++$+++ ")
                         uid = int(split[0].strip())
-                        rank = int(split[1].strip())
-                        self.setUserRank(uid, rank)
+                        if uid not in self.users:
+                            rank = int(split[1].strip())
+                            self.setUserRank(uid, rank)
+
+        for u in self.users:
+            print(u)
 
     def save(self):
         if not os.path.isdir(Config.storageDir):
@@ -443,7 +451,7 @@ class Commands:
                             rankReq=1)
     }
     discordCommands = {
-
+        "summon" : Command("summon", ["join"], "", "Summons me to a server", handlerMethod=summon, rankReq=1),
     }
 
     @staticmethod
