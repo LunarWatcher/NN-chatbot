@@ -458,7 +458,7 @@ class Commands:
                         handlerMethod=killCommand, rankReq=1),
         "ban": Command("ban", ["exterminate"], "", "Bans someone. Rank 8+",
                        handlerMethod=rankUpdate, rankReq=8),
-        "getRank": Command("getRank", [], "", "Gets someone's rank. Rank 7+", handlerMethod=getRank,
+        "getRank": Command("getRank", [], "", "Gets someone's rank.", handlerMethod=getRank,
                            rankReq=1),
         "setRank": Command("setRank", ["promote", "demote"], "", "Changs someone's rank. Rank 8+",
                            handlerMethod=rankUpdate, rankReq=8)
