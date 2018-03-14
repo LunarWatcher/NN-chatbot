@@ -367,7 +367,11 @@ def unsummon(specificCommand, message, isDiscord: bool, userRank: int, site: str
                     remainingVotes - 1) + (" vote" if remainingVotes - 1 == 1 else " votes")
     return False, None
 
+def alive(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
+    return True, "I think so."
 
+def time(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
+    return True, "The time is {}".format(time.localtime(time.time()))
 
 # Utils
 
@@ -460,8 +464,11 @@ class Commands:
                        handlerMethod=rankUpdate, rankReq=8),
         "getRank": Command("getRank", [], "", "Gets someone's rank.", handlerMethod=getRank,
                            rankReq=1),
-        "setRank": Command("setRank", ["promote", "demote"], "", "Changs someone's rank. Rank 8+",
-                           handlerMethod=rankUpdate, rankReq=8)
+        "setRank": Command("setRank", ["promote", "demote"], "", "Changes someone's rank. Rank 8+",
+                           handlerMethod=rankUpdate, rankReq=8),
+        "alive" : Command("alive", [], "", "Am I alive??", handlerMethod=alive, rankReq=1),
+        "time" : Command("time", [], "", "What time is it?", handlerMethod=time, rankReq=1),
+        
     }
 
     stackExchangeCommands = {
