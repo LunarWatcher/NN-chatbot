@@ -9,6 +9,7 @@ import os
 import Commands as cmd
 import sys
 import grammarRules as grammar
+import argparse
 
 # noinspection PyShadowingNames,PyAttributeOutsideInit
 class Bot():
@@ -343,6 +344,16 @@ def getBooleanInput(prompt):
         except KeyError:
             print("Invalid input please enter True or False!")
 
+
+def parseBoolean(str):
+    try:
+        return {"true":True,"false":False, "t": True, "f": False, "1": True, "0": False,
+               "True": True, "False" : False, "y" : True, "n": False, "yes" : True,
+               "no" : False}[str]
+    except:
+        print("Invalid boolean: " + str)
+        return False
+
 def getIntInput(prompt, validChoices = []):
 
     while True:
@@ -367,9 +378,17 @@ def getIntInput(prompt, validChoices = []):
 if __name__ == '__main__':
     print("#########################################")
     print("Booting...")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--training", type=str, help="Am I training? (boolean)")
+    parser.add_argument("--mode", type=int, help="(When training = false only) Where to boot the bot. 0 is the console, 1 is online. More modes may come eventually")
+    args = parser.parse_args()
+    trainingArg = parseBoolean(args.training)
+    modeArg = args.mode
+
     if os.path.isdir("dataset/"):
         print("Dataset directory found!")
-        training = getBooleanInput("Am I training?: ")
+        training = getBooleanInput("Am I training?: ") if trainingArg is None else trainingArg
 
     else:
         print("Dataset directory not found!")
@@ -382,7 +401,7 @@ if __name__ == '__main__':
     print("I'm gonna be " + ("training!" if training else "chatting"))
     mode = 0
     if not training:
-        mode = getIntInput("Mode: ", [0, 1])
+        mode = getIntInput("Mode: ", [0, 1]) if modeArg is None else modeArg
 
 
 
