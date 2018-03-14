@@ -257,16 +257,19 @@ def getRank(specificCommand, message, isDiscord: bool, userRank: int, site: str,
     try:
         id = int(message.strip())
     except ValueError:
-        return True, "Invalid ID"
+        id = uid
 
     currentRank = PermissionManager.getSite(site).getUserRank(id)
     userName = None
 
-    if site == "stackexchange.com" or site == "meta.stackexchange.com" or site == "stackoverflow.com":
-        site = stack.Stackexchange.getSite(site)
-        site = None if site is None else \
-            None if len(site) == 0 else site[0]
-        userName = None if site is None else site.client.get_user(id).name
+    try:
+        if site == "stackexchange.com" or site == "meta.stackexchange.com" or site == "stackoverflow.com":
+            site = stack.Stackexchange.getSite(site)
+            site = None if site is None else \
+                None if len(site) == 0 else site[0]
+            userName = None if site is None else site.client.get_user(id).name
+    except:
+        return True, "The user does not appear to exist"
     return True, "User {} has the rank {}".format(id if userName is None else userName, currentRank)
 
 
