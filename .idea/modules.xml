@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/Alisha/src/main/Alisha.iml" filepath="$PROJECT_DIR$/Alisha/src/main/Alisha.iml" />
-      <module fileurl="file://$PROJECT_DIR$/Alisha/src/main/nnchat.iml" filepath="$PROJECT_DIR$/Alisha/src/main/nnchat.iml" />
-    </modules>
-  </component>
-</project>

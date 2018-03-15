@@ -1,0 +1,21 @@
+# Stack Overflow
+stackoverflow.user.name=Alisha
+stackoverflow.user.email=example@example.com
+stackoverflow.user.password=1234
+stackoverflow.user.id=0123
+# Meta Stack Exchange
+metastackexchange.user.name=Alisha
+metastackexchange.user.email=example@example.com
+metastackexchange.user.password=1234
+metastackexchange.user.id=4567
+# Stack Exchange
+stackexchange.user.name=Alisha
+stackexchange.user.email=example@example.com
+stackexchange.user.password=1234
+stackexchange.user.id=8910
+# Discord
+discord.user.name=Alisha#1234
+discord.user.email=token here
+discord.user.password=none
+discord.user.id=1234
+# Other sites in the same pattern here
