@@ -26,11 +26,33 @@ The [Corell Movie Dialog Corpus](http://www.cs.cornell.edu/~cristian/Cornell_Mov
 
 ## Setup
 
+
+
 The text files in the corell movie dialog corpus goes in a directory called `raw_data`. 
 
 Rename `Config.py_example` to `Config.py` and fill in the necessary values. The bot is designed to run on all three sites, in addition to inthe console, so there is currently no system to handle missing sites. You can of course run it in the console and not deal with websites and API's.
 
 And finally, when all the data is added, run `bot.py`. It'll set up the necessary files and start training once it's done. Checkpoints are saved every epoch (and it overrides the past save).
+
+## Running it
+
+The bot is split in three:
+
+* NN backend
+* Python bot
+* Java bot
+
+The Java bot and Python bot both depend on the NN backend, but can also be run without it. The Python bot has to be run in order to use the console feature.
+
+After training, run BotCore.java in `chatbot/` to use the Java core. Or use `bot.py` with `--training false --mode 1` to use the Python one. It's the Java-core that's actively being developed (with new commands) but the Python one also works. 
+
+The `bot.py` file supports CLI arguments. They are:
+
+    --help     | shows the help message and exits
+    --training | whether or not the bot trains (boolean)
+    --mode     | The mode to run in (int). 0 for console, 1 for python bot, 2 for flask server.
+    
+Running with mode 2 also makes the Java program not create a new instance of the nn backend, but the server has to be up for this to happen. The server doesn't have to be manually booted at all though, as the Java program takes care of it
 
 ## System
 
