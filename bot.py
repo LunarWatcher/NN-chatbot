@@ -127,7 +127,6 @@ class Bot():
 
         # Parse "unk"-only messages to "I don't understand" in some or another form.
         answer = ' '.join(sentence)
-        print(answer)
         return grammar.fix(answer)
 
 
@@ -330,10 +329,12 @@ class Bot():
         tl.files.load_and_assign_npz(sess=self.sess, name="n.npz", network=self.net)
         self.initialized = True
         if self.training:
-
             epochs = self.getEpochs()
-
             self.train(epochs)
+        else:
+            print("Neural network started")
+            print("----------------------")
+            print(">> ")
 
 def getBooleanInput(prompt):
     while True:
@@ -383,12 +384,13 @@ if __name__ == '__main__':
     parser.add_argument("--training", type=str, help="Am I training? (boolean)")
     parser.add_argument("--mode", type=int, help="(When training = false only) Where to boot the bot. 0 is the console, 1 is online. More modes may come eventually")
     args = parser.parse_args()
-    trainingArg = parseBoolean(args.training)
+    parser.print_help()
+    trainingArg = args.training
     modeArg = args.mode
 
     if os.path.isdir("dataset/"):
         print("Dataset directory found!")
-        training = getBooleanInput("Am I training?: ") if trainingArg is None else trainingArg
+        training = getBooleanInput("Am I training?: ") if trainingArg is None else parseBoolean(trainingArg)
 
     else:
         print("Dataset directory not found!")

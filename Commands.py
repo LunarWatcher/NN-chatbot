@@ -8,8 +8,7 @@ import Config
 
 import random as r
 import os
-import time
-
+from time import *
 if Config.isAnyEnabled(["stackoverflow.com",
                         "stackexchange.com",
                         "meta.stackexchange.com"]):
@@ -18,7 +17,7 @@ if Config.isAnyEnabled(["stackoverflow.com",
 if Config.isSiteEnabled("discord"):
     import discordBot as dBot, discord
 
-r.seed = time.time()
+r.seed = time()
 import asyncio
 
 class PermissionManager:
@@ -71,8 +70,7 @@ class Command():
         userRank = ste.getUserRank(userId)
         if userRank < self.rankReq:
             return True, "You don't have permission to use this command"
-        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank, site,
-                                             userId)
+        reply, response = self.handlerMethod(specificCommand, message, indentBased, userRank, site, userId)
         return reply, response
 
 
@@ -152,9 +150,9 @@ def delegate(message, uid: int, client, nnFun):
     if replyContent is None:
         return
     if (reply):
-        message.message.reply(replyContent)
+        message.message.reply(replyContent, length_check=False)
     else:
-        message.room.send_message(replyContent)
+        message.room.send_message(replyContent, length_check=False)
 
 
 def helpCommand(specificCommand, message, indentBased, userRank: int, site: str, uid):
@@ -192,9 +190,9 @@ def helpCommand(specificCommand, message, indentBased, userRank: int, site: str,
 def lickCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
     message = message.strip()
     if message == "":
-        return "You have to tell me who to lick"
-    return True, "*licks " + message + "*. " + StaticResponses.licks[
-        r.randint(0, len(StaticResponses.licks) - 1)]
+        return True, "You have to tell me who to lick"
+    return True, ("*licks " + message + "*. " + StaticResponses.licks[
+        r.randint(0, len(StaticResponses.licks) - 1)])
 
 
 def killCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
@@ -367,11 +365,11 @@ def unsummon(specificCommand, message, isDiscord: bool, userRank: int, site: str
                     remainingVotes - 1) + (" vote" if remainingVotes - 1 == 1 else " votes")
     return False, None
 
-def alive(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
+def aliveCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
     return True, "I think so."
 
-def time(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
-    return True, "The time is {}".format(time.localtime(time.time()))
+def timeCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
+    return True, "The time is {}".format(strftime("%a, %d %b %Y %X %z (%Z)", localtime(time())))
 
 # Utils
 
@@ -466,9 +464,9 @@ class Commands:
                            rankReq=1),
         "setRank": Command("setRank", ["promote", "demote"], "", "Changes someone's rank. Rank 8+",
                            handlerMethod=rankUpdate, rankReq=8),
-        "alive" : Command("alive", [], "", "Am I alive??", handlerMethod=alive, rankReq=1),
-        "time" : Command("time", [], "", "What time is it?", handlerMethod=time, rankReq=1),
-        
+        "alive" : Command("alive", [], "", "Am I alive??", handlerMethod=aliveCommand, rankReq=1),
+        "time" : Command("time", [], "", "What time is it?", handlerMethod=timeCommand, rankReq=1),
+
     }
 
     stackExchangeCommands = {
