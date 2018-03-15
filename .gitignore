@@ -13,6 +13,9 @@ dataset/
 logdir/
 model/
 private.ini
-Alisha/build/
-Alisha/creds.properties
-Alisha/out
+chatbot/build/
+chatbot/creds.properties
+chatbot/out
+chatbot/memory.json
+creds.properties
+memory.json
