@@ -1,15 +1,18 @@
-import tensorlayer as tl
-from tensorlayer.layers import *
-import datasetUtils as data
-import Config
-import tensorflow as tf
-from multiprocessing.dummy import Pool
-from sklearn.utils import shuffle
-import os
-import Commands as cmd
-import sys
-import grammarRules as grammar
 import argparse
+import os
+import sys
+from multiprocessing.dummy import Pool
+
+import Config
+import datasetUtils as data
+import grammarRules as grammar
+import tensorflow as tf
+import tensorlayer as tl
+from sklearn.utils import shuffle
+from tensorlayer.layers import *
+
+import Commands as cmd
+
 
 # noinspection PyShadowingNames,PyAttributeOutsideInit
 class Bot():
@@ -179,7 +182,7 @@ class Bot():
             message = input(">> ")
             if message == "~!save":
                 cmd.PermissionManager.saveAll()
-            elif(message == "~!stop" or message == "~!break"):
+            elif(message == "~!stop" or message == "~!break" or message == "~!exit"):
                 cmd.PermissionManager.saveAll()
                 break
             else:
@@ -382,7 +385,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--training", type=str, help="Am I training? (boolean)")
-    parser.add_argument("--mode", type=int, help="(When training = false only) Where to boot the bot. 0 is the console, 1 is online. More modes may come eventually")
+    parser.add_argument("--mode", type=int, help="(When training = false only) Where to boot the bot. 0 is the console, 1 is online, 2 is online with Java/Kotlin. More modes may come eventually")
     args = parser.parse_args()
     parser.print_help()
     trainingArg = args.training
@@ -414,6 +417,18 @@ if __name__ == '__main__':
     if not training:
         pool = Pool(processes=1)
         pool.apply_async(bot.startNet )
-        bot.startChat(mode)
+        if mode == 2:
+            from flask import Flask, jsonify, request
+            app = Flask(__name__)
+
+            @app.route("/predict", methods=["POST", "GET"])
+            def getAnswer():
+                response = bot.predict(str(request.json["message"]))
+                return jsonify(response)
+
+            os.system("javac")
+
+        else:
+            bot.startChat(mode)
     else:
         bot.startNet()

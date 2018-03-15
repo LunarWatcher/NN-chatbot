@@ -1,12 +1,10 @@
-import random
+import itertools
+import os
+import pickle
+import re
 
 import nltk
-import itertools
 import numpy as np
-import pickle
-import os
-import re
-import grammarRules as grammar
 
 EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_' # space is included in the whitelistt
 EN_BLACKLIST = '$`()/<=>@[\\]{|}~'

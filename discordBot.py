@@ -1,8 +1,8 @@
-import discord
+import Config
 from discord.ext import commands as dCommands
 
-import Config
 import Commands
+
 
 class SDiscord:
     discord = None

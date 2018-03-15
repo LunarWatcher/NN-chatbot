@@ -1,14 +1,12 @@
 import logging.handlers
-
-from ChatExchange.chatexchange.client import Client
-from ChatExchange.chatexchange.browser import LoginError
-from ChatExchange.chatexchange.events import MessagePosted, MessageEdited, MessageStarred
-from ChatExchange.chatexchange.messages import Message
-import Config
-import Commands
-import traceback
 import os
+import traceback
 
+import Config
+from ChatExchange.chatexchange.client import Client
+from ChatExchange.chatexchange.events import MessagePosted, MessageEdited
+
+import Commands
 
 logger = logging.getLogger(__name__)
 

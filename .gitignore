@@ -13,3 +13,5 @@ dataset/
 logdir/
 model/
 private.ini
+Alisha/build/
+Alisha/creds.properties

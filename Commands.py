@@ -4,21 +4,22 @@
 # wikipedia
 # xkcd
 
+import os
+import random as r
+from time import *
+
 import Config
 
-import random as r
-import os
-from time import *
 if Config.isAnyEnabled(["stackoverflow.com",
                         "stackexchange.com",
                         "meta.stackexchange.com"]):
     import stackexchange as stack
 
 if Config.isSiteEnabled("discord"):
-    import discordBot as dBot, discord
+    pass
 
 r.seed = time()
-import asyncio
+
 
 class PermissionManager:
     sites = {}
@@ -421,7 +422,10 @@ class Site:
                 for line in lines:
                     if line != "":
                         split = line.split(" +++$+++ ")
-                        uid = int(split[0].strip())
+                        try:
+                            uid = int(split[0].strip())
+                        except ValueError:
+                            continue
                         if uid not in self.users:
                             rank = int(split[1].strip())
                             self.setUserRank(uid, rank)
