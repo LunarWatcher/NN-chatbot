@@ -9,6 +9,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import java.awt.SystemColor.info
 import java.text.SimpleDateFormat
+import java.util.*
 
 import java.util.regex.Pattern
 
@@ -295,7 +296,7 @@ class Alive : AbstractCommand("alive", listOf(), "Used to check if the bot is wo
 }
 
 class TimeCommand : AbstractCommand("time", listOf(), "What time is it?"){
-    val formatter = SimpleDateFormat("a, d MMMM HH:mm:ss.SSSS Y X z (Z)")
+    val formatter = SimpleDateFormat("E, d MMMM HH:mm:ss.SSSS Y X z (Z)", Locale.US)
     override fun handleCommand(input: String, user: User): BMessage? {
         return BMessage(formatter.format(System.currentTimeMillis()), true)
     }
