@@ -6,7 +6,11 @@ dataset/
 botStorage/
 *.npy
 *.npz
-.idea/
+.idea/libraries/
+.idea/uiDesigner.xml
+.idea/inspectionProfiles
+.idea/workspace.xml
+.idea/tasks.xml
 .ipynb_checkpoints/
 __pycache__/
 dataset/
@@ -19,3 +23,5 @@ chatbot/out
 chatbot/memory.json
 creds.properties
 memory.json
+.gradle/
+chatbot/.gradle/
