@@ -206,8 +206,7 @@ class Bot():
     def startChat(self, mode):
 
         if mode == 0:
-            while not self.initialized:
-                pass
+
             while True:
                 message = input("You >> ")
                 if message == "~!exit":
@@ -413,7 +412,7 @@ if __name__ == '__main__':
     bot = Bot(training)
 
     if not training:
-        pool = Pool(processes=1)
+        pool = Pool(processes=2)
         pool.apply_async(bot.startNet)
 
         if mode == 2:
