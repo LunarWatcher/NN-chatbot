@@ -6,7 +6,7 @@ This is a chatbot both designed for neural network interraction in addition to t
 
 ## Dependencies
 
-* discord.py
+* discord.py - not necessary if you're using the Java backend
 * numpy
 * tensorlayer
 * tensorflow (**`tensorflow-gpu` is recommended** - CPU is extremely slow)
@@ -14,7 +14,8 @@ This is a chatbot both designed for neural network interraction in addition to t
 * tensorboard (will be added layer)
 * asyncio
 * nltk
-* Python 3.6 (anything under 3.5 requires code edits because of the async keyword. 3.6 is the only tested version)
+* Python 3.6 (anything under 3.5 requires code edits because of the async keyword and type hints. However, 3.6 is the only tested version)
+* Java 8 - The Java module downloads its dependencies as .jars using Gradle. Just run it, Gradle will take care of the rest
 
 ### Please note:
 
@@ -53,6 +54,10 @@ The `bot.py` file supports CLI arguments. They are:
     --mode     | The mode to run in (int). 0 for console, 1 for python bot, 2 for flask server.
     
 Running with mode 2 also makes the Java program not create a new instance of the nn backend, but the server has to be up for this to happen. The server doesn't have to be manually booted at all though, as the Java program takes care of it
+
+### ***NOTE:***
+
+It's recommended that you cd into the root directory when running bot.py. It's the root directory the compiled .jar file will run from, meaning it calls the bot.py file relative to that. And when the bot.py file is called from the root directory, that is considered the active classpath (probably the wrong word) for the python script as well, meaning it looks for folders and files in `rootDir/`, not `rootDir/Network/`.
 
 ## System
 
