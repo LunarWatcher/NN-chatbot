@@ -3,6 +3,7 @@ package io.github.lunarwatcher.chatbot.bot.listener
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.commands.User
 
+@Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
     var context: Context? = null
 
@@ -25,7 +26,6 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
         }
 
         mention.ignoreNext();
-        val inp =
         when(context?.index){
             0 ->{
                 context?.next()
@@ -51,7 +51,7 @@ class Context(var index: Int, var user: Long) {
     }
 }
 
-class Train(val count:Int) : AbstractListener("Train", "Finds message trains and joins in"){
+class Train(val count: Int) : AbstractListener("Train", "Finds message trains and joins in"){
 
     init{
         if(count < 2)
@@ -88,5 +88,16 @@ class Train(val count:Int) : AbstractListener("Train", "Finds message trains and
         }
 
         return null;
+    }
+}
+
+class TestListener : AbstractListener("Test", description="Is this thing on??"){
+    val poked = mutableListOf<Long>();
+
+    override fun handleInput(input: String, user: User): BMessage? {
+        if (input.toLowerCase().contains("^test")){
+            return BMessage("You passed! Congratulations!", false)
+        }
+        return null
     }
 }

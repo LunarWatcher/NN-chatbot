@@ -12,7 +12,7 @@ val USER_ADMIN = 1;
 val USER_PRIV = 2;
 val USER_NORMAL = 3;
 
-class CheckCommand(var site: Chat) : AbstractCommand("check", listOf(), "Checks as user's role",
+class CheckCommand(var site: Chat) : AbstractCommand("getRank", listOf(), "Checks as user's role",
         "Supported roles: `admin`, `normal`, `privileged`(/`priv`) and `banned`. Unknown roles defaults to a normal check." +
                 " Example usage: `" + TRIGGER + "check admin 6296561`"){
 

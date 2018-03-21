@@ -1,5 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
+import io.github.lunarwatcher.chatbot.BotCore
 import io.github.lunarwatcher.chatbot.Constants.Ranks.ranks
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
@@ -162,3 +163,10 @@ class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
                     true)
     }
 }
+
+class LocationCommand() : AbstractCommand("location", listOf(), help="Shows the current bot location"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        return BMessage(BotCore.LOCATION, true)
+    }
+}
+

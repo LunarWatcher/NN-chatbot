@@ -9,6 +9,7 @@ import io.github.lunarwatcher.chatbot.utils.Http
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
 
+@Suppress("NAME_SHADOWING")
 class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to pings") {
     var ignoreNext = false;
     val http: Http
@@ -28,19 +29,19 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             return null;
         }
         val split = splitCommand(input)
-        if(split.keys.contains("content")){
+        return if(split.keys.contains("content")){
             var message = split["content"] ?: ""
             message = message.clean()
             try{
                 val response = http.post("http://127.0.0.1:" + Constants.FLASK_PORT + "/predict", "message", message)
                 val reply: String = response.body.substring(1, response.body.length - 2)
-                return BMessage(reply, true)
+                BMessage(reply, true)
             }catch(e: IOException){
                 e.printStackTrace()
-                return BMessage("Something went wrong. Blame my creator!", true)
+                BMessage("The Flask server isn't online yet, so my prediction services are temporarily unavailable. Blame my devs (but mostly Olivia. Blame her!)", true)
             }
         }else
-            return getMessage(input) ?: BMessage("How can I " + TRIGGER + "help?", true);
+            getMessage(input) ?: BMessage("How can I " + TRIGGER + "help?", true);
     }
 
     /**
@@ -51,7 +52,7 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
         //Shadowing name by intent
         val input = input.toLowerCase();
         return when {
-            input.contains("help") -> BMessage("Depends on what kind of help you need. I'm just a bot after all :>", false)
+            input.contains("help") -> BMessage("You can see my commands by doing //help", false)
             //TODO add more stuff here
             else -> {
                 null;
@@ -71,6 +72,19 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             "stackexchange" -> containsUsername(input);
             "stackoverflow" -> containsUsername(input);
             "metastackexchange" -> containsUsername(input);
+            else ->{
+                println("Else");
+                input.contains("@" + site.site.config.username)
+            };
+        }
+    }
+
+    fun isMentionedStart(input: String) : Boolean{
+        return when(site.name){
+            "discord" -> input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
+            "stackexchange" -> containsUsername(input.split(" ")[0]);
+            "stackoverflow" -> containsUsername(input.split(" ")[0]);
+            "metastackexchange" -> containsUsername(input.split(" ")[0]);
             else ->{
                 println("Else");
                 input.contains("@" + site.site.config.username)

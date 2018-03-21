@@ -131,7 +131,7 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
 
 }
 
-class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf(), "Teaches the bot a new command"){
+class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf(), "Teaches the bot a new command. ", help = "Syntax: ${CommandCenter.TRIGGER}help commandName commandOutput -d (optional) description -nsfw (optional) whether the command is NSFW or not (boolean)" ){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         var input = input;

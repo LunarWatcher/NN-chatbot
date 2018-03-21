@@ -4,6 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class Constants {
+    /**
+     * Whether or not the program should start the flask server if it's offline.
+     */
+    public static final boolean START_FLASK_IF_OFFLINE = false;
     public static final boolean AUTO_BOOT = false;
     public static boolean LEAVE_ROOM_ON_UNHOME;
     public static final String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
@@ -25,35 +29,24 @@ public final class Constants {
     public static final int FLASK_PORT = 8213;
 
     public static final String[] joinMessages = {
-            "As you command, I'll leave for that room as soon as possible",
             "Joined",
-            "You can't tell me what to do! Oh wait, you can? I guess I should get over there...",
-            "Are there going to be quests there too? :D"
     };
 
     public static final String[] leaveMessages = {
             "Less to worry about I guess",
-            "But I really liked it there!",
-            "I wasn't finished with my quest yet! *walks away angry*",
-            "Alright, left the room"
+            "Alright, I'm out!",
     };
 
     public static final String[] hrMessages = {
-            "I can't *just* leave my home!",
-            "You can't make me",
-            "There are still quests to finish, I can't leave yet!",
-            "Yeah... not doing that."
+            "I can't leave a home room"
     };
 
     public static final String[] learnedMessages = {
-            "The more I learn, the better",
-            "Oh, THAT's how I do that command!",
-            "I already knew that! Yeah... *coughs*"
+            "Learned."
     };
 
     public static final String[] forgotMessage = {
-            "Forgotten",
-            "I can't remember that one anymore"
+            "Forgotten"
     };
 
     public static final String[] killMessages = {
@@ -85,8 +78,10 @@ public final class Constants {
             "%s was involved in an airplane \"accident\"",
             "Ninjas surrounded %s one day... That is all.",
             "Poor %s. They fell into an endless pit",
-            "Mutants killed %s",
-            "%s died from licking something they shouldn't have licked"
+            "Mutants killed %s","%s didn't watch their step and fell off a cliff",
+            "%s was beamed into space", "PIRATES! %s was ejected along with the rest of the crew",
+            "%s died from licking something they shouldn't have licked", "It's all over the news today, %s was killed by an angry mob!",
+            "Unfortunately, %s hasn't been heard from in a few days",
     };
 
     public static final String[] lickMessages = {
@@ -102,7 +97,13 @@ public final class Constants {
             "*Licks %s.* *shivers*",
             "*Licks %s. Washes mouth with soap*",
             "*Licks %s. Dies from the awful taste*",
-            "*Licks %s. Tongue gets stuck*"
+            "*Licks %s. Tongue gets stuck*",
+            "*Licks %s.* *dies*",
+            "*Licks %s. passes out*",
+            "*Licks %s.* Tastes AWFUL! *goes back in time to avoid licking it in the first place*",
+            "*Licks %s.* Tastes like coffee!",
+            "*Licks %s.* Tastes like a cow!", "*Licks %s. Beams self into space*"
+
     };
 
     public static String BANNED_USERS(String site){

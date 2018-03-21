@@ -3,6 +3,7 @@ package io.github.lunarwatcher.chatbot.bot.sites.se;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
+import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
@@ -11,6 +12,7 @@ import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.utils.Http;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
+import javafx.application.Platform;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,12 +24,11 @@ import javax.websocket.Session;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SERoom implements Closeable {
     private int id;
@@ -36,6 +37,7 @@ public class SERoom implements Closeable {
     Session session;
     @Getter
     private String fkey;
+    private List<String> failedSends = new ArrayList<>();
 
     public SERoom(int id, SEChat parent) throws Exception {
         this.id = id;
@@ -43,6 +45,7 @@ public class SERoom implements Closeable {
 
         Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
         if(connect.getStatusCode() == 404){
+            parent.leaveRoom(id);
             throw new RoomNotFoundException("SERoom not found!");
         }
 
@@ -91,7 +94,6 @@ public class SERoom implements Closeable {
         return url + "?l=" + System.currentTimeMillis();
     }
 
-    //TODO add external handlers
     public void receiveMessage(String input){
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -128,7 +130,6 @@ public class SERoom implements Closeable {
                     Message message = new Message(content, messageID, id, username, userid);
 
                     parent.newMessages.add(message);
-                    return;
                 }else if(eventCode == 3 || eventCode == 4){
                     int userid = event.get("user_id").asInt();
                     String username = event.get("user_name").toString();
@@ -136,17 +137,15 @@ public class SERoom implements Closeable {
 
                     UserAction action = new UserAction(eventCode, userid, username, id);
                     parent.actions.add(action);
-                    return;
                 }else if(eventCode == 6){
                     long messageID = event.get("message_id").asLong();
                     int stars = event.get("message_stars").asInt();
 
                     StarMessage message = new StarMessage(messageID, id, stars);
                     parent.starredMessages.add(message);
-                    return;
                 }else if(eventCode == 10){
                     //The message was deleted. Ignore it
-                    return;
+
                 }else if(eventCode == 15){
                     close();
                     parent.getRooms().remove(this);
@@ -157,7 +156,6 @@ public class SERoom implements Closeable {
                     System.err.println(event.toString());
                 }
                 // Event reference sheet:,
-
                 //1: message
                 //2: edited
                 //3: join
@@ -166,26 +164,34 @@ public class SERoom implements Closeable {
                 //6: star
                 //7:
                 //8: ping - if called, ensure that the content does not contain a ping to the bot name if 1 is called
-                //        - WARNING: Using event 8 will trigger in every single active room. Use at your own risk
+                //        - WARNING: Using event 8 will trigger in every single active room.
                 //9:
                 //10: deleted
+                //11:
+                //12:
+                //13:
+                //14:
                 //15: kicked
+                //16:
                 //17: Invite
-
+                //18:
                 //19: Moved
 
                 //34: Username/profile picture changed
+
             }
 
         }catch(IOException e){
             e.printStackTrace();
+        }finally {
+            new Thread(() -> parent.handleNewMessage()).start();
         }
     }
 
     public String removeQuotation(String input){
         return input.substring(1, input.length() - 1);
     }
-
+    int tries = 0;
     public void sendMessage(String message) throws IOException{
         Response response = parent.getHttp().post(parent.getUrl() + "/chats/" + id + "/messages/new",
                 "text", message,
@@ -205,6 +211,27 @@ public class SERoom implements Closeable {
 				 * "The room does not exist, or you do not have permission"
 				 */
             System.err.println("Room not found, or you can't access it: " + id);
+        }else if (response.getStatusCode() == 409){
+            tries++;
+            if (tries > 4){
+                //To avoid StackOverflowExceptions and repeated attempts on failed messages
+                return;
+            }
+
+            new java.util.Timer().schedule(new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                sendMessage(message);
+                            }catch(IOException e){
+                                parent.commands.crash.crash(e);
+                            }
+                        }
+                    },
+                    tries * 1000 * (tries - 1 <= 0 ? 1 : tries - 1));
+
+        }else{
+            tries = 0;
         }
     }
 

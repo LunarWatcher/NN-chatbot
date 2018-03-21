@@ -370,7 +370,7 @@ def aliveCommand(specificCommand, message, isDiscord: bool, userRank: int, site:
     return True, "I think so."
 
 def timeCommand(specificCommand, message, isDiscord: bool, userRank: int, site: str, uid):
-    return True, "The time is {}".format(strftime("%a, %d %b %Y %X %z (%Z)", localtime(time())))
+    return True, "The time is {}".format(strftime("%a, %d %b %Y %X %z (%Z)%a, %d %b %Y %X %z (%Z)", localtime(time())))
 
 # Utils
 

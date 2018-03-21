@@ -33,8 +33,6 @@ public class DiscordChat implements Chat{
     Properties botProps;
     @Getter
     private Database db;
-    public static Map<String, Pattern> regMatch = new HashMap<>();
-    private List<RMatch> regex;
     private List<IChannel> channels;
     private BotConfig config;
     public List<Long> hardcodedAdmins = new ArrayList<>();
@@ -57,13 +55,11 @@ public class DiscordChat implements Chat{
 
         channels = new ArrayList<>();
 
-        regex = new ArrayList<>();
         config = new BotConfig(this);
 
         load();
 
         Utils.loadHardcodedAdmins(this);
-
 
     }
 
@@ -82,10 +78,6 @@ public class DiscordChat implements Chat{
             }
         }
 
-        List<Object> reg = db.getList("regex");
-        if(reg != null){
-
-        }
     }
 
     public void save(){
@@ -147,104 +139,73 @@ public class DiscordChat implements Chat{
                 }
                 return;
             }
-            if (msg.startsWith(TRIGGER + "stats")) {
-                String cmd = msg.replace(TRIGGER + "stats ", "");
-                RMatch match = null;
 
-                for (RMatch m : regex) {
-                    if (m.usern.toLowerCase().equals(cmd.toLowerCase())) {
-                        match = m;
+            try {
+                IChannel channel = null;
+
+                for (IChannel chnl : channels) {
+                    if (chnl.getLongID() == event.getChannel().getLongID()) {
+                        channel = chnl;
                         break;
                     }
                 }
 
-                if (match != null) {
-                    event.getChannel().sendMessage(match.message());
+                if (channel == null) {
+                    channels.add(event.getChannel());
+                }
+
+                int index = 0;
+                for (int i = 0; i < channels.size(); i++) {
+                    if (channels.get(i).getLongID() == event.getChannel().getLongID()) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                User user = new User(site.getName(), event.getAuthor().getLongID(), event.getAuthor().getName(), index, getNsfw(event.getGuild().getLongID()));
+
+                List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
+                if (replies == null) {
+                    if (CommandCenter.isCommand(msg)) {
+                        event.getChannel().sendMessage("Look up the manual maybe?");
+                    }
                 } else {
-                    event.getChannel().sendMessage("User not listed. Yet :smirk:");
-                }
-            } else {
-                try {
-                    IChannel channel = null;
-
-                    for (IChannel chnl : channels) {
-                        if (chnl.getLongID() == event.getChannel().getLongID()) {
-                            channel = chnl;
-                            break;
-                        }
-                    }
-
-                    if (channel == null) {
-                        channels.add(event.getChannel());
-                    }
-
-                    int index = 0;
-                    for (int i = 0; i < channels.size(); i++) {
-                        if (channels.get(i).getLongID() == event.getChannel().getLongID()) {
-                            index = i;
-                            break;
-                        }
-                    }
-
-                    User user = new User(site.getName(), event.getAuthor().getLongID(), event.getAuthor().getName(), index, getNsfw(event.getGuild().getLongID()));
-
-                    List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
-                    if (replies == null) {
-                        if (CommandCenter.isCommand(msg)) {
-                            event.getChannel().sendMessage("Look up the manual maybe?");
-                        }
-                    } else {
-                        for (BMessage r : replies) {
-                            List<String> items = new ArrayList<>();
-                            if (r.content.length() > 2000) {
-                                int i = 0;
-                                int total = r.content.length();
-                                while (i < total) {
-                                    int remaining = total - i;
-                                    int sub = 0;
-                                    if (remaining >= 2000) {
-                                        sub = 2000;
-                                    } else {
-                                        sub = remaining;
-                                    }
-                                    items.add(r.content.substring(i, i + sub));
-                                    i += sub;
+                    for (BMessage r : replies) {
+                        List<String> items = new ArrayList<>();
+                        if (r.content.length() > 2000) {
+                            int i = 0;
+                            int total = r.content.length();
+                            while (i < total) {
+                                int remaining = total - i;
+                                int sub = 0;
+                                if (remaining >= 2000) {
+                                    sub = 2000;
+                                } else {
+                                    sub = remaining;
                                 }
+                                items.add(r.content.substring(i, i + sub));
+                                i += sub;
+                            }
 
-                                for (int x = 0; x < (items.size() > 5 ? 5 : items.size()); x++) {
-                                    event.getChannel().sendMessage(items.get(x));
-                                    try {
-                                        Thread.sleep(100);
-                                    } catch (InterruptedException e) {
+                            for (int x = 0; x < (items.size() > 5 ? 5 : items.size()); x++) {
+                                event.getChannel().sendMessage(items.get(x));
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
 
-                                    }
                                 }
+                            }
 
-                            } else
-                                event.getChannel().sendMessage(r.content);
-                        }
+                        } else
+                            event.getChannel().sendMessage(r.content);
                     }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
-            }
-            long uid = event.getAuthor().getLongID();
-            String uname = event.getAuthor().getName();
-            RMatch u = null;
 
-            for (RMatch m : regex) {
-                if (m.userid == uid) {
-                    u = m;
-                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
-            if (u == null) {
-                u = new RMatch(uid, uname);
-                regex.add(u);
-            }
 
-            u.match(event.getMessage().getContent());
 
         }catch(Exception e){
             e.printStackTrace();
@@ -256,76 +217,17 @@ public class DiscordChat implements Chat{
         return config;
     }
 
-    public class RMatch{
-        public long userid;
-        public String usern;
-        public Map<String, Long> occurences;
-        public long totalMessages;
-        public long hits;
-
-        public RMatch(long uid, String name){
-            this.userid = uid;
-            this.usern = name;
-
-            occurences = new HashMap<>();
-
-
-            occurences.put("geis+?noo+?b", 0L);
-            occurences.put("geis+", 0L);
-            occurences.put("noo+?b", 0L);
-            occurences.put("lo+l", 0L);
-            occurences.put("lmf*?ao+", 0L);
-            occurences.put("(ha+(ha+)+)", 0L);
-            occurences.put(":sloth:", 0L);
-            occurences.put(":thinking:", 0L);
-            occurences.put("zoe", 0L);
-
-            if(regMatch.size() == 0){
-                for(Map.Entry<String, Long> occurence : occurences.entrySet()){
-                    regMatch.put(occurence.getKey(), Pattern.compile(occurence.getKey()));
-
-                }
-            }
-        }
-
-        public void match(String input){
-            totalMessages++;
-            for(Map.Entry<String, Pattern> reg : regMatch.entrySet()){
-                Pattern p = reg.getValue();
-
-                Matcher m = p.matcher(input);
-                if (m.find()) {
-                    occurences.put(reg.getKey(), occurences.get(reg.getKey()) + 1);
-                    hits++;
-                    break;
-                }
-            }
-        }
-
-        public String message(){
-            StringBuilder sb = new StringBuilder();
-            sb.append("Regex reactions for user \"" + usern + "\"").append("\n");
-            for(Map.Entry<String, Long> e : occurences.entrySet()){
-                sb.append(e.getKey() + " - : - " + e.getValue()).append("\n");
-            }
-            sb.append("This user sent ").append(totalMessages).append(" in which there were found ").append(hits).append(" matches.").append("\n");
-            sb.append("The total match rate is ").append((double)((double)hits / (double)totalMessages) * 100).append("%").append("\n");
-            return sb.toString();
-        }
-    }
-
-    public static class Match extends AbstractCommand {
-        public Match() {
-            super("stats", new ArrayList<>(), "Get the status for a user", TRIGGER + "stats <username>");
-        }
-        @Override
-        public BMessage handleCommand(@NotNull String input, @NotNull User user) {
-            return null;
-        }
-    }
-
     public String getName(){
         return site.getName();
+    }
+
+    public String getUsername(long uid){
+        if(client != null){
+            try {
+                return client.getUserByID(uid).getName();
+            }catch(Exception e){}//Ignore
+        }
+        return Long.toString(uid);
     }
 
     public List<Long> getHardcodedAdmins(){
@@ -356,7 +258,7 @@ public class DiscordChat implements Chat{
     }
 
     public void setNsfw(long server, boolean newState){
-
+        nsfw.put(server, newState);
     }
 
     /**
@@ -380,7 +282,5 @@ public class DiscordChat implements Chat{
         return x.getGuild().getLongID();
     }
 
-    public String getUsername(long uid){
-        return Long.toString(uid);
-    }
+
 }

@@ -3,7 +3,9 @@ package io.github.lunarwatcher.chatbot.bot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 import io.github.lunarwatcher.chatbot.Constants;
+import io.github.lunarwatcher.chatbot.CrashLogs;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.MapUtils;
 import io.github.lunarwatcher.chatbot.bot.Bot;
@@ -36,6 +38,8 @@ public class CommandCenter {
     public static TaughtCommands tc;
     public static Bot bot;
     public Database db;
+
+    public CrashLogs crash;
 
     public CommandCenter(Properties botProps, boolean shrugAlt, Chat site) {
         this.db = site.getDatabase();
@@ -70,12 +74,25 @@ public class CommandCenter {
         addCommand(new BasicPrintCommand("(╯°□°）╯︵ ┻━┻", "tableflip", new ArrayList<>(), "The tables have turned..."));
         addCommand(new BasicPrintCommand("┬─┬ ノ( ゜-゜ノ)", "unflip", new ArrayList<>(), "The tables have turned..."));
         addCommand(new TimeCommand());
+        addCommand(new KillBot(site));
+        addCommand(new NetStat(site));
+        addCommand(new LocationCommand());
+        crash = new CrashLogs(site);
+        addCommand(crash);
+        addCommand(new StartServer(site));
+        addCommand(new StopServer(site));
+
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
+
+        /**
+         * Pun not intended:
+         */
         MentionListener ml = new MentionListener(site);
         listeners.add(new KnockKnock(ml));
         listeners.add(new Train(5));
         listeners.add(ml);
+
 
     }
 
@@ -91,7 +108,6 @@ public class CommandCenter {
 
     public void loadDiscord() {
 
-        addCommand(new DiscordChat.Match());
         if(site instanceof DiscordChat) {
             addCommand(new NSFWState((DiscordChat) site));
         }
@@ -148,48 +164,52 @@ public class CommandCenter {
         message = message.replaceAll(" +", " ");
         String om = message;
         List<BMessage> replies = new ArrayList<>();
-        if(isCommand(message)) {
-            message = message.substring(TRIGGER.length());
+        try {
+            if (isCommand(message)) {
+                message = message.substring(TRIGGER.length());
 
-            //Get rid of white space to avoid problems down the line
-            message = message.trim();
+                //Get rid of white space to avoid problems down the line
+                message = message.trim();
 
 
-            String name = message.split(" ")[0];
+                String name = message.split(" ")[0];
 
-            Command c = get(name);
-            if (c != null) {
-                BMessage x = c.handleCommand(message, user);
+                Command c = get(name);
+                if (c != null) {
+                    BMessage x = c.handleCommand(message, user);
+                    if (x != null) {
+                        //There are still some commands that could return null here
+                        replies.add(x);
+                    }
+                }
+
+                LearnedCommand lc = tc.get(name);
+                if (lc != null) {
+                    //If the command is NSFW but the site doesn't allow it, don't handle the command
+                    if (lc.getNsfw() && !nsfw)
+                        System.out.println("command ignored");
+                    else {
+
+                        BMessage x = lc.handleCommand(message, user);
+                        if (x != null)
+                            replies.add(x);
+                    }
+                }
+            }
+
+            for (Listener l : listeners) {
+                BMessage x = l.handleInput(om, user);
                 if (x != null) {
-                    //There are still some commands that could return null here
                     replies.add(x);
                 }
             }
 
-            LearnedCommand lc = tc.get(name);
-            if (lc != null) {
-                //If the command is NSFW but the site doesn't allow it, don't handle the command
-                if (lc.getNsfw() && !nsfw)
-                    System.out.println("command ignored");
-                else {
-
-                    BMessage x = lc.handleCommand(message, user);
-                    if (x != null)
-                        replies.add(x);
-                }
-            }
+            if (replies.size() == 0)
+                replies = null;
+        }catch(Exception e){
+            crash.crash(e);
+            replies.add(new BMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true));
         }
-
-        for(Listener l : listeners){
-            BMessage x = l.handleInput(om, user);
-            if(x != null){
-                replies.add(x);
-            }
-        }
-
-        if(replies.size() == 0)
-            replies = null;
-
         return replies;
     }
 
@@ -243,7 +263,7 @@ public class CommandCenter {
             //for the database
             site.getConfig().addRank(user, Constants.DEFAULT_RANK, username);
         }else{
-            //Wrong inspection from Java here. There will not be any NPE's as the rank retrieved can't be null if it does into this
+            //Wrong inspection from IntelliJ here. There will not be any NPE's as the rank retrieved can't be null if it does into this
             //statement
             if(site.getConfig().getRank(user).getUsername() == null
                     || !site.getConfig().getRank(user).getUsername().equals(username)){

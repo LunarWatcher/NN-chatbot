@@ -240,7 +240,7 @@ class SaveCommand(val site: Chat) : AbstractCommand("save", listOf(), "Saves the
     }
 }
 
-class WhoMade(val commands: CommandCenter) : AbstractCommand("WhoMade", listOf(), "Gets the user ID of the user who created a command"){
+class WhoMade(val commands: CommandCenter) : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user ID of the user who created a command"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input))
             return null;
@@ -301,3 +301,17 @@ class DebugRanks(val site: Chat) : AbstractCommand("rankdebug", listOf(), "Debug
         return BMessage(reply.toString(), false);
     }
 }
+
+class KillBot(val site: Chat) : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep"), "Shuts down the bot. Rank 10 only"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!matchesCommand(input))
+            return null
+        if(Utils.getRank(user.userID, site.config) < 10)
+            return BMessage("I'm afraid I can't let you do that, User.", true)
+        if(input.contains("--confirm")){
+            System.exit(1)
+        }
+        return BMessage("You sure 'bout that? Run the command with --confirm to shut me down", true)
+    }
+}
+

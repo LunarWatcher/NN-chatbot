@@ -1,6 +1,5 @@
 package io.github.lunarwatcher.chatbot.bot.chat;
 
-import lombok.AllArgsConstructor;
 
 /**
  * Extremely basic message not containing any information about where it is, where it's going, etc

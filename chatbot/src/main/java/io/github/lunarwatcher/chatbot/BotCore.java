@@ -1,13 +1,9 @@
 package io.github.lunarwatcher.chatbot;
 
 import io.github.lunarwatcher.chatbot.bot.Bot;
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
-import io.github.lunarwatcher.chatbot.bot.commands.HelpCommand;
-import io.github.lunarwatcher.chatbot.bot.commands.ShrugCommand;
 import io.github.lunarwatcher.chatbot.utils.Http;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
-import lombok.val;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -16,9 +12,6 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.github.lunarwatcher.chatbot.Constants.*;
 import static io.github.lunarwatcher.chatbot.utils.Utils.assertion;
@@ -29,20 +22,16 @@ public class BotCore {
      * meaning the site specific username isn't the same as the username it actually goes by.
      */
     public static String GLOBAL_USERNAME;
-
+    public static String LOCATION = "Undefined";
     public BotCore() {
 
     }
     public static Bot bot;
-    private static Process process;
+    public static Process process;
     private static ServerThread serverThread;
-    public static void main(String[] args) throws IOException, InterruptedException /*Too lazy to create a try-catch*/{
+    public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
+        LOCATION = Long.toHexString(System.currentTimeMillis());
         try{
-            /**
-             * IDK how else to do this, so I just do this.
-             * It just tries to connect to the server, and starts it if it isn't running.
-             * Izi pizi.
-             */
             CloseableHttpClient httpClient = HttpClients.createDefault();
             Http http = new Http(httpClient);
             Response response = http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello");
@@ -50,8 +39,13 @@ public class BotCore {
             httpClient.close();
 
         }catch(HttpHostConnectException e){
-            System.out.println("Neural network Flask server. Booting it now!");
-            startServer();
+            System.out.println("Neural network Flask server not started.");
+            if(Constants.START_FLASK_IF_OFFLINE) {
+                System.out.println("Starting Flask server");
+                startServer();
+            }else{
+                System.out.print("Not starting server!");
+            }
         }
 
         Properties botProps = new Properties();
@@ -173,13 +167,6 @@ public class BotCore {
             //in a regular fashion (through System.exit or having no threads running)
             System.out.println("Shutdown detected. Saving...");
             bot.kill();
-            if(process != null)
-                process.destroy();
-            if(serverThread != null) {
-                try {
-                    serverThread.join();
-                }catch(InterruptedException e){}
-            }
         }));
 
         while(true){
@@ -244,9 +231,39 @@ public class BotCore {
         }
     }
 
+    public static void stopServer(){
+        if (process == null && serverThread == null){
+            return;
+        }
+
+        if (process != null){
+            process.destroyForcibly();
+        }
+
+        if (serverThread != null){
+            try {
+                serverThread.join();
+            }catch(InterruptedException e){}
+        }
+
+        process = null;
+        serverThread = null;
+    }
+
     public static void startServer(){
+        if (process != null)
+            process.destroy();
+        if (serverThread != null) {
+            if (serverThread.isAlive()) {
+                try {
+                    serverThread.join();
+                } catch (InterruptedException e) {
+                }
+            }
+        }
         serverThread = new ServerThread();
         serverThread.start();
+
 
     }
 

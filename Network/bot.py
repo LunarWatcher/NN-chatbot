@@ -421,8 +421,8 @@ if __name__ == '__main__':
 
             @app.route("/predict", methods=["POST", "GET"])
             def getAnswer():
-                print(request.args)
-                response = bot.predict(str(request.args.get("message")))
+                print(request.form)
+                response = bot.predict(str(request.form.get("message")))
                 return jsonify(response)
 
             app.run(port=8213)

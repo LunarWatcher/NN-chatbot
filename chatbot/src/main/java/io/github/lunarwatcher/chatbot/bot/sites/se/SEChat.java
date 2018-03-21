@@ -1,7 +1,5 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
@@ -19,8 +17,11 @@ import lombok.Getter;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.util.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,13 +56,10 @@ public class SEChat implements Chat {
 
     private List<Integer> roomsToleave = new ArrayList<>();
     private List<SERoom> rooms = new ArrayList<>();
-    SEThread thread;
     CommandCenter commands;
     List<Integer> joining = new ArrayList<>();
     @Getter
     private Database db;
-    @Getter
-    private volatile boolean killed = false;
     private BotConfig config;
 
     public List<Integer> hardcodedRooms = new ArrayList<>();
@@ -132,7 +130,6 @@ public class SEChat implements Chat {
         http = new Http(httpClient);
 
         logIn();
-        run();
         joining.clear();
 
         for(SERoom room : rooms){
@@ -193,20 +190,6 @@ public class SEChat implements Chat {
 
     }
 
-    public void run(){
-        thread = new SEThread();
-        thread.start();
-    }
-
-    public void kill(){
-        killed = true;
-    }
-
-    public void unkill(){
-        killed = false;
-        run();
-    }
-
     public String getUrl(){
         return site.getUrl();
     }
@@ -214,149 +197,7 @@ public class SEChat implements Chat {
     public String getName(){
         return site.getName();
     }
-    long attempts = 0;
-    private class SEThread extends Thread {
 
-        public void run() {
-            try {
-                while (!killed) {
-                    for (int x = newMessages.size() - 1; x >= 0; x--) {
-
-                        Message m = newMessages.get(x);
-                        newMessages.remove(x);
-                        if(!checkedUsers.contains(Long.parseLong(Integer.toString(m.userid)))){
-                            checkedUsers.add(Long.parseLong(Integer.toString(m.userid)));
-                            commands.hookupToRanks(m.userid, m.username);
-                        }
-                        if(m.userid == site.getConfig().getUserID())
-                            continue;
-                        if(Utils.isBanned(m.userid, config)){
-                            if(CommandCenter.isCommand(m.content)) {
-                                boolean mf = false;
-
-                                for (Integer u : notifiedBanned) {
-                                    if (u == m.userid) {
-                                        mf = true;
-                                        break;
-                                    }
-                                }
-
-                                if (!mf) {
-                                    notifiedBanned.add(m.userid);
-                                    SERoom s = getRoom(m.roomID);
-                                    if (s != null) {
-                                        s.reply("You're banned from interracting with me", m.messageID);
-                                    }
-                                }
-                            }
-                            continue;
-                        }
-
-                        User user = new User(getName(), m.userid, m.username, m.roomID, false);
-                        List<BMessage> replies = commands.parseMessage(m.content, user, false);
-                        if(replies != null && getRoom(m.roomID) != null){
-                            for(BMessage bm : replies){
-                                if(bm.content.length() >= 500 && !bm.content.contains("\n")){
-                                    bm.content += "\n.";
-                                }
-                                if(bm.replyIfPossible){
-                                    getRoom(m.roomID).reply(bm.content, m.messageID);
-                                }else{
-                                    getRoom(m.roomID).sendMessage(bm.content);
-                                }
-                            }
-                        }else{
-                            if(CommandCenter.isCommand(m.content)) {
-                                SERoom r = getRoom(m.roomID);
-                                if (r != null) {
-                                    r.reply("Maybe you should consider looking up the manual", m.messageID);
-                                } else {
-                                    System.err.println("Room is null!");
-                                }
-                            }
-                        }
-
-                    }
-
-                    newMessages.clear();
-                    starredMessages.clear();
-                    if(roomsToleave.size() != 0){
-                        for(int r = roomsToleave.size() - 1; r >= 0; r--){
-                            if(r == 0 && roomsToleave.size() == 0)
-                                break;
-                            for(int i = rooms.size() - 1; i >= 0; i--){
-                                if(rooms.get(i).getId() == roomsToleave.get(r)){
-                                    int rtl = roomsToleave.get(r);
-                                    roomsToleave.remove(r);
-                                    rooms.get(i).close();
-                                    rooms.remove(i);
-                                    System.out.println("Left room " + rtl);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    try {
-                        //Update once every second to avoid CPU eating
-                        Thread.sleep(1000);
-                        if(attempts > 0) attempts--;
-                    } catch (InterruptedException e) {
-                    }
-                }
-
-
-            }catch(Exception e){
-                e.printStackTrace();
-
-                new RetryThread().start();
-                try{
-                   join();
-                }catch(InterruptedException ex){
-                    //Ignore
-                }
-            }
-        }
-    }
-
-    public class RetryThread extends Thread{
-        boolean connected = false;
-        public void run(){
-            attempts++;
-            try{
-                Thread.sleep(15000 * attempts);
-            }catch(InterruptedException ignored){
-
-            }
-
-            List<Integer> rooms = new ArrayList<>();
-            for(SERoom s : SEChat.this.getRooms()){
-                rooms.add(s.getId());
-            }
-            SEChat.this.rooms.clear();
-
-            for(Integer x : rooms) {
-                try {
-                    SEChat.this.addRoom(new SERoom(x, SEChat.this));
-                } catch (RoomNotFoundException e) {
-                    //Ignore
-                }catch(IOException e){
-                    //Ignore these too
-                }catch(Exception e){
-                    //Shit went to hell
-                    new RetryThread().start();
-                    return;
-                }
-            }
-            new SEThread().start();
-            try {
-                join();
-            }catch(Exception e){
-                //IGNORE
-            }
-        }
-
-    }
 
     public SERoom getRoom(int id){
         for(SERoom r : rooms){
@@ -425,6 +266,104 @@ public class SEChat implements Chat {
         Utils.saveConfig(config, db);
 
         db.commit();
+
+        if (commands.crash.getLogs().size() != 0) {
+            try {
+                FileOutputStream fis = new FileOutputStream(new File("logs.txt"));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fis));
+                for (String log : commands.crash.getLogs()){
+                    writer.write(log);
+                    writer.write("\n");
+                }
+                fis.close();
+                writer.close();
+            }catch(IOException e){
+                //Ignore
+            }
+        }
+    }
+
+    public void handleNewMessage() {
+        try {
+            for (int x = newMessages.size() - 1; x >= 0; x--) {
+
+                Message m = newMessages.get(x);
+                newMessages.remove(x);
+                if (!checkedUsers.contains(Long.parseLong(Integer.toString(m.userid)))) {
+                    checkedUsers.add(Long.parseLong(Integer.toString(m.userid)));
+                    commands.hookupToRanks(m.userid, m.username);
+                }
+                if (m.userid == site.getConfig().getUserID())
+                    continue;
+                if (Utils.isBanned(m.userid, config)) {
+                    if (CommandCenter.isCommand(m.content)) {
+                        boolean mf = false;
+
+                        for (Integer u : notifiedBanned) {
+                            if (u == m.userid) {
+                                mf = true;
+                                break;
+                            }
+                        }
+
+                        if (!mf) {
+                            notifiedBanned.add(m.userid);
+                            SERoom s = getRoom(m.roomID);
+                            if (s != null) {
+                                s.reply("You're banned from interracting with me", m.messageID);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                User user = new User(getName(), m.userid, m.username, m.roomID, false);
+                List<BMessage> replies = commands.parseMessage(m.content, user, false);
+                if (replies != null && getRoom(m.roomID) != null) {
+                    for (BMessage bm : replies) {
+                        if (bm.content.length() >= 500 && !bm.content.contains("\n")) {
+                            bm.content += "\n.";
+                        }
+                        if (bm.replyIfPossible) {
+                            getRoom(m.roomID).reply(bm.content, m.messageID);
+                        } else {
+                            getRoom(m.roomID).sendMessage(bm.content);
+                        }
+                    }
+                } else {
+                    if (CommandCenter.isCommand(m.content)) {
+                        SERoom r = getRoom(m.roomID);
+                        if (r != null) {
+                            r.reply("Maybe you should consider looking up the manual", m.messageID);
+                        } else {
+                            System.err.println("Room is null!");
+                        }
+                    }
+                }
+
+            }
+
+            newMessages.clear();
+            starredMessages.clear();
+            if (roomsToleave.size() != 0) {
+                for (int r = roomsToleave.size() - 1; r >= 0; r--) {
+                    if (r == 0 && roomsToleave.size() == 0)
+                        break;
+                    for (int i = rooms.size() - 1; i >= 0; i--) {
+                        if (rooms.get(i).getId() == roomsToleave.get(r)) {
+                            int rtl = roomsToleave.get(r);
+                            roomsToleave.remove(r);
+                            rooms.get(i).close();
+                            rooms.remove(i);
+                            System.out.println("Left room " + rtl);
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            commands.crash.crash(e);
+        }
     }
 
     public void load(){

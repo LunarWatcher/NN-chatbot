@@ -134,13 +134,12 @@ class Give(val chat: Chat) : AbstractCommand("give", listOf(), "Gives someone so
             return null;
         }
         val inp = splitCommand(input);
-        var split = inp["content"]?.split(" ", limit=2) ?: return BMessage("#8754987", false);
+        var split = inp["content"]?.split(" ", limit=2) ?: return BMessage("You have to tell me what to give and to who", false);
         if(split.size != 2)
             return BMessage("You have to tell me what to give and to who", true);
 
         val who = split[0].trim()
         val what = split[1].trim()
-
         return BMessage("*gives $what to $who*", false);
 
     }
