@@ -1,5 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot.sites.discord;
 
+import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
@@ -134,7 +135,7 @@ public class DiscordChat implements Chat{
 
                     if (!mf) {
                         notifiedBanned.add(event.getAuthor().getLongID());
-                        event.getChannel().sendMessage("You're banned from interacting with me <@" + event.getAuthor().getLongID() + ">");
+                        event.getChannel().sendMessage(Constants.BANNED_REPLY + " <@" + event.getAuthor().getLongID() + ">");
                     }
                 }
                 return;

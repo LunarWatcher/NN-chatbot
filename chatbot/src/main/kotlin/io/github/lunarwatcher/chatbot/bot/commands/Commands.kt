@@ -1,6 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import com.google.common.base.Strings.repeat
+import com.sun.org.apache.xalan.internal.utils.SecuritySupport.getContextClassLoader
 import io.github.lunarwatcher.chatbot.BotCore
 import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.Constants
@@ -12,12 +13,23 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
+import io.github.lunarwatcher.chatbot.utils.Utils.random
+import javafx.application.Application
 import org.apache.http.impl.client.HttpClients
 import java.awt.SystemColor.info
 import java.text.SimpleDateFormat
 import java.util.*
 
 import java.util.regex.Pattern
+import jdk.nashorn.internal.runtime.ScriptingFunctions.readLine
+import jdk.nashorn.internal.runtime.regexp.joni.SearchAlgorithm.BM
+import org.apache.commons.lang3.StringUtils
+import java.io.InputStreamReader
+import java.io.BufferedReader
+import java.util.ArrayList
+import java.io.IOException
+import java.io.InputStream
+
 
 val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)
@@ -252,13 +264,11 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
 }
 
 fun getMaxLen(list: MutableList<String>) : Int{
-    var longest = 0;
+    val longest = list
+            .map { it.length }
+            .max()
+            ?: 0;
 
-    for(item in list){
-        val len = item.length;
-        if(len > longest)
-            longest = len;
-    }
     return longest;
 }
 
@@ -383,4 +393,41 @@ class StopServer(val site: Chat) : AbstractCommand("stopFlask", listOf("stopServ
 
         return BMessage("Please confirm with --confirm", true);
     }
+}
+
+class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much command."){
+    val doges = mutableListOf("such", "very", "much", "so", "many")
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!matchesCommand(input))
+            return null
+        val raw = input.split(" ", limit=2)
+        val converted = if (raw.size < 2) defaultMsg else raw[1]
+
+        val msg = ReplyBuilder()
+        val what = converted.split(",").map{ it.trim() }
+        if (what.isEmpty()){
+            return BMessage("Much user. Few arguments. Such attempt", true)
+        }
+
+        if (random.nextBoolean())
+            msg.fixedInput().append(StringUtils.repeat(" ", random.nextInt(10))).append("wow").nl()
+
+        val maxIndex = Math.min(what.size, 10)//Limit at 10. Because i
+        for (i in 0 until maxIndex){
+            msg.fixedInput().append(StringUtils.repeat(" ", random.nextInt(15))).append(doges.randomItem()).append(" " + what[i]).nl()
+        }
+        return BMessage(msg.toString(), false)
+    }
+
+    companion object {
+        const val defaultMsg = "user, fail, pro"
+    }
+}
+
+class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){
+    override fun handleCommand(input: String, user: User): BMessage? = BMessage(input.split(" ", limit=2)[1], true)
+}
+
+fun <T> List<T>.randomItem() : T{
+    return get(random.nextInt(this.size))
 }

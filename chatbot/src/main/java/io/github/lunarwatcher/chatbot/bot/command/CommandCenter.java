@@ -81,6 +81,8 @@ public class CommandCenter {
         addCommand(crash);
         addCommand(new StartServer(site));
         addCommand(new StopServer(site));
+        addCommand(new DogeCommand());
+        addCommand(new RepeatCommand());
 
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
@@ -208,6 +210,8 @@ public class CommandCenter {
                 replies = null;
         }catch(Exception e){
             crash.crash(e);
+            if (replies == null)
+                replies = new ArrayList<>();
             replies.add(new BMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true));
         }
         return replies;

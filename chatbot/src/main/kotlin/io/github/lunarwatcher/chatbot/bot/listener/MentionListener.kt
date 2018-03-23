@@ -6,6 +6,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Http
+import org.apache.http.conn.HttpHostConnectException
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
 
@@ -36,9 +37,8 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
                 val response = http.post("http://127.0.0.1:" + Constants.FLASK_PORT + "/predict", "message", message)
                 val reply: String = response.body.substring(1, response.body.length - 2)
                 BMessage(reply, true)
-            }catch(e: IOException){
-                e.printStackTrace()
-                BMessage("The Flask server isn't online yet, so my prediction services are temporarily unavailable. Blame my devs (but mostly Olivia. Blame her!)", true)
+            }catch (e: IOException){
+                BMessage("The Flask server isn't online, so my chatting services are temporarily unavailable. Blame my devs (but mostly Olivia. Blame her!)", true)
             }
         }else
             getMessage(input) ?: BMessage("How can I " + TRIGGER + "help?", true);

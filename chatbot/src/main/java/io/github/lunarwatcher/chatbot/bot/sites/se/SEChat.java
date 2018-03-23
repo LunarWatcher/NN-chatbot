@@ -1,5 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
+import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
@@ -309,8 +310,9 @@ public class SEChat implements Chat {
                         if (!mf) {
                             notifiedBanned.add(m.userid);
                             SERoom s = getRoom(m.roomID);
+                            System.out.println(m.username + " : " + m.content);
                             if (s != null) {
-                                s.reply("You're banned from interracting with me", m.messageID);
+                                s.reply(Constants.BANNED_REPLY, m.messageID);
                             }
                         }
                     }
@@ -363,6 +365,7 @@ public class SEChat implements Chat {
             }
         } catch (IOException e) {
             commands.crash.crash(e);
+
         }
     }
 

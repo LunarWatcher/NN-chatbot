@@ -1,9 +1,10 @@
 package io.github.lunarwatcher.chatbot.bot.chat;
 
+import io.github.lunarwatcher.chatbot.KUtilsKt;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@AllArgsConstructor
+
 public class Message {
     /**
      * The message to send
@@ -23,4 +24,16 @@ public class Message {
 
     public String username;
     public int userid;
+
+    public Message(String content, long messageId, int roomId, String username, int userId){
+        cleanContentAndSet(content);
+        this.messageID = messageId;
+        this.roomID = roomId;
+        this.username = username;
+        this.userid = userId;
+    }
+
+    public void cleanContentAndSet(String original){
+        content = KUtilsKt.cleanInput(original);
+    }
 }

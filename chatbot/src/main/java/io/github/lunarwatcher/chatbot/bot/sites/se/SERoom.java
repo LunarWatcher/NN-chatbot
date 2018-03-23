@@ -184,7 +184,7 @@ public class SERoom implements Closeable {
         }catch(IOException e){
             e.printStackTrace();
         }finally {
-            new Thread(() -> parent.handleNewMessage()).start();
+            parent.handleNewMessage();
         }
     }
 

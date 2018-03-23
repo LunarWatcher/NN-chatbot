@@ -251,16 +251,6 @@ public class BotCore {
     }
 
     public static void startServer(){
-        if (process != null)
-            process.destroy();
-        if (serverThread != null) {
-            if (serverThread.isAlive()) {
-                try {
-                    serverThread.join();
-                } catch (InterruptedException e) {
-                }
-            }
-        }
         serverThread = new ServerThread();
         serverThread.start();
 
