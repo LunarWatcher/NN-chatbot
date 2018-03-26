@@ -1,15 +1,12 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.Constants
-import io.github.lunarwatcher.chatbot.bot.Bot
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.tc
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
-import sun.java2d.cmm.kcms.CMM.checkStatus
 
 class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
         "Adds a home room - Admins only", "Adds a home room for the bot on this site"){
@@ -21,11 +18,16 @@ class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
         }
 
         val raw = input.split(" ");
-        var iRoom: Int;
-        if(raw.size == 1)
-            iRoom = user.roomID
-        else
-            iRoom = raw[1].toInt()
+        val iRoom: Int = try {
+            if (raw.size == 1)
+                user.roomID
+            else
+                raw[1].toInt()
+        }catch(e: NumberFormatException){
+            return BMessage("Not a valid room ID!", true);
+        }catch (e: ClassCastException){
+            return BMessage("Not a valid room ID!", true);
+        }
 
         val added = site.config.addHomeRoom(iRoom);
 
@@ -49,10 +51,16 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
 
         val raw = input.split(" ");
         var iRoom: Int;
-        iRoom = if(raw.size == 1)
-            user.roomID
-        else
-            raw[1].toInt()
+        try {
+            iRoom = if (raw.size == 1)
+                user.roomID
+            else
+                raw[1].toInt()
+        }catch(e: NumberFormatException){
+            return BMessage("Not a valid room ID!", true);
+        }catch (e: ClassCastException){
+            return BMessage("Not a valid room ID!", true);
+        }
 
         if(Utils.isHardcodedRoom(iRoom, site)){
             return BMessage("Unfortunately for you, that's a hard-coded room. These cannot be removed by command. " +
@@ -79,18 +87,19 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
     }
 }
 
-class UpdateRank(val site: Chat) : AbstractCommand("promote", listOf("demote"), "Changes a users rank."){
+class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "promote"), "Changes a users rank."){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
             //final command match assertion check
             return null;
         }
-
+        val type = input.replace(name + " ", "");
         val split = input.split(" ")
         if(split.size < 3)
             return BMessage("Missing parameters. Found " + split.size + ", expected 3", true);
         var updatingUser: Long
+
         val newRank: Int
         updatingUser = try {
             split[1].toLong();
@@ -98,9 +107,10 @@ class UpdateRank(val site: Chat) : AbstractCommand("promote", listOf("demote"), 
         }catch(e: ClassCastException){
             return BMessage("You have to supply a valid user ID and new rank", true);
         }catch(e: NumberFormatException){
-            val usr = site.config.ranks.entries.firstOrNull{it.value.username == split[1]}
-            usr?.value?.uid ?: return BMessage("You have to supply a valid user ID/indexed username", true);
-
+            val r = getRankOrMessage(type, site)
+            if (r is BMessage)
+                return r;
+            r as Long
         }
         try {
 
@@ -148,22 +158,22 @@ class BanUser(val site: Chat) : AbstractCommand("ban", listOf(), "Bans a user fr
         if(type.isEmpty()){
             return BMessage("Specify a user to ban", true);
         }
-        val iUser: Long
-        try {
-            iUser = type.split(" ")[0].toLong()
-
-        }catch(e: ClassCastException){
-            return BMessage("Not a valid user ID!", true);
+        val iUser: Long = try {
+            type.split(" ")[0].toLong()
+        } catch(e: ClassCastException){
+            return BMessage("You have to supply a valid user ID and new rank", true);
+        }catch(e: NumberFormatException){
+            val r = getRankOrMessage(type, site)
+            if (r is BMessage)
+                return r;
+            r as Long
         }
 
         if(Utils.isHardcodedAdmin(iUser, site)){
             return BMessage("You can't ban other hardcoded moderators", true);
         }
 
-
-
         val currentRank = Utils.getRank(iUser, site.config)
-
         val cuRank = Utils.getRank(user.userID, site.config)
 
         if(currentRank >= cuRank)
@@ -194,12 +204,16 @@ class Unban(val site: Chat) : AbstractCommand("unban", listOf(), "Unbans a banne
         if(type.isEmpty()){
             return BMessage("Specify a user to unban", true);
         }
-        val iUser: Long
-        try {
-            iUser = type.split(" ")[0].toLong()
+        val iUser: Long = try {
+            type.split(" ")[0].toLong()
 
         }catch(e: ClassCastException){
-            return BMessage("Not a valid user ID!", true);
+            return BMessage("You have to supply a valid user ID and new rank", true);
+        }catch(e: NumberFormatException){
+            val r = getRankOrMessage(type, site)
+            if (r is BMessage)
+                return r;
+            r as Long
         }
 
         if(Utils.isHardcodedAdmin(iUser, site)){
@@ -291,7 +305,7 @@ class DebugRanks(val site: Chat) : AbstractCommand("rankdebug", listOf(), "Debug
         if(Utils.getRank(user.userID, site.config) < 8)
             return BMessage("You can't do that", true);
 
-        val reply: ReplyBuilder = ReplyBuilder(site.name == "discord")
+        val reply = ReplyBuilder(site.name == "discord")
         reply.fixedInput().append("Username - user ID - rank").nl();
         for(rankInfo in site.config.ranks){
             val ri = rankInfo.value;
@@ -315,3 +329,13 @@ class KillBot(val site: Chat) : AbstractCommand("shutdown", listOf("gotosleep", 
     }
 }
 
+fun getRankOrMessage(type: String, site: Chat): Any{
+    val list = site.config.ranks.entries.filter{ (_, v)->
+        v.username?.replace(" ", "")?.toLowerCase()?.trim() == type.split(" ")[0].replace(" ", "").toLowerCase().trim()
+    }.map{(_, v) -> v.uid}
+    return when(list.size){
+        0-> BMessage("You have to supply a valid user ID/indexed username", true);
+        1-> list[0]
+        else-> BMessage("Ambiguous username. Found ${list.size} users with that username. Please specify with the user ID. (found: ${list.joinToString(",")})", true)
+    }
+}

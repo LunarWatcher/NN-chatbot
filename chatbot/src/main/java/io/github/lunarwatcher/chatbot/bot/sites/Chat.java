@@ -3,6 +3,7 @@ package io.github.lunarwatcher.chatbot.bot.sites;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 
 import java.io.IOException;
@@ -20,6 +21,7 @@ public interface Chat {
     Site getSite();
     Properties getBotProps();
     Database getDatabase();
+    CommandCenter getCommands();
 
     /**
      * Since the username systems for each site is different, this method aims to add abstraction to get it.

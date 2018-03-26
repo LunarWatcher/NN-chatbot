@@ -442,4 +442,8 @@ public class SEChat implements Chat {
     public String getUsername(long uid){
         return Long.toString(uid);
     }
+
+    public CommandCenter getCommands(){
+        return commands;
+    }
 }

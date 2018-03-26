@@ -283,5 +283,8 @@ public class DiscordChat implements Chat{
         return x.getGuild().getLongID();
     }
 
+    public CommandCenter getCommands(){
+        return commands;
+    }
 
 }

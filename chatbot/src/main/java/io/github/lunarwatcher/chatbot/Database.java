@@ -44,6 +44,7 @@ public class Database {
                 System.out.println("Ignored load failing.");
             }
         }else{
+
             Files.createFile(file);
         }
     }
