@@ -83,6 +83,7 @@ public class CommandCenter {
         addCommand(new StopServer(site));
         addCommand(new DogeCommand());
         addCommand(new RepeatCommand());
+        addCommand(new Blame(site));
 
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());

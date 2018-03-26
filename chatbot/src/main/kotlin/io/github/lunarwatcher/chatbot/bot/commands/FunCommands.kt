@@ -126,6 +126,19 @@ class Ping : AbstractCommand("ping", listOf("poke"), "Pokes someone"){
     }
 }
 
+class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone must be blamed for this!"){
+    private val random = Random();
+
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val problem = splitCommand(input)["content"]
+
+        val blamable = site.config.ranks.values.map{it.username}.filter{it != null}
+        return if(problem == null)
+            BMessage("It is ${blamable[random.nextInt(blamable.size)]}'s fault!", true);
+        else BMessage("blames ${blamable[random.nextInt(blamable.size)]} for $problem", true)
+    }
+}
+
 class Appul : AbstractCommand("appul", listOf("apple"), "Apples."){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)) return null;
