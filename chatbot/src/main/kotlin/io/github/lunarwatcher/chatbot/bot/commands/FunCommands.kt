@@ -139,6 +139,12 @@ class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone m
     }
 }
 
+class StockComments(val site: Chat) {
+    //TODO allow creation of stock comments for specific rooms saved in the dataabase
+    //Also, this commit is a part in testing some doge aliases for git :3
+    
+}
+
 class Appul : AbstractCommand("appul", listOf("apple"), "Apples."){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)) return null;
