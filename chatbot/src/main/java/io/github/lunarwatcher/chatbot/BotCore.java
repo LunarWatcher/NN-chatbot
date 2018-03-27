@@ -9,6 +9,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 import java.io.*;
+import java.net.SocketException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -46,6 +47,8 @@ public class BotCore {
             }else{
                 System.out.print("Not starting server!");
             }
+        }catch(SocketException e){
+            //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
         }
 
         Properties botProps = new Properties();

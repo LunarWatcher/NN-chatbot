@@ -221,6 +221,7 @@ class Bot():
             exit()
 
     def startNet(self):
+        print("Network starting")
         if self.training:
             # TODO not implemented: custom datasets
             # y if forced else input

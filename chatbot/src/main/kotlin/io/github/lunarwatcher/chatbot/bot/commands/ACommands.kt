@@ -330,8 +330,9 @@ class KillBot(val site: Chat) : AbstractCommand("shutdown", listOf("gotosleep", 
 }
 
 fun getRankOrMessage(type: String, site: Chat): Any{
+    val username = type.replace("\\d".toRegex(), "").replace(" ", "").trim()
     val list = site.config.ranks.entries.filter{ (_, v)->
-        v.username?.replace(" ", "")?.toLowerCase()?.trim() == type.split(" ")[0].replace(" ", "").toLowerCase().trim()
+        v.username?.toLowerCase()?.trim()?.replace(" ", "") == username.toLowerCase()
     }.map{(_, v) -> v.uid}
     return when(list.size){
         0-> BMessage("You have to supply a valid user ID/indexed username", true);

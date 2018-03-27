@@ -6,7 +6,6 @@ import re
 import nltk
 import numpy as np
 from random import sample
-from gensim.models import word2vec, KeyedVectors
 
 EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_'  # space is included in the whitelistt
 EN_BLACKLIST = '$`()/<=>@[\\]{|}~'
@@ -254,13 +253,6 @@ def processData():
     print('\n>> 2nd layer of filtering')
     qlines, alines = filterData(questions, answers)
 
-    with open("model/tokenized.tok", "w") as f:
-        for i in range(0, min(len(questions), len(answers))):
-            f.write(questions[i] + "\n")
-            f.write(answers[i] + "\n")
-    wordVector = word2vec.Word2Vec(questions + answers)
-    os.mkdir("dataset/")
-    wordVector.wv.save_word2vec_format("dataset/wordVector.bin", binary=True)
     for q, a in zip(qlines[141:145], alines[141:145]):
         print('q : [{0}]; a : [{1}]'.format(q, a))
 

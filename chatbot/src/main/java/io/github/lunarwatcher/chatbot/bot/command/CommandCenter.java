@@ -87,6 +87,7 @@ public class CommandCenter {
 
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
+        listeners.add(new TestListener());
 
         /**
          * Pun not intended:

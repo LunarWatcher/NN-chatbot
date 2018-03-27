@@ -4,7 +4,8 @@ val mapped = mutableListOf(
         "&lt;" to "<",
         "&gt;" to ">",
         "&amp;" to "&",
-        "&qout;" to "\""
+        "&qout;" to "\"",
+        "&#39;" to "'"
 
 )
 

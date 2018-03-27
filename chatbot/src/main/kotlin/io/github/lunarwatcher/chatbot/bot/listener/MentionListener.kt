@@ -10,6 +10,7 @@ import io.github.lunarwatcher.chatbot.utils.Http
 import org.apache.http.conn.HttpHostConnectException
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
+import java.net.SocketException
 
 @Suppress("NAME_SHADOWING")
 class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to pings") {
@@ -39,6 +40,9 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
                 val reply: String = response.body.substring(1, response.body.length - 2)
                 BMessage(reply, true)
             }catch (e: IOException){
+                BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
+            }catch(e: SocketException){
+                //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
                 BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
             }
         }else

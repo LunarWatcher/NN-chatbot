@@ -95,7 +95,10 @@ class TestListener : AbstractListener("Test", description="Is this thing on??"){
     val poked = mutableListOf<Long>();
 
     override fun handleInput(input: String, user: User): BMessage? {
-        if (input.toLowerCase().contains("^test")){
+        if (input.toLowerCase().contains("^test$".toRegex())){
+            if (poked.contains(user.userID))
+                return null;
+            poked.add(user.userID);
             return BMessage("You passed! Congratulations!", false)
         }
         return null
