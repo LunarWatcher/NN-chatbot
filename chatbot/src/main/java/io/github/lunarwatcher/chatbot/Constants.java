@@ -106,6 +106,11 @@ public final class Constants {
 
     };
 
+    public static String[] wakeMessages = {
+            "*throws pebbles at %s's window*", "*throws cold water on %s*", "*cranks up the music to 11*. Oh, I'm sorry, did I wake you %s?",
+            "*flips %s's bed...*", "*throws %s out the plane*"
+    };
+
     public static String BANNED_USERS(String site){
         return "banned-users-" + site;
     }

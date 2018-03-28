@@ -2,21 +2,14 @@ package io.github.lunarwatcher.chatbot.bot.sites.se;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
-import io.github.lunarwatcher.chatbot.utils.Http;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
-import javafx.application.Platform;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import javax.naming.ldap.StartTlsRequest;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -24,11 +17,10 @@ import javax.websocket.Session;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public class SERoom implements Closeable {
     private int id;

@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import com.google.common.base.Strings.repeat
@@ -93,7 +95,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
             return dMap;
 
         for(e in iMap)
-            dMap.put(e.key.trim(), e.value.trim())
+            dMap[e.key.trim()] = e.value.trim()
 
 
         return dMap;
@@ -101,7 +103,10 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
     }
 
     fun parseArguments(input: String) : Map<String, String>{
-        if(input.substring(name.length).isEmpty()){
+        if (input.isEmpty())
+            return mapOf()
+        val used = input.split(" ")[0]
+        if(input.substring(used.length).trim().isEmpty()){
             //no arguments passed
             return mapOf();
         }
@@ -114,7 +119,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
                 val g1 = matcher.group(1)
                 val g2 = matcher.group(2);
 
-                retval.put(g1.substring(1, g1.length), g2.substring(1, g2.length))
+                retval[g1.substring(1, g1.length)] = g2.substring(1, g2.length)
             }
         }
 
@@ -140,6 +145,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         return input;
     }
 
+
 }
 
 class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("halp", "hilfen", "help"),
@@ -159,7 +165,7 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
             reply.fixedInput().append("###################### Help ######################")
                     .nl().fixedInput().nl();
             var commands: MutableMap<String, String> = mutableMapOf()
-            var learnedCommands: MutableList<String> = mutableListOf()
+            val learnedCommands: MutableList<String> = mutableListOf()
             var listeners: MutableMap<String, String> = mutableMapOf();
 
             val names: MutableList<String> = mutableListOf()
@@ -167,7 +173,7 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
             if (!center.commands.isEmpty()) {
 
                 for (command: Command in center.commands.values) {
-                    commands.put(command.name, command.desc);
+                    commands[command.name] = command.desc;
                 }
             }
 
@@ -179,7 +185,7 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
 
             if(!center.listeners.isEmpty()){
                 for(listener in center.listeners){
-                    listeners.put(listener.name, listener.description);
+                    listeners[listener.name] = listener.description;
                 }
             }
 
@@ -231,29 +237,31 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
             return BMessage(reply.toString(), false);
         }else{
             val cmd = (`in`["content"] ?: return null).toLowerCase();
-            var desc: String
-            var help: String
-            var name: String
+            val desc: String
+            val help: String
+            val name: String
             //No clue what to call this thing
-            var d: String;
+            val d: String;
 
-            if(center.isBuiltIn(cmd)){
-                desc = center.get(cmd)?.desc ?: return null;
-                help = center.get(cmd)?.help ?: return null;
-                name = center.get(cmd)?.name ?: return null;
-                d = "Built in command. "
-            }else if(CommandCenter.tc.doesCommandExist(cmd)){
-                desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
-                help = CommandCenter.tc.get(cmd)?.help ?: return null;
-                name = CommandCenter.tc.get(cmd)?.name ?: return null;
-                d = "Taught command. (Learned to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
-            }else{
-                return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
+            when {
+                center.isBuiltIn(cmd) -> {
+                    desc = center.get(cmd)?.desc ?: return null;
+                    help = center.get(cmd)?.help ?: return null;
+                    name = center.get(cmd)?.name ?: return null;
+                    d = "Built in command. "
+                }
+                CommandCenter.tc.doesCommandExist(cmd) -> {
+                    desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
+                    help = CommandCenter.tc.get(cmd)?.help ?: return null;
+                    name = CommandCenter.tc.get(cmd)?.name ?: return null;
+                    d = "Taught command. (Learned to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
+                }
+                else -> return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
             }
 
-            val reply: ReplyBuilder = ReplyBuilder(center.site.name == "discord");
+            val reply = ReplyBuilder(center.site.name == "discord");
 
-            reply.fixedInput().append(d).append("`" + TRIGGER).append(name).append("`: " + desc)
+            reply.fixedInput().append(d).append("`$TRIGGER").append(name).append("`: $desc")
                     .nl().fixedInput().append(help)
 
 
@@ -351,7 +359,7 @@ class StartServer(val site: Chat) : AbstractCommand("startFlask", listOf("startS
         val status = try {
             val httpClient = HttpClients.createDefault()
             val http = Http(httpClient)
-            val response = http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello")
+            http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello")
             http.close()
             httpClient.close()
             true
@@ -421,6 +429,17 @@ class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much comm
 
     companion object {
         const val defaultMsg = "user, fail, pro"
+    }
+}
+
+class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
+    val random = Random()
+
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!matchesCommand(input))
+            return null
+        val who = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to wake up!", true)
+        return BMessage(Constants.wakeMessages[random.nextInt(Constants.wakeMessages.size)].format(who), true)
     }
 }
 
