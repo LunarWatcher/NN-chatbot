@@ -31,6 +31,7 @@ import java.io.BufferedReader
 import java.util.ArrayList
 import java.io.IOException
 import java.io.InputStream
+import java.rmi.server.UID
 
 
 val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
@@ -440,6 +441,32 @@ class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
             return null
         val who = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to wake up!", true)
         return BMessage(Constants.wakeMessages[random.nextInt(Constants.wakeMessages.size)].format(who), true)
+    }
+}
+
+class WhoIs(val site: Chat) : AbstractCommand("whois", listOf("identify")){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!matchesCommand(input))
+            return null;
+        val who = splitCommand(input)["content"]?.trim() ?: return BMessage("You have to tell me who to identify", true)
+        if(who.isEmpty()) return BMessage("You have to tell me who to identify", true)
+
+        val uid = if(who.matches("(\\d+)".toRegex())){
+            who.toLong()
+        }else {
+            val res = getRankOrMessage(who, site)
+            if (res is BMessage) {
+                return res
+            } else {
+                res as Long
+            }
+        }
+        val username = site.config.ranks[uid]?.username ?: return BMessage("User not indexed", true)
+        return BMessage("""${
+        if(site.name == "stackoverflow" || site.name == "stackexchange" || site.name == "metastackexchange")
+            "[$username](${site.site.url.replace("chat.", "")}/users/$uid)"
+        else username
+        } (UID $uid)""".trimIndent().replace("\n", ""), true)
     }
 }
 
