@@ -111,6 +111,8 @@ public final class Constants {
             "*flips %s's bed...*", "*throws %s out the plane*"
     };
 
+
+
     public static String BANNED_USERS(String site){
         return "banned-users-" + site;
     }
@@ -146,4 +148,6 @@ public final class Constants {
             return ranks.get(level);
         }
     }
+
+
 }

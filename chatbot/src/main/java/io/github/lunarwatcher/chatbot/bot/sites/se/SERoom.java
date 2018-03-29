@@ -64,6 +64,7 @@ public class SERoom implements Closeable {
                 try{
                     throw new Exception(error);
                 }catch(Exception e){
+                    parent.commands.crash.crash(e);
                     e.printStackTrace();
                 }
             }

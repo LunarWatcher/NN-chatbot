@@ -15,6 +15,8 @@ public class BMessage {
      * @param rip replyIfPossible - replies to a message in supported platforms
      */
     public BMessage(String content, boolean rip){
+        if(content == null)
+            content = "null";
         this.content = content;
         this.replyIfPossible = rip;
     }

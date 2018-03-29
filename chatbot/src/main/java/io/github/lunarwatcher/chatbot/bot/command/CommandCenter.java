@@ -4,10 +4,7 @@ package io.github.lunarwatcher.chatbot.bot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import io.github.lunarwatcher.chatbot.Constants;
-import io.github.lunarwatcher.chatbot.CrashLogs;
-import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.MapUtils;
+import io.github.lunarwatcher.chatbot.*;
 import io.github.lunarwatcher.chatbot.bot.Bot;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
@@ -86,6 +83,7 @@ public class CommandCenter {
         addCommand(new Blame(site));
         addCommand(new WakeCommand());
         addCommand(new WhoIs(site));
+        addCommand(new JSEval());
 
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
@@ -168,6 +166,8 @@ public class CommandCenter {
         message = message.replace("\u202E", "");
         message = message.trim();
         message = message.replaceAll(" +", " ");
+        message = KUtilsKt.cleanInput(message);
+
         String om = message;
         List<BMessage> replies = new ArrayList<>();
         try {
@@ -176,7 +176,6 @@ public class CommandCenter {
 
                 //Get rid of white space to avoid problems down the line
                 message = message.trim();
-
 
                 String name = message.split(" ")[0];
 

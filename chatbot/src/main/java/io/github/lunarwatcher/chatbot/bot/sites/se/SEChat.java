@@ -323,6 +323,8 @@ public class SEChat implements Chat {
                 List<BMessage> replies = commands.parseMessage(m.content, user, false);
                 if (replies != null && getRoom(m.roomID) != null) {
                     for (BMessage bm : replies) {
+                        if(bm.content == null)
+                            continue;
                         if (bm.content.length() >= 500 && !bm.content.contains("\n")) {
                             bm.content += "\n.";
                         }

@@ -2,9 +2,12 @@ package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import io.github.lunarwatcher.chatbot.cleanInput
+import io.github.lunarwatcher.chatbot.createInvocable
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
 import java.util.*
+import javax.script.ScriptEngineManager
 
 class RandomNumber() : AbstractCommand("random", listOf("dice"), "Generates a random number"){
     val random: Random = Random(System.currentTimeMillis());
@@ -136,6 +139,24 @@ class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone m
         return if(problem == null)
             BMessage("It is ${blamable[random.nextInt(blamable.size)]}'s fault!", true);
         else BMessage("blames ${blamable[random.nextInt(blamable.size)]} for $problem", true)
+    }
+}
+
+class JSEval : AbstractCommand("eval", listOf(), desc="Calls the ScriptEngineManager to evaluate JS. Also does basic maths."){
+    private val engineManager = ScriptEngineManager()
+    private val engine = engineManager.getEngineByName("javascript")
+
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!matchesCommand(input))
+            return null
+
+        val content = splitCommand(input)["content"]?.trim() ?: return BMessage("You have to tell me what to evaluate", true)
+        return try{
+            BMessage(engine.eval(content)?.toString(), true)
+        }catch(e: Exception){
+            e.printStackTrace()
+            BMessage(e.toString(), true)
+        }
     }
 }
 
