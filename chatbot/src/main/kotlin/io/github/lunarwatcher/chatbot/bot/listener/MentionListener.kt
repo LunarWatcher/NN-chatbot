@@ -7,7 +7,6 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Http
-import org.apache.http.conn.HttpHostConnectException
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
 import java.net.SocketException

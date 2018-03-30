@@ -6,7 +6,6 @@ import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import org.apache.commons.lang3.mutable.MutableLong
 
 @Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){

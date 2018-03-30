@@ -1,14 +1,10 @@
 package io.github.lunarwatcher.chatbot.bot.listener
 
-import com.sun.org.apache.xpath.internal.operations.Bool
-import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.commands.ARGUMENT_PATTERN
-import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.bot.commands.FLAG_REGEX
 import io.github.lunarwatcher.chatbot.bot.commands.User
-import java.util.regex.Pattern
 
 //TODO add listeners
 interface Listener{
