@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module external.linked.project.id="chatbot:main" external.linked.project.path="$MODULE_DIR$/../../chatbot" external.root.project.path="$MODULE_DIR$/../../chatbot" external.system.id="GRADLE" external.system.module.group="io.github.lunarwatcher.chatbot" external.system.module.type="sourceSet" external.system.module.version="1.0.0" type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="kotlin-language" name="Kotlin">
+      <configuration version="3" platform="JVM 1.8" useProjectSettings="false">
+        <compilerSettings />
+        <compilerArguments>
+          <option name="destination" value="$MODULE_DIR$/../../chatbot/build/classes/kotlin/main" />
+          <option name="noStdlib" value="true" />
+          <option name="noReflect" value="true" />
+          <option name="moduleName" value="chatbot" />
+          <option name="jvmTarget" value="1.8" />
+          <option name="addCompilerBuiltIns" value="true" />
+          <option name="loadBuiltInsFromDependencies" value="true" />
+          <option name="languageVersion" value="1.2" />
+          <option name="apiVersion" value="1.2" />
+          <option name="pluginOptions">
+            <array />
+          </option>
+          <option name="pluginClasspaths">
+            <array />
+          </option>
+        </compilerArguments>
+      </configuration>
+    </facet>
+  </component>
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
     <output url="file://$MODULE_DIR$/../../chatbot/out/production/classes" />
     <exclude-output />
@@ -10,7 +34,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-jre8:1.2.10" level="project" />
+    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.2.31" level="project" />
     <orderEntry type="library" name="Gradle: com.github.austinv11:Discord4J:2.9.2" level="project" />
     <orderEntry type="library" name="Gradle: com.fasterxml.jackson.module:jackson-module-afterburner:2.8.7" level="project" />
     <orderEntry type="library" name="Gradle: com.fasterxml.jackson.core:jackson-databind:2.8.7" level="project" />
@@ -21,11 +45,9 @@
     <orderEntry type="library" name="Gradle: org.apache.httpcomponents:httpcore:4.4.8" level="project" />
     <orderEntry type="library" name="Gradle: org.glassfish.tyrus.bundles:tyrus-standalone-client-jdk:1.13.1" level="project" />
     <orderEntry type="library" name="Gradle: com.google.guava:guava:23.5-jre" level="project" />
-    <orderEntry type="library" name="Gradle: com.jfoenix:jfoenix:1.10.0" level="project" />
-    <orderEntry type="library" name="Gradle: io.datafx:datafx:8.0.1" level="project" />
-    <orderEntry type="library" name="Gradle: io.datafx:flow:8.0.1" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-jre7:1.2.10" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib:1.2.10" level="project" />
+    <orderEntry type="library" name="Gradle: org.jodd:jodd-all:4.3.0" level="project" />
+    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.2.31" level="project" />
+    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib:1.2.31" level="project" />
     <orderEntry type="library" name="Gradle: org.slf4j:slf4j-api:1.7.24" level="project" />
     <orderEntry type="library" name="Gradle: commons-io:commons-io:2.5" level="project" />
     <orderEntry type="library" name="Gradle: org.eclipse.jetty.websocket:websocket-client:9.4.3.v20170317" level="project" />
@@ -46,7 +68,6 @@
     <orderEntry type="library" name="Gradle: com.google.errorprone:error_prone_annotations:2.0.18" level="project" />
     <orderEntry type="library" name="Gradle: com.google.j2objc:j2objc-annotations:1.1" level="project" />
     <orderEntry type="library" name="Gradle: org.codehaus.mojo:animal-sniffer-annotations:1.14" level="project" />
-    <orderEntry type="library" name="Gradle: io.datafx:core:8.0.1" level="project" />
     <orderEntry type="library" name="Gradle: org.jetbrains:annotations:13.0" level="project" />
     <orderEntry type="library" name="Gradle: org.eclipse.jetty:jetty-client:9.4.3.v20170317" level="project" />
     <orderEntry type="library" name="Gradle: org.eclipse.jetty.websocket:websocket-common:9.4.3.v20170317" level="project" />

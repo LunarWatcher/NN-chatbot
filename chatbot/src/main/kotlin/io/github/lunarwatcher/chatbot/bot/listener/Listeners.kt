@@ -1,7 +1,12 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package io.github.lunarwatcher.chatbot.bot.listener
 
+import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.commands.User
+import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import org.apache.commons.lang3.mutable.MutableLong
 
 @Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
@@ -32,7 +37,7 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
                 return BMessage("Who's there?", true);
             }
             1->{
-                val who = input + " who?"
+                val who = "$input who?"
                 context?.next()
                 return BMessage(who, true);
             }
@@ -104,3 +109,85 @@ class TestListener : AbstractListener("Test", description="Is this thing on??"){
         return null
     }
 }
+
+class WaveListener : AbstractListener("wave", "Waves back when a wave is detected"){
+    val pause = 30000;
+    var lastWave: Long = 0;
+    override fun handleInput(input: String, user: User): BMessage? {
+        //using isCommand is optional in listeners, but some listeners want to ignore it if it is a command
+        if(isCommand(input))
+            return null;
+        if(System.currentTimeMillis() - lastWave >= pause) {
+
+            if (input == "o/") {
+                lastWave = System.currentTimeMillis();
+                return BMessage("\\o", false);
+            }else if (input == "\\o") {
+                lastWave = System.currentTimeMillis();
+                return BMessage("o/", false)
+            }
+
+        }
+
+        return null;
+    }
+}
+
+class StatusListener(val site: Chat, val database: Database) : AbstractListener("status", "tracks messages for statuses. See also the status command"){
+    var users: MutableMap<Int, MutableMap<Long, Long>>
+
+    init{
+        val b = database.getMap("status-" + site.name) as MutableMap<String, MutableMap<String, Long>>?
+        if (b != null){
+            try {
+                users = mutableMapOf()
+                for (user in b){
+                    try {
+                        users[user.key.toInt()] = user.value.map{it.key.toLong() to it.value}.associateBy({it.first}, {it.second}).toMutableMap()
+
+                    }catch(e: Exception){
+                        e.printStackTrace()
+                    }
+                }
+            }catch(e: ClassCastException){
+                users = mutableMapOf()
+                e.printStackTrace()
+            }
+        }else{
+            users = mutableMapOf()
+        }
+    }
+
+    override fun handleInput(input: String, user: User): BMessage? {
+        val uid = user.userID
+        if(!users.keys.contains(user.roomID))
+            users[user.roomID] = mutableMapOf()
+        if(users[user.roomID]!![uid] == null)
+            users[user.roomID]!![uid] = 0
+
+        users[user.roomID]!![uid] = users[user.roomID]!!.getNonNull(uid) + 1
+        return null
+    }
+
+    fun save(){
+        database.put("status-" + site.name, users.toMap())
+    }
+}
+
+/**
+ * Saves some time in casting; but it will throw a NPE if Map\[what] == null
+ */
+fun <K, V> Map<K, V>.getNonNull(what: K) : V{
+    return get(what) as V
+}
+
+fun <K, V> MutableMap<K, V>.getNonNullI(what: K, defaultValue: V) : V{
+    return try {
+        get(what) as V
+    }catch(e: Exception){
+        this[what] = defaultValue
+        defaultValue
+    }
+}
+
+

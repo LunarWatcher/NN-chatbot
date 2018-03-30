@@ -266,6 +266,9 @@ public final class Utils {
     }
 
     public static int getRank(long user, BotConfig config){
+        if(user == config.getSite().getSite().getConfig().getUserID())
+            return 10;
+
         if(config.getRanks().get(user) != null){
             return config.getRanks().get(user).getRank();
         }else return Constants.DEFAULT_RANK;

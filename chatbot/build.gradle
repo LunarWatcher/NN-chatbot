@@ -2,7 +2,7 @@ group 'io.github.lunarwatcher.chatbot'
 version '1.0.0'
 
 buildscript {
-    ext.kotlin_version = '1.2.10'
+    ext.kotlin_version = '1.2.31'
 
     repositories {
         mavenCentral()
@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // The Discord API
     compile "com.github.austinv11:Discord4J:2.9.2"
@@ -47,10 +47,8 @@ dependencies {
 
     compile 'com.google.guava:guava:23.5-jre'
 
-    //UI
-    compile 'com.jfoenix:jfoenix:1.10.0'
-    compile 'io.datafx:datafx:8.0.1'
-    compile 'io.datafx:flow:8.0.1'
+
+    compile 'org.jodd:jodd-all:4.3.0'
 
 }
 

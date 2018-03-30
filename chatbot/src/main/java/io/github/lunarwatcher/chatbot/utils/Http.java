@@ -37,6 +37,17 @@ public class Http implements Closeable {
     }
 
 
+    public Response get(String uri, List<Object> params) throws IOException{
+        StringBuilder preparedUri = new StringBuilder(uri + "?");
+        for(int i = 0; i < params.size(); i += 2){
+            preparedUri.append(i == 0 ? "" : "&").append(params.get(i).toString()).append("=").append(params.get(i + 1));
+        }
+
+        HttpGet request = new HttpGet(preparedUri.toString());
+
+        return send(request);
+    }
+
     public Response post(String uri, Object... parameters) throws IOException {
         if (parameters.length % 2 != 0) {
             throw new IllegalArgumentException("\"parameters\" vararg must have an even number of values.");

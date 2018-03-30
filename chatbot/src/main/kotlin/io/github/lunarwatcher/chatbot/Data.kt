@@ -1,17 +1,5 @@
 package io.github.lunarwatcher.chatbot
 
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
-import java.io.Reader
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.util.*
-import java.util.concurrent.Callable
-import java.util.concurrent.TimeUnit
-import java.util.function.BiConsumer
-import javax.script.Invocable
-import javax.script.ScriptEngine
-import javax.script.ScriptEngineManager
-
 /**
  * Site specific config
  */
@@ -43,18 +31,3 @@ class MapUtils{
         }
     }
 }
-
-fun main(args: Array<String>){
-
-    val process = Runtime.getRuntime()
-            .exec(arrayOf("python", "Network/bot.py", "--training=false", "--mode=2"))
-
-    println("Start")
-    process.waitFor()
-    println("End")
-    println(process.exitValue())
-
-    println(process.inputStream.bufferedReader().use { it.readText() })
-    println(process.errorStream.bufferedReader().use { it.readText() })
-}
-

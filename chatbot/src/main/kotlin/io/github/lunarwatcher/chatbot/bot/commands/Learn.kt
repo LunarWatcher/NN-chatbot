@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.Constants.LEARNED_COMMANDS
@@ -33,13 +35,13 @@ class TaughtCommands(val db: Database){
             val cmdMap = mutableMapOf<String, Any?>()
             val lc: LearnedCommand = it.value;
 
-            cmdMap.put("name", lc.name);
-            cmdMap.put("desc", lc.desc);
-            cmdMap.put("output", lc.output);
-            cmdMap.put("creator", lc.creator);
-            cmdMap.put("reply", lc.reply);
-            cmdMap.put("site", lc.site);
-            cmdMap.put("nsfw", lc.nsfw)
+            cmdMap["name"] = lc.name;
+            cmdMap["desc"] = lc.desc;
+            cmdMap["output"] = lc.output;
+            cmdMap["creator"] = lc.creator;
+            cmdMap["reply"] = lc.reply;
+            cmdMap["site"] = lc.site;
+            cmdMap["nsfw"] = lc.nsfw
             map.add(cmdMap)
 
         }
@@ -122,6 +124,21 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
             return null;
         }
         var output = this.output;
+        output = output.replace("""(?i)\\un""".toRegex(), user.userName).replace("""(?i)\\uid""".toRegex(), user.userID.toString())
+
+        if(output.contains("%s")){
+            val arguments = output.split("%s").size - 1
+            val given = (splitCommand(input)["content"]?: return BMessage("You need $arguments arguments to run this command", true))
+                    .split(",");
+            if(given.size != arguments){
+                return BMessage("Not enough arguments. Found ${given.size}, requires $arguments", true)
+            }
+            output = output.format(*given.toTypedArray())
+
+        }
+
+
+
 
         if(user.site == "discord"){
             output = output.replace("\\\\", "\\")
@@ -131,14 +148,18 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
 
 }
 
-class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf(), "Teaches the bot a new command. ", help = "Syntax: ${CommandCenter.TRIGGER}help commandName commandOutput -d (optional) description -nsfw (optional) whether the command is NSFW or not (boolean)" ){
+class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf("teach"), "Teaches the bot a new command. ",
+        help = "Syntax: ${CommandCenter.TRIGGER}help commandName commandOutput -d (optional) description -nsfw (optional) whether the command is NSFW or not (boolean)\n" +
+                "ADditional: %s - requires input for the command to be used\n" +
+                "\\un - adds the username for whoever uses the command\n" +
+                "\\uid - adds the user ID for whoever uses the command" ){
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        var input = input;
+        val input = input;
 
         if(!matchesCommand(input)) return null;
 
-        var nsfw: Boolean = false;
+        var nsfw = false;
 
         //on Discord there may appear commands that one would consider unwanted on sites like the Stack Exchange network.
         //These are just called NSFW because I have nothing better to call them.
@@ -155,19 +176,17 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
         val split = (args["content"] ?: return BMessage("Supply valid arguments -_-", true))
                 .split(" ".toRegex(), limit = 2);
 
-        if(split.size != 2 || split[0] == null || split[1] == null){
-            return BMessage("...", true);
+        if(split.size != 2){
+            return BMessage("Not enough arguments", true);
         }
 
         var name = "undefined";
         var desc = "No description was supplied";
         val creator = user.userID;
         var output = "undefined";
-        var reply = false;
+        val reply = false;
 
-        val keys = args.keys;
-
-        loopie@ for(i in 0 until args.size){
+        for(i in 0 until args.size){
             val key = args.keys.elementAt(i);
             when (key) {
                 "content" -> { //The name is the name of the command used, not the one that's attempted learned.

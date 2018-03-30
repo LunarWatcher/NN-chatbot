@@ -1,17 +1,11 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
+import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Utils
-import org.tritonus.share.TCircularBuffer
-import sun.java2d.cmm.kcms.CMM.checkStatus
-
-val USER_BANNED = 0;
-val USER_ADMIN = 1;
-val USER_PRIV = 2;
-val USER_NORMAL = 3;
 
 class CheckCommand(var site: Chat) : AbstractCommand("getRank", listOf(), "Checks as user's role",
         "Supported roles: `admin`, `normal`, `privileged`(/`priv`) and `banned`. Unknown roles defaults to a normal check." +
@@ -43,8 +37,10 @@ class CheckCommand(var site: Chat) : AbstractCommand("getRank", listOf(), "Check
 
         val rank: Int = Utils.getRank(id, site.config)
         val username: String? = site.config.ranks[id]?.username
+        if(rank == 0)
+            return BMessage((username ?: "The user $id").toString() + " is ${Constants.Ranks.getRank(rank).toLowerCase()}", true)
 
-        return BMessage("The user " + (username ?: id) + "'s rank is $rank", true)
+        return BMessage((username ?: "The user $id").toString() + "'s rank is ${Constants.Ranks.getRank(rank).toLowerCase()}", true)
     }
 
 }

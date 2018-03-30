@@ -3,39 +3,27 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import com.google.common.base.Strings.repeat
-import com.sun.org.apache.xalan.internal.utils.SecuritySupport.getContextClassLoader
 import io.github.lunarwatcher.chatbot.BotCore
 import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.Constants
-import io.github.lunarwatcher.chatbot.bot.Bot
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
+import io.github.lunarwatcher.chatbot.bot.listener.StatusListener
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
-import javafx.application.Application
+import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
-import java.awt.SystemColor.info
 import java.text.SimpleDateFormat
 import java.util.*
-
 import java.util.regex.Pattern
-import jdk.nashorn.internal.runtime.ScriptingFunctions.readLine
-import jdk.nashorn.internal.runtime.regexp.joni.SearchAlgorithm.BM
-import org.apache.commons.lang3.StringUtils
-import java.io.InputStreamReader
-import java.io.BufferedReader
-import java.util.ArrayList
-import java.io.IOException
-import java.io.InputStream
-import java.rmi.server.UID
 
 
-val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
-var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)
+const val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
+var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
 
 interface Command{
     val name: String;
@@ -300,7 +288,7 @@ class AboutCommand : AbstractCommand("about", listOf("whoareyou"), "Let me tell 
         val reply = ReplyBuilder();
 
         reply.append("Hiya! I'm Alisha, a chatbot designed by [${Configurations.CREATOR}](${Configurations.CREATOR_GITHUB}). ")
-                .append("I'm open-source and the code is available on [Github](${Configurations.GITHUB}).")
+                .append("I'm open-source and the code is available on [Github](${Configurations.GITHUB}). Running version ${Configurations.REVISION}")
 
         return BMessage(reply.toString(), true)
     }
@@ -463,11 +451,96 @@ class WhoIs(val site: Chat) : AbstractCommand("whois", listOf("identify")){
         }
         val username = site.config.ranks[uid]?.username ?: return BMessage("User not indexed", true)
         return BMessage("""${
-        if(site.name == "stackoverflow" || site.name == "stackexchange" || site.name == "metastackexchange")
+        if(site.name == "stackoverflow" || site.name == "metastackexchange")
             "[$username](${site.site.url.replace("chat.", "")}/users/$uid)"
-        else username
+        else if(site.name=="stackexchange"){
+            "[$username](${site.site.url}/users/$uid)"
+        } else username
         } (UID $uid)""".trimIndent().replace("\n", ""), true)
     }
+}
+
+class StatusCommand(val statusListener: StatusListener, val site: Chat) : AbstractCommand("status", listOf("leaderboard"), desc="Shows the leading chatters"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(clear){
+            if(!cleared.contains(site.name)){
+                statusListener.users.clear()
+                cleared.add(site.name)
+            }
+
+            if(cleared.size == 4){
+                clear = false
+                cleared.clear()
+            }
+        }
+
+        if (statusListener.users.isEmpty() || statusListener.users[user.roomID] == null)
+            return BMessage("No users registered yet. Try again later", true)
+        if(statusListener.users[user.roomID]!!.isEmpty())
+            return BMessage("No users registered yet. Try again later", true)
+
+        if(!statusListener.users.keys.contains(user.roomID))
+            statusListener.users[user.roomID] = mutableMapOf()
+
+
+
+        if(input.contains("--clear")){
+            if(Utils.getRank(user.userID, site.config) < 9)
+                return BMessage("You need rank 9 or higher to clear the status", true);
+            if(input.contains("--confirm")){
+                statusListener.users.clear()
+                clear = true
+                cleared.add(site.name)
+                return BMessage("Flag sent!", true)
+            }
+            return BMessage("Confirm with --confirm", true)
+        }
+
+        val buffer = statusListener.users[user.roomID]!!.map{
+                it.key.toString() to it.value
+            }.associateBy({it.first}, {it.second})
+                    .toMutableMap()
+        val localCopy = mutableMapOf<String, Long>()
+
+        for((k, v) in buffer){
+            val buff = getUsername(k, site)
+
+            if(buff == null)
+                localCopy[k] = v
+            else
+                localCopy["$buff ($k)"] = v
+
+        }
+        val longFirst = localCopy.map { it.value to it.key }.associateBy ({it.first}, {it.second}).toSortedMap(compareBy{-it})
+
+        val reply = ReplyBuilder()
+        reply.discord = site.site.name == "discord"
+        reply.fixedInput().append("Message status").nl()
+        val maxLen = localCopy.getMaxLen()
+        val x = "Username:"
+        reply.fixedInput().append("$x${repeat(" ", maxLen - x.length + 2)}- Message count").nl()
+        for((count, who) in longFirst){
+            reply.fixedInput().append("$who${repeat(" ", maxLen - who.length + 2)}- $count").nl()
+        }
+
+        return BMessage(reply.toString(), false)
+    }
+
+    companion object {
+        var clear = false
+
+        val cleared = mutableListOf<String>()
+    }
+}
+
+
+fun <K, V> Map<K, V>.getMaxLen() : Int{
+    var current = 0
+    for (k in this){
+        if(k.toString().length > current)
+            current = k.toString().length
+    }
+    return current
 }
 
 class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){

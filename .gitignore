@@ -13,7 +13,6 @@ botStorage/
 .idea/tasks.xml
 .ipynb_checkpoints/
 __pycache__/
-dataset/
 logdir/
 model/
 private.ini
@@ -25,3 +24,4 @@ creds.properties
 memory.json
 .gradle/
 chatbot/.gradle/
+logs.txt

@@ -4,7 +4,7 @@ public class ReplyBuilder {
     public boolean discord = false;
     private boolean fixed;
 
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder;
     public ReplyBuilder() {
         builder = new StringBuilder();
     }
@@ -17,6 +17,12 @@ public class ReplyBuilder {
         builder = new StringBuilder();
         this.discord = discord;
     }
+
+    public ReplyBuilder(String initial, boolean discord){
+        builder = new StringBuilder(initial);
+        this.discord = discord;
+    }
+
     public ReplyBuilder fixedInput(){
         //For-loop as adding four spaces directly doesn't work for some reason
         if(!discord) {

@@ -1,16 +1,13 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.BotCore
-import io.github.lunarwatcher.chatbot.Constants.Ranks.ranks
+import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
-import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException.build
-import sun.java2d.pipe.AAShapePipe
-import kotlin.streams.toList
 
 @Suppress("NAME_SHADOWING")
 //TODO make this better kotlin
@@ -50,7 +47,7 @@ class BotConfig{
             this.homes.addAll(homes)
         }
         ranked?.forEach{
-            this.ranks.put(it.key, it.value)
+            this.ranks[it.key] = it.value
         }
     }
 
@@ -63,7 +60,7 @@ class BotConfig{
                 username = rank.username;
             }
         }
-        ranks.put(user, RankInfo(user, rank, username));
+        ranks[user] = RankInfo(user, rank, username);
     }
 
     fun getRank(user: Long) : RankInfo? = ranks[user];
@@ -71,34 +68,24 @@ class BotConfig{
 
 class RankInfo(val uid: Long, val rank: Int, var /*usernames can change*/username: String?/*Nullable because it isn't always this can be passed*/)
 
-val EXISTED: Int = 0;
-val ADDED: Int = 1;
-val HARDCODED = 2;
-val BANNED = 3;
-
-data class ARRequests(val code: Int);
-
 class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare", listOf(), "Changes a commands status. Only commands available on the site can be edited"){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input)){
-            return null;
-        }
+
 
         if(Utils.getRank(user.userID, center.site.config) < 7){
             return BMessage("I'm afraid I can't let you do that, User", true);
         }
         try {
             val args = input.split(" ");
-            val command = args[1];
+            val command = args[0];
 
-            var newState: String = args[2];
+            val newState: String = args[1];
             val actual: Boolean
-            if(newState == "sfw"){
-                actual = false;
-            }else if(newState == "nsfw"){
-                actual = true;
-            }else
-                actual = newState.toBoolean();
+            actual = when (newState) {
+                "sfw" -> false
+                "nsfw" -> true
+                else -> newState.toBoolean()
+            };
 
             if (center.isBuiltIn(command)) {
                 System.out.println(command);
@@ -127,6 +114,7 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
     }
 }
 
+@Suppress("UNCHECKED_CAST")
 class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
     override fun handleCommand(input: String, user: User): BMessage? {
         val sechats: List<SEChat> = CommandCenter.bot.chats.filter { it is SEChat } as List<SEChat>
@@ -164,9 +152,9 @@ class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
     }
 }
 
-class LocationCommand() : AbstractCommand("location", listOf(), help="Shows the current bot location"){
+class LocationCommand : AbstractCommand("location", listOf(), help="Shows the current bot location"){
     override fun handleCommand(input: String, user: User): BMessage? {
-        return BMessage(BotCore.LOCATION, true)
+        return BMessage("${Configurations.INSTANCE_LOCATION} (${BotCore.LOCATION})", true)
     }
 }
 

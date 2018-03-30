@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.jetty.util.Fields;
-import sun.util.resources.LocaleData;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -93,6 +90,10 @@ public class Database {
             return node.asInt();
         }else if(node.isLong()){
             return node.asLong();
+        }else if(node.isDouble()){
+            return node.asDouble();
+        }else if(node.isFloat()){
+            return node.floatValue();
         }else if(node.isBoolean()) {
             return node.asBoolean();
         }else if (node.isNull()) {
@@ -228,6 +229,7 @@ public class Database {
     public Map<String, Object> getMap(String key){
         return (Map<String, Object>) get(key);
     }
+
 
     public List<Object> getList(String key){
         return (List<Object>) get(key);

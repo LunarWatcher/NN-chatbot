@@ -1,41 +1,35 @@
 package io.github.lunarwatcher.chatbot.bot.command;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
 import io.github.lunarwatcher.chatbot.*;
 import io.github.lunarwatcher.chatbot.bot.Bot;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
-import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.commands.*;
 import io.github.lunarwatcher.chatbot.bot.listener.*;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
 import lombok.Getter;
-import lombok.NonNull;
 
-import javax.print.DocFlavor;
 import java.io.IOException;
 import java.util.*;
 
 import static io.github.lunarwatcher.chatbot.Constants.RELOCATION_VOTES;
-import java.util.Map.Entry;
-import java.util.function.Consumer;
 
 public class CommandCenter {
     public static String TRIGGER;
 
     @Getter
     public Map<CmdInfo, Command> commands;
+    public Map<CmdInfo, Command> sfCommands;
+
     public List<Listener> listeners;
     //List<Listener> listeners;
     public Chat site;
     public static TaughtCommands tc;
     public static Bot bot;
     public Database db;
-
+    private StatusListener statusListener;
     public CrashLogs crash;
 
     public CommandCenter(Properties botProps, boolean shrugAlt, Chat site) {
@@ -46,6 +40,11 @@ public class CommandCenter {
         this.site = site;
         TRIGGER = botProps.getProperty("bot.trigger");
         commands = new HashMap<>();
+        sfCommands = new HashMap<>();
+
+        LocationCommand location = new LocationCommand();
+        Alive alive = new Alive();
+
         addCommand(new HelpCommand(this));
         addCommand(new ShrugCommand(shrugAlt ? "¯\\\\_(ツ)_/¯" : "¯\\_(ツ)_/¯"));
         addCommand(new AboutCommand());
@@ -56,7 +55,7 @@ public class CommandCenter {
         addCommand(new BanUser(site));
         addCommand(new Unban(site));
         addCommand(new SaveCommand(site));
-        addCommand(new Alive());
+        addCommand(alive);
         addCommand(new WhoMade(this));
         addCommand(new ChangeCommandStatus(this));
         addCommand(new RandomNumber());
@@ -73,7 +72,7 @@ public class CommandCenter {
         addCommand(new TimeCommand());
         addCommand(new KillBot(site));
         addCommand(new NetStat(site));
-        addCommand(new LocationCommand());
+        addCommand(location);
         crash = new CrashLogs(site);
         addCommand(crash);
         addCommand(new StartServer(site));
@@ -85,10 +84,14 @@ public class CommandCenter {
         addCommand(new WhoIs(site));
         addCommand(new JSEval());
 
+        statusListener = new StatusListener(site, db);
+        addCommand(new StatusCommand(statusListener, site));
+
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
         listeners.add(new TestListener());
 
+        listeners.add(statusListener);
         /**
          * Pun not intended:
          */
@@ -168,6 +171,7 @@ public class CommandCenter {
         message = message.replaceAll(" +", " ");
         message = KUtilsKt.cleanInput(message);
 
+
         String om = message;
         List<BMessage> replies = new ArrayList<>();
         try {
@@ -244,7 +248,12 @@ public class CommandCenter {
         return get(cmdName) != null;
     }
 
-    public static void save(){
+    public void save(){
+
+        statusListener.save();
+    }
+
+    public static void saveTaught(){
         if(tc != null)
             tc.save();
     }
@@ -263,6 +272,7 @@ public class CommandCenter {
         return (Command) MapUtils.Companion.get(key, commands);
     }
 
+    @SuppressWarnings("ConstantConditions")
     public void hookupToRanks(long user, String username){
         if(site.getConfig().getRank(user) == null){
             //This code exists in an attempt to map every. Single. User. who uses the bot or even talk around it
@@ -270,8 +280,6 @@ public class CommandCenter {
             //for the database
             site.getConfig().addRank(user, Constants.DEFAULT_RANK, username);
         }else{
-            //Wrong inspection from IntelliJ here. There will not be any NPE's as the rank retrieved can't be null if it does into this
-            //statement
             if(site.getConfig().getRank(user).getUsername() == null
                     || !site.getConfig().getRank(user).getUsername().equals(username)){
                 site.getConfig().addRank(user, site.getConfig().getRank(user).getRank(), username);

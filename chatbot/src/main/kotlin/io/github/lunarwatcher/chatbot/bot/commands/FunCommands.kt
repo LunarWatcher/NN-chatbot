@@ -2,14 +2,12 @@ package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.cleanInput
-import io.github.lunarwatcher.chatbot.createInvocable
 import io.github.lunarwatcher.chatbot.utils.Utils
-import io.github.lunarwatcher.chatbot.utils.Utils.random
 import java.util.*
 import javax.script.ScriptEngineManager
 
-class RandomNumber() : AbstractCommand("random", listOf("dice"), "Generates a random number"){
+@Suppress("NAME_SHADOWING")
+class RandomNumber : AbstractCommand("random", listOf("dice"), "Generates a random number"){
     val random: Random = Random(System.currentTimeMillis());
 
     override fun handleCommand(input: String, user: User): BMessage? {
@@ -33,7 +31,7 @@ class RandomNumber() : AbstractCommand("random", listOf("dice"), "Generates a ra
 
     fun randomNumber(limit: Int, count: Int): String{
         val count = if(count > 500) 500 else count;
-        val builder: StringBuilder = StringBuilder()
+        val builder = StringBuilder()
         for(i in 0 until count){
             builder.append((if(i == count - 1) random.nextInt(limit) else random.nextInt(limit).toString() + ", "))
         }
@@ -42,21 +40,34 @@ class RandomNumber() : AbstractCommand("random", listOf("dice"), "Generates a ra
 }
 
 
-val GOOGLE_LINK = "https://www.google.com/search?q=";
+const val GOOGLE_LINK = "https://www.google.com/search?q=";
+const val DDG_LINK = "https://www.duckduckgo.com/?q=";
+
 class LMGTFY : AbstractCommand("lmgtfy", listOf("searchfor", "google"), "Sends a link to Google in chat"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
             return null;
         }
 
-        var query = removeName(input).replaceFirst(" ", "");
+        var query = removeName(input).trim()
         if(query.isEmpty())
             return BMessage("You have to supply a query", true);
+
+        if(input.contains("--ddg") || input.contains("--duckduckgo")){
+            query = query.replace("--ddg", "").replace("--duckduckgo", "").trim()
+            if(query.isEmpty())
+                return BMessage("You have to supply a query", true);
+
+            query = query.replace(" ", "+")
+            return BMessage("$DDG_LINK$query", false)
+        }
+
         query = query.replace(" ", "+")
 
-        return BMessage(GOOGLE_LINK + query, false)
+        return BMessage("$GOOGLE_LINK$query", false)
     }
 }
+
 
 class Kill(val chat: Chat) : AbstractCommand("kill", listOf("assassinate"), "They must be disposed of!"){
 
@@ -106,7 +117,7 @@ class Give(val chat: Chat) : AbstractCommand("give", listOf(), "Gives someone so
             return null;
         }
         val inp = splitCommand(input);
-        var split = inp["content"]?.split(" ", limit=2) ?: return BMessage("You have to tell me what to give and to who", false);
+        val split = inp["content"]?.split(" ", limit=2) ?: return BMessage("You have to tell me what to give and to who", false);
         if(split.size != 2)
             return BMessage("You have to tell me what to give and to who", true);
 
@@ -124,7 +135,7 @@ class Ping : AbstractCommand("ping", listOf("poke"), "Pokes someone"){
         val inp = splitCommand(input);
         var content = inp["content"]?.replace(" ", "") ?: return null;
         if(!content.startsWith("@"))
-            content = "@" + content;
+            content = "@$content";
         return BMessage("*pings $content*", false);
     }
 }
@@ -153,7 +164,7 @@ class JSEval : AbstractCommand("eval", listOf(), desc="Calls the ScriptEngineMan
         val content = splitCommand(input)["content"]?.trim() ?: return BMessage("You have to tell me what to evaluate", true)
         return try{
             BMessage(engine.eval(content)?.toString(), true)
-        }catch(e: Exception){
+        }catch(e: Throwable){
             e.printStackTrace()
             BMessage(e.toString(), true)
         }

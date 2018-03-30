@@ -2,7 +2,6 @@ package io.github.lunarwatcher.chatbot;
 
 import io.github.lunarwatcher.chatbot.bot.Bot;
 import io.github.lunarwatcher.chatbot.utils.Http;
-import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -31,14 +30,14 @@ public class BotCore {
     public static Process process;
     private static ServerThread serverThread;
     public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
+
         LOCATION = Long.toHexString(System.currentTimeMillis());
         try{
             CloseableHttpClient httpClient = HttpClients.createDefault();
             Http http = new Http(httpClient);
-            Response response = http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello");
+            http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello");
             http.close();
             httpClient.close();
-
         }catch(HttpHostConnectException e){
             System.out.println("Neural network Flask server not started.");
             if(Constants.START_FLASK_IF_OFFLINE) {
@@ -59,7 +58,7 @@ public class BotCore {
         Configurations.GITHUB = botProps.getProperty("about.github");
         Configurations.REVISION = botProps.getProperty("about.revision");
         Configurations.CREATOR_GITHUB = botProps.getProperty("about.creatorGithub");
-
+        Configurations.INSTANCE_LOCATION = botProps.getProperty("about.instanceLocation");
         Properties credentials = new Properties();
         InputStream creds = new FileInputStream(new File("creds.properties"));
         credentials.load(creds);

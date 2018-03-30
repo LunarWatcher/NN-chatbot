@@ -65,7 +65,7 @@ abstract class AbstractListener(override val name: String, override val descript
                 val g1 = matcher.group(1)
                 val g2 = matcher.group(2);
 
-                retval.put(g1.substring(1, g1.length), g2.substring(1, g2.length))
+                retval[g1.substring(1, g1.length)] = g2.substring(1, g2.length)
             }
         }
 
@@ -73,25 +73,3 @@ abstract class AbstractListener(override val name: String, override val descript
     }
 }
 
-class WaveListener : AbstractListener("wave", "Waves back when a wave is detected"){
-    val pause = 30000;
-    var lastWave: Long = 0;
-    override fun handleInput(input: String, user: User): BMessage? {
-        //using isCommand is optional in listeners, but some listeners want to ignore it if it is a command
-        if(isCommand(input))
-            return null;
-        if(System.currentTimeMillis() - lastWave >= pause) {
-
-            if (input == "o/") {
-                lastWave = System.currentTimeMillis();
-                return BMessage("\\o", false);
-            }else if (input == "\\o") {
-                lastWave = System.currentTimeMillis();
-                return BMessage("o/", false)
-            }
-
-        }
-
-        return null;
-    }
-}

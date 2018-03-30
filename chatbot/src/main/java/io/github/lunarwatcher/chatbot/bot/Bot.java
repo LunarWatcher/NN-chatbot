@@ -7,19 +7,16 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
-import io.github.lunarwatcher.chatbot.utils.Utils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
-import static io.github.lunarwatcher.chatbot.utils.Utils.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
-import static org.tritonus.share.TDebug.assertion;
 
 public class Bot {
     Database database;
@@ -27,10 +24,12 @@ public class Bot {
     List<Site> sites;
     List<Chat> chats = new ArrayList<>();
 
-    public Bot(Database db, Properties botProps, List<Site> sites){
+
+    public Bot(Database db, Properties botProps, List<Site> sites) {
         this.database = db;
         this.botProps = botProps;
         this.sites = sites;
+
         CommandCenter.bot = this;
     }
 
@@ -57,13 +56,14 @@ public class Bot {
                 ((SEChat) s).leaveAll();
             }
         }
+
     }
 
     public void save(){
         for(Chat s : chats){
             s.save();
         }
-        CommandCenter.save();
+        CommandCenter.saveTaught();
         database.commit();
     }
 

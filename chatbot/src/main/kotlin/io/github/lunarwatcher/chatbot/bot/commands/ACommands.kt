@@ -50,9 +50,8 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
         }
 
         val raw = input.split(" ");
-        var iRoom: Int;
-        try {
-            iRoom = if (raw.size == 1)
+        val iRoom = try {
+            if (raw.size == 1)
                 user.roomID
             else
                 raw[1].toInt()
@@ -94,11 +93,11 @@ class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "
             //final command match assertion check
             return null;
         }
-        val type = input.replace(name + " ", "");
+        val type = input.replace("$name ", "");
         val split = input.split(" ")
         if(split.size < 3)
             return BMessage("Missing parameters. Found " + split.size + ", expected 3", true);
-        var updatingUser: Long
+        val updatingUser: Long
 
         val newRank: Int
         updatingUser = try {
@@ -151,7 +150,7 @@ class BanUser(val site: Chat) : AbstractCommand("ban", listOf(), "Bans a user fr
         if(!matchesCommand(input))
             return null;
 
-        val type = input.replace(name + " ", "");
+        val type = input.replace("$name ", "");
         if(type == input)
             return BMessage("Specify a user to ban -_-", true);
 
@@ -197,7 +196,7 @@ class Unban(val site: Chat) : AbstractCommand("unban", listOf(), "Unbans a banne
         if(!matchesCommand(input))
             return null;
 
-        val type = input.replace(name + " ", "");
+        val type = input.replace("$name ", "");
         if(type == input)
             return BMessage("Specify a user to unban -_-", true);
 
@@ -338,5 +337,15 @@ fun getRankOrMessage(type: String, site: Chat): Any{
         0-> BMessage("You have to supply a valid user ID/indexed username", true);
         1-> list[0]
         else-> BMessage("Ambiguous username. Found ${list.size} users with that username. Please specify with the user ID. (found: ${list.joinToString(",")})", true)
+    }
+}
+
+fun getUsername(type: String, site: Chat): String?{
+    if(type.toLongOrNull() == null)
+        return null
+    val list = site.config.ranks.entries.filter{(_, v) -> v.uid == type.toLong()}.map {(_, v) -> v.username}
+    return when(list.size){
+        0-> null
+        else-> list[0]
     }
 }

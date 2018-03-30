@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.lunarwatcher.chatbot
 
 import java.io.Reader

@@ -248,9 +248,7 @@ public class SEChat implements Chat {
                     return true;
                 }
             }
-        }catch(Exception e){
-
-        }
+        }catch(Exception ignored){}
         return false;
     }
 
@@ -263,7 +261,7 @@ public class SEChat implements Chat {
 
             db.put(getName() + "-rooms", rooms);
         }
-
+        commands.save();
         Utils.saveConfig(config, db);
 
         db.commit();
@@ -365,9 +363,8 @@ public class SEChat implements Chat {
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             commands.crash.crash(e);
-
         }
     }
 

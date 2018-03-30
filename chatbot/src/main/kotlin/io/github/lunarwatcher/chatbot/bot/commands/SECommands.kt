@@ -19,17 +19,17 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
 
         try{
             val raw = input.split(" ")[1];
-            var iRoom: Int = raw.toInt();
+            val iRoom: Int = raw.toInt();
 
 
             chat.rooms.filter { it.id == iRoom }
                     .forEach { return BMessage("I'm already in that room", true) }
 
-            var users: MutableList<Long>? = vts.get(iRoom);
+            var users: MutableList<Long>? = vts[iRoom];
 
             if(users == null){
-                vts.put(iRoom, mutableListOf(user.userID))
-                users = vts.get(iRoom);
+                vts[iRoom] = mutableListOf(user.userID)
+                users = vts[iRoom];
 
             }else{
 
@@ -39,22 +39,22 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
                     }
                 }
                 users.add(user.userID);
-                vts.put(iRoom,users);
+                vts[iRoom] = users;
             }
 
-            if(users!!.size >= votes){
-                var message: SEChat.BMWrapper = chat.joinRoom(iRoom);
+            return if(users!!.size >= votes){
+                val message: SEChat.BMWrapper = chat.joinRoom(iRoom);
                 vts.remove(iRoom);
 
                 if(!message.exception) {
-                    return message;
+                    message;
                 }else{
 
-                    return BMessage(Utils.getRandomJoinMessage(), true)
+                    BMessage(Utils.getRandomJoinMessage(), true)
                 }
 
             }else{
-                return BMessage((votes - users.size).toString() + " more " + (if(votes - users.size == 1 ) "vote" else "votes") + " required", true);
+                BMessage((votes - users.size).toString() + " more " + (if(votes - users.size == 1 ) "vote" else "votes") + " required", true);
             }
 
         }catch (e: IndexOutOfBoundsException){
@@ -96,11 +96,11 @@ class UnSummon(val votes: Int, val chat: SEChat) : AbstractCommand("unsummon", l
                 return BMessage(Utils.getRandomHRMessage(), true);
             }
 
-            var users: MutableList<Long>? = vts.get(iRoom);
+            var users: MutableList<Long>? = vts[iRoom];
 
             if(users == null){
-                vts.put(iRoom, mutableListOf(user.userID))
-                users = vts.get(iRoom);
+                vts[iRoom] = mutableListOf(user.userID)
+                users = vts[iRoom];
 
             }else{
 
@@ -110,21 +110,21 @@ class UnSummon(val votes: Int, val chat: SEChat) : AbstractCommand("unsummon", l
                     }
                 }
                 users.add(user.userID);
-                vts.put(iRoom,users);
+                vts[iRoom] = users;
             }
 
-            if(users!!.size >= votes){
+            return if(users!!.size >= votes){
                 val succeeded = chat.leaveRoom(iRoom);
 
                 vts.remove(iRoom);
                 if(!succeeded){
-                    return BMessage("Something happened when trying to leave", true);
+                    BMessage("Something happened when trying to leave", true);
                 }else{
-                    return BMessage(Utils.getRandomLeaveMessage(), true)
+                    BMessage(Utils.getRandomLeaveMessage(), true)
                 }
 
             }else{
-                return BMessage((votes - users.size).toString() + " more " + (if(votes - users.size == 1 ) "vote" else "votes") + " required", true);
+                BMessage((votes - users.size).toString() + " more " + (if(votes - users.size == 1 ) "vote" else "votes") + " required", true);
             }
 
         }catch (e: IndexOutOfBoundsException){

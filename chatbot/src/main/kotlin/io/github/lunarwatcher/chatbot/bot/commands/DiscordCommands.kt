@@ -3,7 +3,6 @@ package io.github.lunarwatcher.chatbot.bot.commands
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
-import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 class NSFWState(val chat: DiscordChat) : AbstractCommand("nsfwtoggle", listOf(),
@@ -16,7 +15,6 @@ class NSFWState(val chat: DiscordChat) : AbstractCommand("nsfwtoggle", listOf(),
         }
 
         val arg = splitCommand(input);
-        System.out.println("New requested NSFW state: " + arg);
 
         if(Utils.getRank(user.userID, chat.config) < 7){
             return BMessage("You have to be rank 7 or higher to do that", true);

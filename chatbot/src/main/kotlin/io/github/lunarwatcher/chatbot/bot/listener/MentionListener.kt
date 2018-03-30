@@ -73,7 +73,8 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
      */
     fun isMentioned(input: String) : Boolean{
         return when(site.name){
-            "discord" -> input.toLowerCase().contains("<@!" + site.site.config.userID + ">".toLowerCase());
+            "discord" -> input.toLowerCase().startsWith("<@" + site.site.config.userID + ">".toLowerCase())
+                    || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
             "stackexchange" -> containsUsername(input);
             "stackoverflow" -> containsUsername(input);
             "metastackexchange" -> containsUsername(input);
@@ -86,10 +87,11 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
 
     fun isMentionedStart(input: String) : Boolean{
         return when(site.name){
-            "discord" -> input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
-            "stackexchange" -> containsUsername(input.split(" ")[0]);
-            "stackoverflow" -> containsUsername(input.split(" ")[0]);
-            "metastackexchange" -> containsUsername(input.split(" ")[0]);
+            "discord" -> input.toLowerCase().startsWith("<@" + site.site.config.userID + ">".toLowerCase())
+                    || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
+            "stackexchange" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
+            "stackoverflow" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
+            "metastackexchange" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
             else ->{
                 println("Else");
                 input.contains("@" + site.site.config.username)
@@ -98,7 +100,9 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
     }
 
 
-    fun containsUsername(input: String) : Boolean = (site.site.config.username.length downTo 3).any { input.toLowerCase().contains(("@" + site.site.config.username.substring(0, it).toLowerCase())) };
+    fun containsUsername(input: String) : Boolean = (site.site.config.username.length downTo 3).any {
+        input.toLowerCase().contains("${("@" + site.site.config.username.substring(0, it).toLowerCase())}\\b".toRegex())
+    };
 
     fun ignoreNext(){
         ignoreNext = true;

@@ -1,5 +1,7 @@
 package io.github.lunarwatcher.chatbot;
 
+import com.sun.xml.internal.bind.v2.TODO;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -140,8 +142,15 @@ public final class Constants {
             ranks = new HashMap<>();
             ranks.put(0, "Banned");
             ranks.put(1, "User");
-            //TODO be creative here later
-            ranks.put(10, "Owner");
+            ranks.put(2, "2");//TODO
+            ranks.put(3, "3");
+            ranks.put(4, "4");
+            ranks.put(5, "5");
+            ranks.put(6, "6");
+            ranks.put(7, "Trusted");
+            ranks.put(8, "High-ranked user");
+            ranks.put(9, "General");
+            ranks.put(10, "Fur-real owner");
         }
 
         public static String getRank(int level){

@@ -44,7 +44,6 @@ public class DiscordChat implements Chat{
      * rate keeping this in memory and not saved in the database is the best way for getting updates for usernames.
      */
     List<Long> checkedUsers = new ArrayList<>();
-
     public DiscordChat(Site site, Properties botProps, Database db) throws IOException {
         this.site = site;
         this.db = db;
@@ -91,7 +90,7 @@ public class DiscordChat implements Chat{
             data.put(entry.getKey().toString(), entry.getValue());
             sites.add(data);
         }
-
+        commands.save();
         db.put("sfw", sites);
 
     }
