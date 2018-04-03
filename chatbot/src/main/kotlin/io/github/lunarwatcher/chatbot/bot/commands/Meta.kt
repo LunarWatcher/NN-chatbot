@@ -2,6 +2,8 @@ package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.BotCore
 import io.github.lunarwatcher.chatbot.Configurations
+import io.github.lunarwatcher.chatbot.Constants
+import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
@@ -10,7 +12,6 @@ import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 @Suppress("NAME_SHADOWING")
-//TODO make this better kotlin
 class BotConfig{
     val site: Chat;
     val ranks: MutableMap<Long, RankInfo>;
@@ -55,7 +56,7 @@ class BotConfig{
         var username = username
 
         if(username == null){
-            val rank = ranks.get(user);
+            val rank = ranks[user];
             if(rank?.username != null){
                 username = rank.username;
             }
@@ -138,11 +139,11 @@ class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
 
         val res = StringBuilder()
         res.append("[")
-        so.forEachIndexed{ k,v-> res.append("$v" + if(k == so.size - 2) " and " else if (k < so.size - 2) ", " else "] on SO, ") }
+        so.forEachIndexed{ k,v-> res.append("$v" + if(k == so.size - 2) ", and " else if (k < so.size - 2) ", " else "] on SO, ") }
         res.append("[")
-        se.forEachIndexed{ k,v-> res.append("$v" + if(k == se.size - 2) " and " else if (k < se.size - 2) ", " else "] on SE, and ") }
+        se.forEachIndexed{ k,v-> res.append("$v" + if(k == se.size - 2) ", and " else if (k < se.size - 2) ", " else "] on SE, and ") }
         res.append("[")
-        mse.forEachIndexed{ k,v-> res.append("$v" + if(k == mse.size - 2) " and " else if (k < mse.size - 2) ", " else "] on MSE") }
+        mse.forEachIndexed{ k,v-> res.append("$v" + if(k == mse.size - 2) ", and " else if (k < mse.size - 2) ", " else "] on MSE") }
 
         return BMessage(
                     ReplyBuilder(false)
@@ -155,6 +156,109 @@ class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
 class LocationCommand : AbstractCommand("location", listOf(), help="Shows the current bot location"){
     override fun handleCommand(input: String, user: User): BMessage? {
         return BMessage("${Configurations.INSTANCE_LOCATION} (${BotCore.LOCATION})", true)
+    }
+}
+
+
+class CentralBlacklistStorage private constructor(var database: Database){
+    var list: MutableMap<String, MutableList<Int>>
+    init{
+        println("Creating new Central Blacklist Storage")
+        val existing = database.getMap("blacklisted-rooms")
+        list = mutableMapOf()
+        if(existing != null) {
+            for ((site, roomList) in existing) {
+                if (roomList is List<*>) {
+
+                    @Suppress("UNCHECKED_CAST")
+                    list[site] = (roomList.map { it.toString().toIntOrNull() }.filter { it != null } as List<Int>).toMutableList()
+                }
+            }
+        }
+    }
+
+    fun blacklist(where: String, which: Int) : Boolean{
+        if(!list.containsKey(where))
+            list[where] = mutableListOf()
+        if(list[where]!!.contains(which))
+            return false
+        list[where]!!.add(which)
+        println(list)
+        return true
+    }
+
+    fun unblacklist(where: String, which: Int) : Boolean{
+        if(!list.containsKey(where)) {
+            list[where] = mutableListOf()
+            return false
+        }
+        if(!list[where]!!.contains(which))
+            return false
+        list[where]!!.remove(which)
+        return true
+    }
+
+    fun save(){
+        database.put("blacklisted-rooms", list)
+    }
+
+    fun isBlacklisted(where: String, which: Int) : Boolean{
+        if(!list.keys.contains(where))
+            list[where] = mutableListOf()
+        return list[where]!!.contains(which)
+    }
+
+    companion object {
+        private var instance: CentralBlacklistStorage? = null
+
+        fun getInstance(database: Database) : CentralBlacklistStorage{
+            return if(instance == null){
+                instance = CentralBlacklistStorage(database);
+                instance as CentralBlacklistStorage
+            }else{
+                instance as CentralBlacklistStorage
+            }
+        }
+
+        fun save(){
+            instance?.save();
+        }
+    }
+}
+
+class BlacklistRoom(val site: Chat) : AbstractCommand("ban-room", listOf(), "Blacklists a room"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me which room", true);
+        val where = site.site.name
+        val which = content.toIntOrNull() ?: return BMessage("You have to tell me which room to blacklist", true)
+        val rank = Utils.getRank(user.userID, site.config)
+
+        if(rank < 8)
+            return BMessage("You need rank ${Constants.Ranks.getRank(rank)} (numeric: $rank) or higher to use this feature", true)
+
+        val result = CentralBlacklistStorage.getInstance(site.database).blacklist(where, which)
+        if(!result)
+            return BMessage("Room already blacklisted", true)
+        site.leaveServer(which);
+        return BMessage("Room blacklisted", true);
+    }
+}
+
+class UnblacklistRoom(val site: Chat) : AbstractCommand("unban-room", listOf(), "Removes the blacklisting of a room."){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me which room", true);
+        val where = site.site.name
+        val which = content.toIntOrNull() ?: return BMessage("You have to tell me which room to unblock", true)
+        val rank = Utils.getRank(user.userID, site.config)
+
+        if(rank < 8)
+            return BMessage("You need rank ${Constants.Ranks.getRank(rank)} (numeric: $rank) or higher to use this feature", true)
+
+        val result = CentralBlacklistStorage.getInstance(site.database).unblacklist(where, which)
+        if(!result)
+            return BMessage("The room isn't blacklisted", true)
+
+        return BMessage("Room unblocked", true);
     }
 }
 

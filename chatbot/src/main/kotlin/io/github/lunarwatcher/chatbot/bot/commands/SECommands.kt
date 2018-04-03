@@ -1,6 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
@@ -12,6 +13,7 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
         if(!matchesCommand(input)){
             return null;
         }
+
         var votes = this.votes;
 
         if(Utils.isAdmin(user.userID, chat.config))
@@ -21,6 +23,23 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
             val raw = input.split(" ")[1];
             val iRoom: Int = raw.toInt();
 
+            if(CentralBlacklistStorage.getInstance(chat.database).isBlacklisted(chat.site.name, iRoom))
+                return BMessage("Not gonna happen.", true);
+
+            try {
+
+                val response = chat.http.get("${chat.site.url}/rooms/$iRoom")
+                if (response.statusCode == 404)
+                    throw RoomNotFoundException("Room not found")
+                if (!response.body.contains("<textarea id=\"input\">")) {
+                    throw RoomNotFoundException("No write access in the room")
+                }
+            } catch (e: RoomNotFoundException) {
+                return BMessage("An exception occured while checking the validity of the room: " + (e.message ?: "No message"), true);
+            } catch (e: Exception) {
+                chat.commands.crash.crash(e)
+                return BMessage("An exception occured when trying to check the validity of the room", true)
+            }
 
             chat.rooms.filter { it.id == iRoom }
                     .forEach { return BMessage("I'm already in that room", true) }
@@ -43,15 +62,10 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
             }
 
             return if(users!!.size >= votes){
-                val message: SEChat.BMWrapper = chat.joinRoom(iRoom);
+                val message= chat.joinRoom(iRoom);
                 vts.remove(iRoom);
 
-                if(!message.exception) {
-                    message;
-                }else{
-
-                    BMessage(Utils.getRandomJoinMessage(), true)
-                }
+                message
 
             }else{
                 BMessage((votes - users.size).toString() + " more " + (if(votes - users.size == 1 ) "vote" else "votes") + " required", true);
@@ -62,6 +76,7 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
         }catch(e: ClassCastException){
             return BMessage("That's not a valid room ID", true);
         }catch(e: Exception){
+            chat.commands.crash.crash(e);
             return BMessage("Something bad happened :/", true);
         }
     }

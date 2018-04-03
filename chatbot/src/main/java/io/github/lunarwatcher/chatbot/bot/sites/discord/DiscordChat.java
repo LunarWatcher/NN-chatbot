@@ -11,6 +11,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.Getter;
+import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -18,6 +19,7 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEditEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IGuild;
 
 import java.io.IOException;
 import java.util.*;
@@ -39,11 +41,6 @@ public class DiscordChat implements Chat{
     public List<Long> hardcodedAdmins = new ArrayList<>();
     List<Long> notifiedBanned = new ArrayList<>();
     Map<Long, Boolean> nsfw = new HashMap<>();
-    /**
-     * Not stored in memory as it is a good idea to check for updates every once in a while, and with a given bot reboot
-     * rate keeping this in memory and not saved in the database is the best way for getting updates for usernames.
-     */
-    List<Long> checkedUsers = new ArrayList<>();
     public DiscordChat(Site site, Properties botProps, Database db) throws IOException {
         this.site = site;
         this.db = db;
@@ -69,6 +66,7 @@ public class DiscordChat implements Chat{
         List<Object> sfw = db.getList("sfw");
         if(sfw != null) {
             for (Object o : sfw) {
+                @SuppressWarnings("unchecked")
                 Map<String, Boolean> entry = (Map<String, Boolean>) o;
                 for (Map.Entry<String, Boolean> e : entry.entrySet()) {
                     long guildID = Long.parseLong(e.getKey());
@@ -95,6 +93,7 @@ public class DiscordChat implements Chat{
 
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
     public void logIn() throws IOException {
         client = new ClientBuilder()
@@ -106,6 +105,7 @@ public class DiscordChat implements Chat{
 
     }
 
+    @SuppressWarnings("unused")
     @EventSubscriber
     public void onMessageEdited(MessageEditEvent event){
         MessageReceivedEvent rEvent = new MessageReceivedEvent(event.getMessage());
@@ -115,10 +115,9 @@ public class DiscordChat implements Chat{
     @EventSubscriber
     public void onMessageReceived(MessageReceivedEvent event){
         try {
-            if (!checkedUsers.contains(event.getAuthor().getLongID())) {
-                checkedUsers.add(event.getAuthor().getLongID());
-                commands.hookupToRanks(event.getAuthor().getLongID(), event.getAuthor().getName());
-            }
+
+            commands.hookupToRanks(event.getAuthor().getLongID(), event.getAuthor().getName());
+
             String msg = event.getMessage().getContent();
 
             if (Utils.isBanned(event.getAuthor().getLongID(), config)) {
@@ -173,26 +172,37 @@ public class DiscordChat implements Chat{
                     for (BMessage r : replies) {
                         List<String> items = new ArrayList<>();
                         if (r.content.length() > 2000) {
+                            boolean fixedFont = r.content.startsWith("```");
+
                             int i = 0;
                             int total = r.content.length();
                             while (i < total) {
+
                                 int remaining = total - i;
                                 int sub = 0;
                                 if (remaining >= 2000) {
                                     sub = 2000;
+                                    if(fixedFont)
+                                        sub -= 3;
+                                    if(!r.content.substring(i, i + sub).startsWith("```") && fixedFont)
+                                        sub -= 3;
                                 } else {
                                     sub = remaining;
                                 }
-                                items.add(r.content.substring(i, i + sub));
+                                String subbed = r.content.substring(i, i + sub);
+                                if(!subbed.startsWith("```") &&fixedFont)
+                                    subbed = "```" + subbed;
+                                if(fixedFont)
+                                    subbed += "```";
+                                items.add(subbed);
                                 i += sub;
                             }
 
-                            for (int x = 0; x < (items.size() > 5 ? 5 : items.size()); x++) {
-                                event.getChannel().sendMessage(items.get(x));
+                            for (String item : items) {
+                                event.getChannel().sendMessage(item);
                                 try {
-                                    Thread.sleep(100);
-                                } catch (InterruptedException e) {
-
+                                    Thread.sleep(150);
+                                } catch (InterruptedException ignored) {
                                 }
                             }
 
@@ -204,8 +214,6 @@ public class DiscordChat implements Chat{
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
 
         }catch(Exception e){
             e.printStackTrace();
@@ -225,7 +233,7 @@ public class DiscordChat implements Chat{
         if(client != null){
             try {
                 return client.getUserByID(uid).getName();
-            }catch(Exception e){}//Ignore
+            }catch(Exception ignored){}
         }
         return Long.toString(uid);
     }
@@ -284,6 +292,12 @@ public class DiscordChat implements Chat{
 
     public CommandCenter getCommands(){
         return commands;
+    }
+
+    @Override
+    public void leaveServer(int id){
+        val server = channels.get(id).getGuild().getLongID();
+        client.getGuildByID(server).leave();
     }
 
 }

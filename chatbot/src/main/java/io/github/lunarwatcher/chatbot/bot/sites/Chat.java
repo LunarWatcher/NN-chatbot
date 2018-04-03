@@ -31,4 +31,5 @@ public interface Chat {
      * @return The username, or a stringified form of the UID if not found.
      */
     String getUsername(long uid);
+    void leaveServer(int serverId);
 }

@@ -4,20 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
+import io.github.lunarwatcher.chatbot.bot.exceptions.NoAccessException;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
+import javax.websocket.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +24,21 @@ public class SERoom implements Closeable {
     private SEChat parent;
     @Getter
     Session session;
-    @Getter
-    private String fkey;
-    private List<String> failedSends = new ArrayList<>();
 
+    private String fkey;
+    private Long lastMessage;
+    boolean disconnected = false;
+    private boolean intended = false;
+    private int kickCount = 0;
+    private boolean breakRejoin = false;
     public SERoom(int id, SEChat parent) throws Exception {
         this.id = id;
         this.parent = parent;
 
+        createSession();
+    }
+
+    public void createSession() throws Exception{
         Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
         if(connect.getStatusCode() == 404){
             parent.leaveRoom(id);
@@ -42,9 +46,10 @@ public class SERoom implements Closeable {
         }
 
         if(!connect.getBody().contains("<textarea id=\"input\">")){
-            throw new RoomNotFoundException("No write access in the room!");
+            throw new NoAccessException("No write access in the room!");
         }
         fkey = Utils.parseHtml(connect.getBody());
+
 
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .configurator(new ClientEndpointConfig.Configurator() {
@@ -53,22 +58,80 @@ public class SERoom implements Closeable {
                         headers.put("Origin", Arrays.asList(parent.getSite().getUrl()));
                     }
                 }).build();
+
+
         session = parent.getWebSocket().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig config) {
-                session.addMessageHandler(String.class, SERoom.this::receiveMessage);
-            }
+                disconnected = false;
+                intended = false;
 
+                session.addMessageHandler(String.class, SERoom.this::receiveMessage);
+
+            }
+            public void onClose(Session session, CloseReason closeReason) {
+                System.out.println("Connection closed: " + closeReason);
+                disconnected = true;
+                if(!intended)
+                    respawn();
+
+            }
             @Override
             public void onError(Session session, Throwable error){
-                try{
-                    throw new Exception(error);
-                }catch(Exception e){
-                    parent.commands.crash.crash(e);
-                    e.printStackTrace();
-                }
+                System.out.println("Connection closed (src: " + id + " @" + parent.site.getName() + ": Error. " + error.getMessage());
+                error.printStackTrace();
+                parent.commands.crash.crash(new Exception(error));
+                disconnected = true;
+                intended = false;
+                respawn();
             }
+
         }, config, new URI(getWSURL()));
+    }
+
+    private int attempts = 0;
+    public void respawn(){
+        System.out.println("Attempting to respawn");
+        try{
+            Thread.sleep(100);
+            createSession();
+            System.out.println("SUCCESS!!!");
+        }catch(NoAccessException | IOException e){
+            persistentRespawn();
+        } catch (Exception e){
+            e.printStackTrace();
+            //Other problem that isn't just disconnecting. The room doesn't exist, etc. Don't reconnect.
+            //Remove from the list of rooms in the parent
+            parent.getRooms().removeIf(it -> it.id == id);
+        }
+    }
+
+    private void persistentRespawn(){
+        attempts++;
+        while(true) {
+            try {
+                Thread.sleep((long)(10000f * (attempts <= 0 ? 1 : attempts >= 6 ? 6 : attempts == 1 ? 0.5f : attempts)));//The ternary ihere is to avoid problems with thread access
+            } catch (InterruptedException ignore) {
+            }
+
+            if(breakRejoin)
+                break;
+            try {
+                respawnUnsafe();
+            }catch(NoAccessException e){
+                continue;
+            }catch(RoomNotFoundException e){
+                System.out.println("Room not found. Stopping.");
+                break;
+            } catch(Exception ex){
+                continue;
+            }
+            break;
+        }
+    }
+
+    public void respawnUnsafe() throws Exception{
+        createSession();
     }
 
     public String getWSURL() throws IOException{
@@ -89,6 +152,7 @@ public class SERoom implements Closeable {
 
     public void receiveMessage(String input){
         try {
+
             ObjectMapper mapper = new ObjectMapper();
             JsonNode actualObj = mapper.readTree(input).get("r" + id);
 
@@ -99,15 +163,22 @@ public class SERoom implements Closeable {
             if(actualObj == null)
                 return;
 
-            for(JsonNode event : actualObj){
+            for(JsonNode event : actualObj) {
+                try{
+                    long time = event.get("time_stamp").asLong();
+                    if(time > lastMessage)
+                        lastMessage = time;
+                }catch(Exception ignored){
+
+                }
                 JsonNode et = event.get("event_type");
-                if(et == null)
+                if (et == null)
                     continue;
 
                 int eventCode = et.asInt();
 
 
-                if(eventCode == 1 || eventCode == 2){
+                if (eventCode == 1 || eventCode == 2) {
                     String content = event.get("content").toString();
                     content = removeQuotation(content);
                     content = correctBackslash(content);
@@ -123,39 +194,62 @@ public class SERoom implements Closeable {
                     Message message = new Message(content, messageID, id, username, userid);
 
                     parent.newMessages.add(message);
-                }else if(eventCode == 3 || eventCode == 4){
+                } else if (eventCode == 3 || eventCode == 4) {
                     int userid = event.get("user_id").asInt();
                     String username = event.get("user_name").toString();
                     username = removeQuotation(username);
 
                     UserAction action = new UserAction(eventCode, userid, username, id);
                     parent.actions.add(action);
-                }else if(eventCode == 6){
+                } else if (eventCode == 6) {
                     long messageID = event.get("message_id").asLong();
                     int stars = event.get("message_stars").asInt();
 
                     StarMessage message = new StarMessage(messageID, id, stars);
                     parent.starredMessages.add(message);
+                }else if(eventCode == 8){
+                    try {
+                        if (!parent.mentionIds.contains(event.get("message_id").asInt())) {
+                            parent.mentionIds.add(event.get("message_id").asInt());
+                        }
+                    }catch(Exception e){
+                        parent.commands.crash.crash(e);
+                    }
                 }else if(eventCode == 10){
                     //The message was deleted. Ignore it
 
                 }else if(eventCode == 15){
-                    close();
-                    parent.getRooms().remove(this);
+                    if(event.get("target_user_id").intValue() != parent.site.getConfig().getUserID())
+                        return;
+
+                    System.out.println(event.get("content"));
+                    System.out.println(event);
+                    if(event.get("content").textValue().matches("((?i)priv \\d+ created)")){
+                        System.out.println("Kicked");
+                        kickCount++;
+                        if(kickCount == 2){
+                            breakRejoin = true;
+                            close();
+                        }
+
+                    }else if(event.get("content").textValue().matches("((?i)access now [a-zA-Z]+)")){
+                        System.out.println(event.get("content").textValue());
+                    }
                 }else{
                     //These are printed using the error stream to make sure they are easy to spot. These are critical
                     //to find more events in the SE network
                     System.err.println("Unknown event:");
                     System.err.println(event.toString());
                 }
+
                 // Event reference sheet:,
                 //1: message
                 //2: edited
                 //3: join
                 //4: leave
-                //5:
+                //5: room name changed
                 //6: star
-                //7:
+                //7: Debug message (?)
                 //8: ping - if called, ensure that the content does not contain a ping to the bot name if 1 is called
                 //        - WARNING: Using event 8 will trigger in every single active room.
                 //9:
@@ -164,11 +258,12 @@ public class SERoom implements Closeable {
                 //12:
                 //13:
                 //14:
-                //15: kicked
+                //15: Access level changed (kicks, RO added, read/write status changed, etc)
                 //16:
                 //17: Invite
-                //18:
-                //19: Moved
+                //18: reply
+                //19: message moved out
+                //20: message moved in
 
                 //34: Username/profile picture changed
 
@@ -176,8 +271,6 @@ public class SERoom implements Closeable {
 
         }catch(IOException e){
             e.printStackTrace();
-        }finally {
-            parent.handleNewMessage();
         }
     }
 
@@ -190,7 +283,6 @@ public class SERoom implements Closeable {
                 "text", message,
                 "fkey", fkey
         );
-        //@formatter:on
 
         if (response.getStatusCode() == 404) {
 				/*
@@ -234,6 +326,7 @@ public class SERoom implements Closeable {
 
     @Override
     public void close() throws IOException {
+        intended = true;
         parent.getHttp().post(SEEvents.leaveRoom(parent.getSite().getUrl(), id),
                 "fkey", fkey);
         session.close();
@@ -253,16 +346,6 @@ public class SERoom implements Closeable {
         public int stars;
 
     }
-
-    public boolean isPinged(String message, String username){
-        for(int i = 3; i < username.length(); i++){
-            if(message.toLowerCase().contains(("@" + username.substring(0, i)).toLowerCase())){
-                return true;
-            }
-        }
-        return false;
-    }
-
     public int getId(){
         return id;
     }
@@ -273,5 +356,17 @@ public class SERoom implements Closeable {
 
     public SEChat getParent(){
         return parent;
+    }
+
+    public String getFKey(){
+        return fkey;
+    }
+
+    public boolean getDisconnected(){
+        return disconnected;
+    }
+
+    public boolean getIntended(){
+        return intended;
     }
 }

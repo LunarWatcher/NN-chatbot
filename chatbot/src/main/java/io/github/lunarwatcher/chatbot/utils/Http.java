@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.Consts;
+import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -11,6 +12,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
@@ -28,6 +30,7 @@ public class Http implements Closeable {
 
     public Http(CloseableHttpClient client) {
         this.client = client;
+
     }
 
     public Response get(String uri) throws IOException {
@@ -55,6 +58,33 @@ public class Http implements Closeable {
 
         HttpPost request = new HttpPost(uri);
 
+        if (parameters.length > 0) {
+            List<NameValuePair> params = new ArrayList<>(parameters.length / 2);
+            for (int i = 0; i < parameters.length; i += 2) {
+                params.add(new BasicNameValuePair(parameters[i].toString(), parameters[i + 1].toString()));
+            }
+            request.setEntity(new UrlEncodedFormEntity(params, Consts.UTF_8));
+        }
+
+        return send(request);
+    }
+
+    public Response post(String uri, String[] headers, Object... parameters) throws IOException {
+        if (parameters.length % 2 != 0) {
+            throw new IllegalArgumentException("\"parameters\" vararg must have an even number of values.");
+        }
+        if (headers.length % 2 != 0) {
+            throw new IllegalArgumentException("\"headers\" array must have an even number of values.");
+        }
+
+        HttpPost request = new HttpPost(uri);
+        if(headers.length > 0){
+            List<Header> headersL = new ArrayList<>();
+            for(int i = 0; i < headers.length; i+= 2){
+                headersL.add(new BasicHeader(headers[i], headers[i + 1]));
+            }
+            request.setHeaders(headersL.toArray(new Header[0]));
+        }
         if (parameters.length > 0) {
             List<NameValuePair> params = new ArrayList<>(parameters.length / 2);
             for (int i = 0; i < parameters.length; i += 2) {
@@ -113,14 +143,9 @@ public class Http implements Closeable {
         return TimeUnit.SECONDS.toMillis(seconds);
     }
 
-    public CloseableHttpClient getClient() {
-        return client;
-    }
-
     @Override
     public void close() throws IOException {
         client.close();
     }
-
 
 }

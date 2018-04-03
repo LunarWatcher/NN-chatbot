@@ -4,6 +4,7 @@ package io.github.lunarwatcher.chatbot.bot;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
+import io.github.lunarwatcher.chatbot.bot.commands.CentralBlacklistStorage;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
@@ -41,6 +42,7 @@ public class Bot {
                 CloseableHttpClient httpClient = HttpClients.createDefault();
                 ClientManager websocketClient = ClientManager.createClient(JdkClientContainer.class.getName());
                 websocketClient.setDefaultMaxSessionIdleTimeout(0);
+
                 websocketClient.getProperties().put(ClientProperties.RETRY_AFTER_SERVICE_UNAVAILABLE, true);
                 chats.add(new SEChat(site, httpClient, websocketClient, botProps, database));
             }
@@ -54,6 +56,7 @@ public class Bot {
         for(Chat s : chats) {
             if (s instanceof SEChat) {
                 ((SEChat) s).leaveAll();
+                ((SEChat) s).stop();
             }
         }
 
@@ -64,6 +67,7 @@ public class Bot {
             s.save();
         }
         CommandCenter.saveTaught();
+        CentralBlacklistStorage.Companion.getInstance(database).save();
         database.commit();
     }
 

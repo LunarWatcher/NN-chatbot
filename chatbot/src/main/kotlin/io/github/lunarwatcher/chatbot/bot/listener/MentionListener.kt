@@ -1,12 +1,15 @@
 package io.github.lunarwatcher.chatbot.bot.listener
 
+import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Http
+import jodd.jerry.Jerry
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
 import java.net.SocketException
@@ -22,10 +25,27 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
     }
 
     override fun handleInput(input: String, user: User): BMessage? {
-
+        if(input.startsWith(CommandCenter.TRIGGER))
+            return null;
         if(!isMentioned(input)){
             return null;
         }
+
+        if (site is SEChat){
+            try {
+                //To avoid this stupidity: https://i.imgur.com/N8lZ4Q9.png
+                //TODO fix - currently gives a 302 status code.
+                if(site.mentionIds.size > 0) {
+                    val ids = site.mentionIds.joinToString(",")
+                    site.mentionIds.clear()
+                    site.http.post("${site.site.url}/messages/ack", arrayOf("Content-Type", "text/plain"), "fkey", site.rooms.first { it.id == user.roomID }.fKey, "id", ids)
+
+                }
+            }catch(e: Exception){
+                site.commands.crash.crash(e)
+            }
+        }
+
         if(ignoreNext){
             ignoreNext = false;
             return null;

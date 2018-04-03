@@ -124,11 +124,15 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
             return null;
         }
         var output = this.output;
+
         output = output.replace("""(?i)\\un""".toRegex(), user.userName).replace("""(?i)\\uid""".toRegex(), user.userID.toString())
 
         if(output.contains("%s")){
             val arguments = output.split("%s").size - 1
-            val given = (splitCommand(input)["content"]?: return BMessage("You need $arguments arguments to run this command", true))
+            val given = (splitCommand(input)["content"]?: return BMessage(
+                    "You need $arguments ${if (arguments == 1) "argument" else "arguments"} to run this command",
+                    true))
+
                     .split(",");
             if(given.size != arguments){
                 return BMessage("Not enough arguments. Found ${given.size}, requires $arguments", true)
@@ -136,8 +140,6 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
             output = output.format(*given.toTypedArray())
 
         }
-
-
 
 
         if(user.site == "discord"){
@@ -150,9 +152,10 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
 
 class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf("teach"), "Teaches the bot a new command. ",
         help = "Syntax: ${CommandCenter.TRIGGER}help commandName commandOutput -d (optional) description -nsfw (optional) whether the command is NSFW or not (boolean)\n" +
-                "ADditional: %s - requires input for the command to be used\n" +
-                "\\un - adds the username for whoever uses the command\n" +
-                "\\uid - adds the user ID for whoever uses the command" ){
+                "Symbols:\n" +
+                "* %s - requires input for the command to be used\n" +
+                "* \\un - adds the username for whoever uses the command\n" +
+                "* \\uid - adds the user ID for whoever uses the command" ){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         val input = input;

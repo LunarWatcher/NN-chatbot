@@ -14,8 +14,7 @@ interface Listener{
     fun handleInput(input: String, user: User) : BMessage?;
 }
 
-abstract class AbstractListener(override val name: String, override val description: String)
-    : Listener{
+abstract class AbstractListener(override val name: String, override val description: String) : Listener{
 
 
     fun isCommand(input: String) : Boolean = input.startsWith(TRIGGER)

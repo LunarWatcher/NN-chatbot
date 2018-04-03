@@ -141,16 +141,16 @@ public final class Constants {
         static {
             ranks = new HashMap<>();
             ranks.put(0, "Banned");
-            ranks.put(1, "User");
+            ranks.put(1, "1");
             ranks.put(2, "2");//TODO
             ranks.put(3, "3");
             ranks.put(4, "4");
             ranks.put(5, "5");
             ranks.put(6, "6");
-            ranks.put(7, "Trusted");
-            ranks.put(8, "High-ranked user");
-            ranks.put(9, "General");
-            ranks.put(10, "Fur-real owner");
+            ranks.put(7, "7");
+            ranks.put(8, "8");
+            ranks.put(9, "9");
+            ranks.put(10, "An owner");
         }
 
         public static String getRank(int level){

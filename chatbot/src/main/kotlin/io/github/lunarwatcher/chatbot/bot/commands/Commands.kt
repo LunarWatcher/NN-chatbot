@@ -340,58 +340,6 @@ class NetStat(val site: Chat) : AbstractCommand("netStat", listOf("netstat"), "T
     }
 }
 
-class StartServer(val site: Chat) : AbstractCommand("startFlask", listOf("startServer")){
-    override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null
-
-        val status = try {
-            val httpClient = HttpClients.createDefault()
-            val http = Http(httpClient)
-            http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello")
-            http.close()
-            httpClient.close()
-            true
-
-        }catch(e: Exception){
-            false
-        }
-        if (status){
-            return BMessage("The network is already online", true)
-        }
-        if(Utils.getRank(user.userID, site.config) < 9)
-            return BMessage("You need to be rank 9 or higher to use this command", true)
-
-        if(input.contains("--confirm")){
-            BotCore.startServer();
-            return BMessage("Server started.", true);
-        }
-
-        return BMessage("Please confirm with --confirm", true);
-    }
-}
-
-class StopServer(val site: Chat) : AbstractCommand("stopFlask", listOf("stopServer")){
-    override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null
-
-        if(Utils.getRank(user.userID, site.config) < 9)
-            return BMessage("You need to be rank 9 or higher to use this command", true)
-
-        if (BotCore.process == null){
-            return BMessage("Either the server isn't online, or it's started externally. Either way, I can't kill it.", true);
-        }
-
-        if(input.contains("--confirm")){
-            BotCore.stopServer()
-            return BMessage("Stopped.", true)
-        }
-
-        return BMessage("Please confirm with --confirm", true);
-    }
-}
-
 class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much command."){
     val doges = mutableListOf("such", "very", "much", "so", "many")
     override fun handleCommand(input: String, user: User): BMessage? {
