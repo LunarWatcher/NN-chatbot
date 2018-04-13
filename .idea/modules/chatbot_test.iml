@@ -46,6 +46,7 @@
     <orderEntry type="library" name="Gradle: org.apache.httpcomponents:httpcore:4.4.8" level="project" />
     <orderEntry type="library" name="Gradle: org.glassfish.tyrus.bundles:tyrus-standalone-client-jdk:1.13.1" level="project" />
     <orderEntry type="library" name="Gradle: com.google.guava:guava:23.5-jre" level="project" />
+    <orderEntry type="library" name="Gradle: joda-time:joda-time:2.9.9" level="project" />
     <orderEntry type="library" name="Gradle: org.jodd:jodd-all:4.3.0" level="project" />
     <orderEntry type="library" name="Gradle: com.googlecode.soundlibs:mp3spi:1.9.5-2" level="project" />
     <orderEntry type="library" name="Gradle: com.googlecode.soundlibs:jlayer:1.0.1-2" level="project" />

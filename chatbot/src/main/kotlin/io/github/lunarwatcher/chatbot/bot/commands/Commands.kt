@@ -17,11 +17,17 @@ import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
+import org.joda.time.*
+import org.joda.time.Days.between
+import org.joda.time.Days.daysBetween
+import org.joda.time.Hours.hoursBetween
+import org.joda.time.base.BaseSingleFieldPeriod
+import org.joda.time.format.PeriodFormatterBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-
+val formatter = SimpleDateFormat("E, d MMMM HH:mm:ss.SSSS Y z ('GMT' Z)", Locale.ENGLISH)
 const val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
 
@@ -312,7 +318,7 @@ class Alive : AbstractCommand("alive", listOf(), "Used to check if the bot is wo
 }
 
 class TimeCommand : AbstractCommand("time", listOf(), "What time is it?"){
-    val formatter = SimpleDateFormat("E, d MMMM HH:mm:ss.SSSS Y X z (Z)", Locale.US)
+
     override fun handleCommand(input: String, user: User): BMessage? {
         return BMessage(formatter.format(System.currentTimeMillis()), true)
     }
@@ -409,6 +415,7 @@ class WhoIs(val site: Chat) : AbstractCommand("whois", listOf("identify")){
 }
 
 class StatusCommand(val statusListener: StatusListener, val site: Chat) : AbstractCommand("status", listOf("leaderboard"), desc="Shows the leading chatters"){
+
     override fun handleCommand(input: String, user: User): BMessage? {
         if(clear){
             if(!cleared.contains(site.name)){
@@ -462,6 +469,14 @@ class StatusCommand(val statusListener: StatusListener, val site: Chat) : Abstra
         val longFirst = localCopy.map { it.value to it.key }.associateBy ({it.first}, {it.second}).toSortedMap(compareBy{-it})
 
         val reply = ReplyBuilder()
+        val now = Instant()
+        val duration = Period(BotCore.STARTED_AT, now)
+
+        val days = duration.days
+        val hours = duration.hours
+        val minutes = duration.minutes
+        val seconds = duration.seconds
+        reply.fixedInput().append("Started ${formatter.format(BotCore.STARTED_AT.toDate().time)} (running for $days days, $hours hours, $minutes minutes, and $seconds seconds.)").nl()
         reply.discord = site.site.name == "discord"
         reply.fixedInput().append("Message status").nl()
         val maxLen = localCopy.getMaxLen()
@@ -492,7 +507,11 @@ fun <K, V> Map<K, V>.getMaxLen() : Int{
 }
 
 class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){
-    override fun handleCommand(input: String, user: User): BMessage? = BMessage(input.split(" ", limit=2)[1], true)
+    override fun handleCommand(input: String, user: User): BMessage?{
+        val content = splitCommand(input)["content"] ?: return BMessage("What?", true)
+        if(content.trim().isEmpty()) return BMessage("What?", true)
+        return BMessage(content, false)
+    }
 }
 
 fun <T> List<T>.randomItem() : T{

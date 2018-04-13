@@ -11,7 +11,15 @@ val mapped = mutableListOf(
         "&gt;" to ">",
         "&amp;" to "&",
         "&quot;" to "\"",
-        "&#39;" to "'"
+        "&#39;" to "'",
+        "<i>" to "*",
+        "</i>" to "*",
+        "<b>" to "**",
+        "</b>" to "**",
+        "<code>" to "`",
+        "</code>" to "`",
+        "<strike>" to "---",
+        "</strike>" to "---"
 
 )
 

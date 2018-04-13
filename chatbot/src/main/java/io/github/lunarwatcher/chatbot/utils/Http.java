@@ -1,8 +1,5 @@
 package io.github.lunarwatcher.chatbot.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.Consts;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -35,18 +32,6 @@ public class Http implements Closeable {
 
     public Response get(String uri) throws IOException {
         HttpGet request = new HttpGet(uri);
-
-        return send(request);
-    }
-
-
-    public Response get(String uri, List<Object> params) throws IOException{
-        StringBuilder preparedUri = new StringBuilder(uri + "?");
-        for(int i = 0; i < params.size(); i += 2){
-            preparedUri.append(i == 0 ? "" : "&").append(params.get(i).toString()).append("=").append(params.get(i + 1));
-        }
-
-        HttpGet request = new HttpGet(preparedUri.toString());
 
         return send(request);
     }
