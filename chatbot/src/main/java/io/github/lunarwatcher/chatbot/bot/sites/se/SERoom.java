@@ -128,6 +128,7 @@ public class SERoom implements Closeable {
             }
             break;
         }
+        attempts = 0;
     }
 
     public void respawnUnsafe() throws Exception{

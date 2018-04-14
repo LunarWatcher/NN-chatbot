@@ -6,6 +6,7 @@ import io.github.lunarwatcher.chatbot.utils.Utils;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.joda.time.Instant;
 
 import java.io.*;
 import java.net.SocketException;
@@ -26,6 +27,7 @@ public class BotCore {
     public BotCore() {
 
     }
+    public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
     public static Process process;
     private static ServerThread serverThread;

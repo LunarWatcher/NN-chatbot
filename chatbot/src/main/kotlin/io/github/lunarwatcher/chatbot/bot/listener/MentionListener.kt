@@ -51,21 +51,27 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             return null;
         }
         val split = splitCommand(input)
-        return if(split.keys.contains("content")){
+        if(split.keys.contains("content")){
             var message = split["content"] ?: ""
             message = message.clean()
             try{
                 val response = http.post("http://127.0.0.1:" + Constants.FLASK_PORT + "/predict", "message", message)
                 val reply: String = response.body.substring(1, response.body.length - 2)
-                BMessage(reply, true)
+                return BMessage(reply, true)
             }catch (e: IOException){
-                BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
+
             }catch(e: SocketException){
                 //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
-                BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
+
             }
-        }else
-            getMessage(input) ?: BMessage("How can I " + TRIGGER + "help?", true);
+
+            val res = site.commands.parseMessage(CommandCenter.TRIGGER + message, user, user.nsfwSite) as List<BMessage>?
+            if(res != null && res.isNotEmpty())
+                return res[0]
+        }
+
+        return BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
+
     }
 
     /**

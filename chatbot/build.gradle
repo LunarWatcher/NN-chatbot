@@ -47,7 +47,6 @@ dependencies {
 
     compile 'com.google.guava:guava:23.5-jre'
     compile 'joda-time:joda-time:2.9.9'
-
     compile 'org.jodd:jodd-all:4.3.0'
 
 }
