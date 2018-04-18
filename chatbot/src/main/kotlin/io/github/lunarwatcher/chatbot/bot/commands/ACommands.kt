@@ -1,11 +1,14 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.Constants
+import io.github.lunarwatcher.chatbot.CrashLogs
+import io.github.lunarwatcher.chatbot.LogStorage
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
+import io.github.lunarwatcher.chatbot.getRevision
 import io.github.lunarwatcher.chatbot.utils.Utils
 import java.io.IOException
 
@@ -336,5 +339,24 @@ fun getUsername(type: String, site: Chat): String?{
     return when(list.size){
         0-> null
         else-> list[0]
+    }
+}
+
+class NPECommand(val site: Chat) : AbstractCommand("npe", listOf(), "Throws an NPE"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(Utils.getRank(user.userID, site.config) < 10)
+            return BMessage("Rank 10 only!", true)
+        throw NullPointerException("Manually requested exception from NPECommand")
+    }
+}
+
+class RevisionCommand : AbstractCommand("rev", listOf("revision")){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        return try{
+            BMessage(getRevision(), true)
+        }catch(e: Exception){
+            LogStorage.crash(e)
+            BMessage("Unknown revision", true)
+        }
     }
 }

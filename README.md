@@ -89,6 +89,11 @@ General chatbots are incredibly hard to make. Creating knowledge-based generativ
 Use a GPU if possible. If you already are, use more. Or decrease the vocab size, it speeds it up a little.
 
 
+# Notes
+
+With the Java/Kotlin bot, using the revision command requires access to git. Meaning it has to be added to the path or in some
+other way become accessible to the program.
+
 # Licensing
 
     Copyright 2018 LunarWatcher

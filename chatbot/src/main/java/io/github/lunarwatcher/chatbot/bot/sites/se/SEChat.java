@@ -316,20 +316,7 @@ public class SEChat implements Chat {
 
         db.commit();
 
-        if (commands.crash.getLogs().size() != 0) {
-            try {
-                FileOutputStream fis = new FileOutputStream(new File("logs.txt"));
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fis));
-                for (String log : commands.crash.getLogs()){
-                    writer.write(log);
-                    writer.write("\n");
-                }
-                fis.close();
-                writer.close();
-            }catch(IOException e){
-                //Ignore
-            }
-        }
+
     }
 
     public void load(){

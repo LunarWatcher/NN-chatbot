@@ -85,7 +85,9 @@ public class CommandCenter {
         addCommand(new JSEval());
         addCommand(new BlacklistRoom(site));
         addCommand(new UnblacklistRoom(site));
-
+        addCommand(new TellCommand(site));
+        addCommand(new NPECommand(site));
+        addCommand(new RevisionCommand());
 
         statusListener = new StatusListener(site, db);
         addCommand(new StatusCommand(statusListener, site));
@@ -93,6 +95,7 @@ public class CommandCenter {
         listeners = new ArrayList<>();
         listeners.add(new WaveListener());
         listeners.add(new TestListener());
+        listeners.add(new MorningListener());
 
         listeners.add(statusListener);
         /**

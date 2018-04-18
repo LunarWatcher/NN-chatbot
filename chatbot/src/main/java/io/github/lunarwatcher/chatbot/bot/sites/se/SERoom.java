@@ -78,12 +78,8 @@ public class SERoom implements Closeable {
             }
             @Override
             public void onError(Session session, Throwable error){
-                System.out.println("Connection closed (src: " + id + " @" + parent.site.getName() + ": Error. " + error.getMessage());
-                error.printStackTrace();
-                parent.commands.crash.crash(new Exception(error));
-                disconnected = true;
+                System.out.println("Error (src: " + id + " @" + parent.site.getName() + ": Error. " + error.getMessage());
                 intended = false;
-                respawn();
             }
 
         }, config, new URI(getWSURL()));
@@ -95,7 +91,7 @@ public class SERoom implements Closeable {
         try{
             Thread.sleep(100);
             createSession();
-            System.out.println("SUCCESS!!!");
+            System.out.println("Success!!!");
         }catch(NoAccessException | IOException e){
             persistentRespawn();
         } catch (Exception e){
@@ -220,8 +216,13 @@ public class SERoom implements Closeable {
                     //The message was deleted. Ignore it
 
                 }else if(eventCode == 15){
-                    if(event.get("target_user_id").intValue() != parent.site.getConfig().getUserID())
+                    try {
+                        if (event.get("target_user_id").intValue() != parent.site.getConfig().getUserID())
+                            return;
+                    }catch(NullPointerException e){
+                        //No target user; meaning the state of the room was changed.
                         return;
+                    }
 
                     System.out.println(event.get("content"));
                     System.out.println(event);
@@ -248,7 +249,7 @@ public class SERoom implements Closeable {
                 //2: edited
                 //3: join
                 //4: leave
-                //5: room name changed
+                //5: room name/description changed
                 //6: star
                 //7: Debug message (?)
                 //8: ping - if called, ensure that the content does not contain a ping to the bot name if 1 is called

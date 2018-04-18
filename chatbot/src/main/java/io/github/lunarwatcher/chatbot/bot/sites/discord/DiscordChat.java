@@ -300,4 +300,7 @@ public class DiscordChat implements Chat{
         client.getGuildByID(server).leave();
     }
 
+    public void close(){
+        client.logout();
+    }
 }

@@ -29,8 +29,6 @@ public class BotCore {
     }
     public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
-    public static Process process;
-    private static ServerThread serverThread;
     public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
 
         LOCATION = Long.toHexString(System.currentTimeMillis());
@@ -42,12 +40,6 @@ public class BotCore {
             httpClient.close();
         }catch(HttpHostConnectException e){
             System.out.println("Neural network Flask server not started.");
-            if(Constants.START_FLASK_IF_OFFLINE) {
-                System.out.println("Starting Flask server");
-                startServer();
-            }else{
-                System.out.print("Not starting server!");
-            }
         }catch(SocketException e){
             //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
         }
@@ -209,83 +201,5 @@ public class BotCore {
         System.out.println("db - sets a custom database");
         System.out.println("    -reset - resets the database to the default one");
         System.out.println("###########################");
-    }
-
-    public class SaveThread extends Thread{
-        private Database db;
-
-        public SaveThread(Database d){
-            this.db = d;
-        }
-        public void run(){
-            if(db == null)
-                return;
-
-            while(true){
-                try{
-                    Thread.sleep(Constants.SAVE_INTERVAL);
-                }catch(Exception e){
-
-                }
-
-                if(db == null)
-                    break;
-                db.commit();
-            }
-        }
-    }
-
-    public static void stopServer(){
-        if (process == null && serverThread == null){
-            return;
-        }
-
-        if (process != null){
-            process.destroyForcibly();
-        }
-
-        if (serverThread != null){
-            try {
-                serverThread.join();
-            }catch(InterruptedException e){}
-        }
-
-        process = null;
-        serverThread = null;
-    }
-
-    public static void startServer(){
-        serverThread = new ServerThread();
-        serverThread.start();
-
-
-    }
-
-    public static class ServerThread extends Thread{
-
-        public ServerThread(){
-            super("ServerThread");
-        }
-        boolean running = true;
-        @Override
-        public void run(){
-            try {
-                process = Runtime.getRuntime().exec(new String[]{"python", "Network/bot.py", "--training=false", "--mode=2"});
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String s;
-                while(running){
-                    while((s = reader.readLine()) != null){
-                        System.out.println(s);
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    }catch(InterruptedException e){
-                        //Ignore
-                    }
-                }
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-        }
     }
 }

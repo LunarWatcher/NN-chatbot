@@ -173,6 +173,17 @@ class StatusListener(val site: Chat, val database: Database) : AbstractListener(
     }
 }
 
+class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
+    private var lastMessage = 0L
+    override fun handleInput(input: String, user: User): BMessage? {
+        if(input.toLowerCase() == "morning" && System.currentTimeMillis() - lastMessage > 30000) {
+            lastMessage = System.currentTimeMillis()
+            return BMessage("morning", false)
+        }
+        return null
+    }
+}
+
 /**
  * Saves some time in casting; but it will throw a NPE if Map\[what] == null
  */

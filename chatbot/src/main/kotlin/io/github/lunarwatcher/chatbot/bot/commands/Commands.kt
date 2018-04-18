@@ -320,6 +320,10 @@ class Alive : AbstractCommand("alive", listOf(), "Used to check if the bot is wo
 class TimeCommand : AbstractCommand("time", listOf(), "What time is it?"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
+        val content = splitCommand(input)["content"] ?: return BMessage(formatter.format(System.currentTimeMillis()), true);
+        if(content.trim().toLowerCase().contains("139") || content.trim().toLowerCase().contains("java")){
+            return BMessage("Morning", true)
+        }
         return BMessage(formatter.format(System.currentTimeMillis()), true)
     }
 }

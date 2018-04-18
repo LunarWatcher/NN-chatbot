@@ -2,6 +2,7 @@ package io.github.lunarwatcher.chatbot.bot;
 
 
 import io.github.lunarwatcher.chatbot.Database;
+import io.github.lunarwatcher.chatbot.LogStorage;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.commands.CentralBlacklistStorage;
@@ -14,7 +15,7 @@ import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -54,14 +55,41 @@ public class Bot {
         System.out.println("Killing");
         save();
         for(Chat s : chats) {
+            s.save();
             if (s instanceof SEChat) {
                 ((SEChat) s).leaveAll();
                 ((SEChat) s).stop();
+            }else if(s instanceof DiscordChat){
+                ((DiscordChat) s).close();
+            }
+        }
+
+
+        if (LogStorage.INSTANCE.getLogs().size() != 0) {
+            try {
+                FileOutputStream fis = new FileOutputStream(new File("logs.txt"));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fis));
+                for (String log : LogStorage.INSTANCE.getLogs()){
+                    writer.write(log);
+                    writer.write("\n");
+                }
+                fis.close();
+                writer.close();
+            }catch(IOException e){
+                //Ignore
             }
         }
 
     }
 
+    public void restart(){
+        kill();
+        try{ Thread.sleep(1000);}catch(InterruptedException ignored){}
+        try {
+            initialize();
+        }catch(IOException ignore){}
+
+    }
     public void save(){
         for(Chat s : chats){
             s.save();
