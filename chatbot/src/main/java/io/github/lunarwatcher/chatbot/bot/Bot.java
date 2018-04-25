@@ -14,6 +14,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -55,7 +58,6 @@ public class Bot {
         System.out.println("Killing");
         save();
         for(Chat s : chats) {
-            s.save();
             if (s instanceof SEChat) {
                 ((SEChat) s).leaveAll();
                 ((SEChat) s).stop();
@@ -82,6 +84,14 @@ public class Bot {
 
     }
 
+
+    public @Nullable Chat getChatByName(@NotNull String chatName){
+        for(Chat c : chats){
+            if(c.getSite().getName().toLowerCase().equals(chatName))
+                return c;
+        }
+        return null;
+    }
     public void restart(){
         kill();
         try{ Thread.sleep(1000);}catch(InterruptedException ignored){}

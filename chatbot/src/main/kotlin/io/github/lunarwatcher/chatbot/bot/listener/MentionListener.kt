@@ -9,6 +9,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Http
+import jdk.nashorn.internal.runtime.regexp.joni.encoding.CharacterType.W
 import jodd.jerry.Jerry
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
@@ -55,7 +56,7 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             var message = split["content"] ?: ""
             message = message.clean()
             try{
-                val response = http.post("http://127.0.0.1:" + Constants.FLASK_PORT + "/predict", "message", message)
+                val response = http.post("http://${Configurations.NEURAL_NET_IP ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", message)
                 val reply: String = response.body.substring(1, response.body.length - 2)
                 return BMessage(reply, true)
             }catch (e: IOException){
@@ -102,7 +103,7 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
                     || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
             "stackexchange" -> containsUsername(input);
             "stackoverflow" -> containsUsername(input);
-            "metastackexchange" -> containsUsername(input);
+            "metastackexchange" -> input.toLowerCase().contains("@${site.site.config.username.toLowerCase()}\\W".toRegex())
             else ->{
                 println("Else");
                 input.contains("@" + site.site.config.username)

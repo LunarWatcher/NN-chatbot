@@ -53,6 +53,7 @@ public final class Utils {
      * @param message Optional message
      */
     public static void assertion(boolean input, @Nullable String message){
+
         if(!input)
             throw new RuntimeException("Assertion failed! " + (message != null ? message : "No message provided"));
     }

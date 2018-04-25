@@ -20,6 +20,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEditEvent
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.util.DiscordException;
 
 import java.io.IOException;
 import java.util.*;
@@ -301,6 +302,9 @@ public class DiscordChat implements Chat{
     }
 
     public void close(){
-        client.logout();
+        try {
+            client.logout();
+        }catch(DiscordException ignored){ /* Logout throws an exception during shutdown (because the shutdown is detected and it's logged out before this method is called)
+        as a result, the exception needs to be caught for the shutdown to work properly*/ }
     }
 }

@@ -10,4 +10,5 @@ public class Configurations {
      * is a specific location within the location, only used to debug multiple instance issues.
      */
     public static String INSTANCE_LOCATION;
+    public static String NEURAL_NET_IP = "127.0.0.1";
 }

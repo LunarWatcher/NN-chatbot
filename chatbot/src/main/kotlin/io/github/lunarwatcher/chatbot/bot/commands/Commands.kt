@@ -12,17 +12,13 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.listener.StatusListener
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import io.github.lunarwatcher.chatbot.cleanInput
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
 import org.joda.time.*
-import org.joda.time.Days.between
-import org.joda.time.Days.daysBetween
-import org.joda.time.Hours.hoursBetween
-import org.joda.time.base.BaseSingleFieldPeriod
-import org.joda.time.format.PeriodFormatterBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
@@ -30,13 +26,13 @@ import java.util.regex.Pattern
 val formatter = SimpleDateFormat("E, d MMMM HH:mm:ss.SSSS Y z ('GMT' Z)", Locale.ENGLISH)
 const val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
-
+const val NO_DEFINED_RANK = -1
 interface Command{
     val name: String;
     val aliases: List<String>
     val desc: String;
     val help: String;
-
+    val rankRequirement: Int
     /**
      * Check if the input starts with the name or one of the command's aliases
      */
@@ -45,20 +41,29 @@ interface Command{
      * Handle a given command
      */
     fun handleCommand(input: String, user: User) : BMessage?;
+    fun canUserRun(user: User) : Boolean
 
 }
 
 /**
  * Info about a user.
  */
-class User(var site: String, var userID: Long, var userName: String, var roomID: Int, var nsfwSite: Boolean = false);
+class User(var site: String, var userID: Long, var userName: String, var roomID: Int, var nsfwSite: Boolean = false)
 
 /**
  * Utility implementation of [Command]
  */
 abstract class AbstractCommand(override val name: String, override val aliases: List<String>,
                                override val desc: String = Constants.NO_DESCRIPTION,
-                               override val help: String = Constants.NO_HELP) : Command{
+                               override val help: String = Constants.NO_HELP,
+                               override val rankRequirement: Int = NO_DEFINED_RANK) : Command{
+
+    init {
+        if (rankRequirement != NO_DEFINED_RANK) {
+            if (rankRequirement < 0 || rankRequirement > 10)
+                throw IllegalArgumentException("The rank requirement must be between 0")
+        }
+    }
 
     override fun matchesCommand(input: String): Boolean{
         val input = input.toLowerCase();
@@ -70,6 +75,20 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         return aliases.any{split[0] == it.toLowerCase()}
     }
 
+    /**
+     * This would be considerably easier to integrate into a centralized dispatch system (where commands are refered through
+     * method instances instead of declaring entire classes for them), but rewriting would take a lot of time. So this
+     * method exists to enable classes where ranks appy to easily check for validity vs [rankRequirement]
+     */
+    override fun canUserRun(user: User) : Boolean {
+        if(rankRequirement == NO_DEFINED_RANK && !Utils.isBanned(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config)){
+            // rank not defined (req == 1) && user !banned - can run
+            return true;
+        }else if(rankRequirement != NO_DEFINED_RANK){
+            return Utils.getRank(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config) >= rankRequirement
+        }
+        return false
+    }
     fun splitCommand(input: String) : Map<String, String>{
         val iMap = parseArguments(input);
         val initialSplit = input.split(FLAG_REGEX.toRegex())[0];
@@ -235,22 +254,34 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
             val desc: String
             val help: String
             val name: String
+            val aliases: String
             //No clue what to call this thing
             val d: String;
+            val rank: Int
 
             when {
                 center.isBuiltIn(cmd) -> {
                     desc = center.get(cmd)?.desc ?: return null;
                     help = center.get(cmd)?.help ?: return null;
                     name = center.get(cmd)?.name ?: return null;
+                    val aliasBuffer = center.get(cmd)?.aliases ?: return null
+                    if(aliasBuffer.size == 0)
+                        aliases = "None"
+                    else
+                        aliases = aliasBuffer.joinToString(", ")
+                    rank = center.get(cmd)?.rankRequirement ?: return null
+
                     d = "Built in command. "
                 }
                 CommandCenter.tc.doesCommandExist(cmd) -> {
                     desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
                     help = CommandCenter.tc.get(cmd)?.help ?: return null;
                     name = CommandCenter.tc.get(cmd)?.name ?: return null;
-                    d = "Taught command. (Learned to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
+                    d = "Taught command. (Taught to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
+                    aliases = "None"
+                    rank = 1
                 }
+
                 else -> return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
             }
 
@@ -258,6 +289,12 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
 
             reply.fixedInput().append(d).append("`$TRIGGER").append(name).append("`: $desc")
                     .nl().fixedInput().append(help)
+                    .nl().fixedInput().append("Known aliases: $aliases")
+                    .nl().fixedInput().append("Rank required: " +
+                            "${if(rank == NO_DEFINED_RANK)
+                                "1 (WARNING: Undefined in code. Actual rank may differ from listed)"
+                            else rank.toString()} " +
+                            "(your rank: ${Utils.getRank(user.userID, center.site.config)}")
 
 
             return BMessage(reply.toString(), true);
@@ -336,7 +373,7 @@ class NetStat(val site: Chat) : AbstractCommand("netStat", listOf("netstat"), "T
         try {
             val httpClient = HttpClients.createDefault()
             val http = Http(httpClient)
-            val response = http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello")
+            val response = http.post("http://${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT + "/predict", "message", "hello")
             http.close()
             httpClient.close()
             if (response.body.toLowerCase().contains("sorry, i boot")){

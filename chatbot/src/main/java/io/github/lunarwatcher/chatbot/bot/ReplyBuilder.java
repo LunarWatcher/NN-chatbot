@@ -1,5 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot;
 
+
 public class ReplyBuilder {
     public boolean discord = false;
     private boolean fixed;

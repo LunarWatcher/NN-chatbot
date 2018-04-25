@@ -10,6 +10,7 @@ import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
 import lombok.Getter;
+import lombok.val;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 
@@ -88,7 +89,7 @@ public class CommandCenter {
         addCommand(new TellCommand(site));
         addCommand(new NPECommand(site));
         addCommand(new RevisionCommand());
-
+        addCommand(new NetIpCommand());
         statusListener = new StatusListener(site, db);
         addCommand(new StatusCommand(statusListener, site));
 
@@ -231,15 +232,14 @@ public class CommandCenter {
     }
 
     public static boolean isCommand(String input){
+        if(input.startsWith(TRIGGER)) {
+            val stripped = input.substring(TRIGGER.length()).replace("\n", "");
 
-        if(!input.substring(0, Math.min(TRIGGER.length() + 1, input.length()))
-                .toLowerCase().matches(TRIGGER + "(\\w|\\d)"))
-            return false;
-        //Explanation: if the trigger is present, it goes here. Otherwise it's not a command. Up to this point, it's obvious
-        //This check assumes the trigger is present (see the previous check). isEmpty should be false, hence the exclamation
-        //mark. If it's true, that means the message is "[trigger]". No command at all. Meaning it isn't really a command.
-        //so that is the secondary check
-        return !input.substring(TRIGGER.length()).trim().isEmpty();
+            if (stripped.length() == 0 || stripped.trim().length() == 0)
+                return false;
+            return stripped.matches("(?!\\s+)(.*)");
+        }
+        return false;
     }
 
     public static String[] splitCommand(String input, String commandName){

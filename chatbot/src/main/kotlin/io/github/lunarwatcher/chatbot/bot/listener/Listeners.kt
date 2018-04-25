@@ -176,11 +176,16 @@ class StatusListener(val site: Chat, val database: Database) : AbstractListener(
 class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     private var lastMessage = 0L
     override fun handleInput(input: String, user: User): BMessage? {
-        if(input.toLowerCase() == "morning" && System.currentTimeMillis() - lastMessage > 30000) {
+        if(input.toLowerCase() == "morning" && System.currentTimeMillis() - lastMessage > (WAIT * 1000)) {
             lastMessage = System.currentTimeMillis()
             return BMessage("morning", false)
         }
         return null
+    }
+
+    companion object {
+        const val WAIT = 60
+        
     }
 }
 

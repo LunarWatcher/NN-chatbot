@@ -1,4 +1,7 @@
 import org.junit.Test
+import java.util.Arrays
+
+
 
 class KotlinTests {
 
@@ -11,4 +14,13 @@ class KotlinTests {
         println(output)
     }
 
+    @Test
+    fun repro(){
+
+
+        val r = Arrays.stream(intArrayOf(1, 2, 3)).mapToObj { i ->
+            println(i)
+            Integer.toString(i)
+        }.toArray()
+    }
 }

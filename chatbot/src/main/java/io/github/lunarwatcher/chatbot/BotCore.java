@@ -7,6 +7,7 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.joda.time.Instant;
+import sun.security.krb5.Config;
 
 import java.io.*;
 import java.net.SocketException;
@@ -32,17 +33,6 @@ public class BotCore {
     public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
 
         LOCATION = Long.toHexString(System.currentTimeMillis());
-        try{
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            Http http = new Http(httpClient);
-            http.post("http://localhost:" + Constants.FLASK_PORT + "/predict", "message", "hello");
-            http.close();
-            httpClient.close();
-        }catch(HttpHostConnectException e){
-            System.out.println("Neural network Flask server not started.");
-        }catch(SocketException e){
-            //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
-        }
 
         Properties botProps = new Properties();
         InputStream stream = new FileInputStream(new File("bot.properties"));
@@ -53,6 +43,7 @@ public class BotCore {
         Configurations.REVISION = botProps.getProperty("about.revision");
         Configurations.CREATOR_GITHUB = botProps.getProperty("about.creatorGithub");
         Configurations.INSTANCE_LOCATION = botProps.getProperty("about.instanceLocation");
+        Configurations.NEURAL_NET_IP = botProps.getProperty("bot.nnip");
         Properties credentials = new Properties();
         InputStream creds = new FileInputStream(new File("creds.properties"));
         credentials.load(creds);
@@ -82,7 +73,7 @@ public class BotCore {
                     System.out.println("Invalid config for site " + name + "!");
                 }else {
                     System.out.println("Valid config for site " + name);
-                    SiteConfig siteConfig = new SiteConfig(username, password, email, userID, true);//TODO replace last argument with loaded data
+                    SiteConfig siteConfig = new SiteConfig(username.replace(" ", ""), password, email, userID, true);//TODO replace last argument with loaded data
                     availableSites.add(new Site(name, url, siteConfig));
                 }
             }

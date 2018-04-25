@@ -12,6 +12,7 @@ val mapped = mutableListOf(
         "&gt;" to ">",
         "&amp;" to "&",
         "&quot;" to "\"",
+        "\\\"" to "\"",//This has to come after the previous one; otherwise it breaks
         "&#39;" to "'",
         "<i>" to "*",
         "</i>" to "*",
@@ -20,8 +21,13 @@ val mapped = mutableListOf(
         "<code>" to "`",
         "</code>" to "`",
         "<strike>" to "---",
-        "</strike>" to "---"
+        "</strike>" to "---",
+        "<br>" to "\n"
+)
 
+val mappedRegex = mutableListOf(
+        "\\B<a href=\"(.*?)\" (rel=\".*?\")?>(.*?)</a>\\B".toRegex() to "[$3]($1)",
+        "^\\n+(.*?)\$".toRegex() to "$1"
 )
 
 fun cleanInput(input: String) : String {
@@ -29,6 +35,11 @@ fun cleanInput(input: String) : String {
     for ((o, r) in mapped){
         cleaned = cleaned.replace(o, r)
     }
+    for((regex, replacement) in mappedRegex){
+        cleaned = cleaned.replace(regex, replacement)
+    }
+    if(cleaned.startsWith("\n"))
+        cleaned = cleaned.replaceFirst("\n", "")
     return cleaned
 }
 

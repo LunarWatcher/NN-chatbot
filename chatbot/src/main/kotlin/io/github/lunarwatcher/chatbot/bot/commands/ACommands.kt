@@ -1,15 +1,13 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
-import io.github.lunarwatcher.chatbot.Constants
-import io.github.lunarwatcher.chatbot.CrashLogs
-import io.github.lunarwatcher.chatbot.LogStorage
+import io.github.lunarwatcher.chatbot.*
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
-import io.github.lunarwatcher.chatbot.getRevision
 import io.github.lunarwatcher.chatbot.utils.Utils
+import sun.security.krb5.Config
 import java.io.IOException
 
 class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
@@ -345,7 +343,7 @@ fun getUsername(type: String, site: Chat): String?{
 class NPECommand(val site: Chat) : AbstractCommand("npe", listOf(), "Throws an NPE"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(Utils.getRank(user.userID, site.config) < 10)
-            return BMessage("Rank 10 only!", true)
+            return BMessage("Rank 10 only! This feature could potentially kill the bot, which is why rank 10 is required", true)
         throw NullPointerException("Manually requested exception from NPECommand")
     }
 }
@@ -353,10 +351,42 @@ class NPECommand(val site: Chat) : AbstractCommand("npe", listOf(), "Throws an N
 class RevisionCommand : AbstractCommand("rev", listOf("revision")){
     override fun handleCommand(input: String, user: User): BMessage? {
         return try{
-            BMessage(getRevision(), true)
+            BMessage(getRevision() + " (@version ${Configurations.REVISION})", true)
         }catch(e: Exception){
             LogStorage.crash(e)
             BMessage("Unknown revision", true)
         }
+    }
+}
+
+class NetIpCommand : AbstractCommand("ip", listOf(), rankRequirement = 10){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!canUserRun(user))
+            return BMessage("I'm afraid I can't let you do that, User", true)
+        val content = (splitCommand(input)["content"]?.trim()) ?: "You have to supply a new IP"
+        println(content)
+        if(!"""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""".toRegex().containsMatchIn(content) || !containsOutOfRange(content)){
+            return BMessage("Invalid IP", true)
+        }
+
+        Configurations.NEURAL_NET_IP = content;
+        return BMessage("NN IP set to $content", true)
+    }
+
+    private fun containsOutOfRange(input: String) : Boolean{
+        try {
+            val parts = input.split(".")
+            for (part in parts) {
+                val numP = part.toInt()
+                if(numP < 0 || numP > 255) {
+                    System.out.println(numP)//Not printed
+                    return false;
+                }
+            }
+        }catch(e: Exception) {
+            e.printStackTrace()//Not printed
+            return false
+        }
+        return true;
     }
 }
