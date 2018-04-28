@@ -18,4 +18,12 @@ discord.user.name=Alisha#1234
 discord.user.email=token here
 discord.user.password=none
 discord.user.id=1234
+# Twitch
+twitch.user.name=ShadowOfZoe
+twitch.user.email=Client ID
+twitch.user.password=Secret
+# The user ID doesn't matter on twitch; usernames are unique
+twitch.user.id=none
+# Get one at https://twitchapps.com/tmi/
+twitch.oauth.credential=none
 # Other sites in the same pattern here

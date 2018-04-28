@@ -20,7 +20,7 @@ class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
         }
 
         val raw = input.split(" ");
-        val iRoom: Int = try {
+        val iRoom = try {
             if (raw.size == 1)
                 user.roomID
             else
@@ -31,7 +31,7 @@ class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
             return BMessage("Not a valid room ID!", true);
         }
 
-        val added = site.config.addHomeRoom(iRoom);
+        val added = site.config.addHomeRoom(iRoom.toLong());
 
         if(!added){
             return BMessage("Room was not added as a home room", true);
@@ -69,7 +69,7 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
                     "it defaults to one even if it's empty", true);
         }
 
-        val added = site.config.removeHomeRoom(iRoom);
+        val added = site.config.removeHomeRoom(iRoom.toLong());
 
         if(!added){
             return BMessage("Room was not removed as a home room", true);

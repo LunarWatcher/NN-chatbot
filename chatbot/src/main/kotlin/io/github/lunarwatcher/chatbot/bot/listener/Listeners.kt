@@ -145,7 +145,6 @@ class StatusListener(val site: Chat, val database: Database) : AbstractListener(
                         users[user.key.toInt()] = user.value.map{it.key.toLong() to it.value}.associateBy({it.first}, {it.second}).toMutableMap()
 
                     }catch(e: Exception){
-                        e.printStackTrace()
                     }
                 }
             }catch(e: ClassCastException){

@@ -40,13 +40,27 @@ public class SERoom implements Closeable {
 
     public void createSession() throws Exception{
         Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
+        if(connect.getStatusCode() != 302 && connect.getStatusCode() != 200){
+            System.out.println(connect.getBody());
+        }
         if(connect.getStatusCode() == 404){
             parent.leaveRoom(id);
             throw new RoomNotFoundException("SERoom not found!");
         }
 
         if(!connect.getBody().contains("<textarea id=\"input\">")){
-            throw new NoAccessException("No write access in the room!");
+            connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
+            System.out.println(connect.getBody());
+
+            if(connect.getStatusCode() == 404){
+                parent.leaveRoom(id);
+                throw new RoomNotFoundException("SERoom not found!");
+            }
+
+            if(!connect.getBody().contains("<textarea id=\"input\">")){
+                throw new NoAccessException("No write access in the room!");
+            }
+
         }
         fkey = Utils.parseHtml(connect.getBody());
 

@@ -7,6 +7,8 @@ import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.commands.RankInfo;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
+import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat;
+import me.philippheuer.twitch4j.TwitchClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.handle.obj.IChannel;
@@ -92,7 +94,7 @@ public final class Utils {
 
     public static void saveConfig(BotConfig cf, Database db){
         Map<Long, RankInfo> ranks = cf.getRanks();
-        List<Integer> homes = cf.getHomes();
+        List<Long> homes = cf.getHomes();
 
         String site = cf.getSite().getName();
 
@@ -116,7 +118,7 @@ public final class Utils {
         String site = cf.getSite().getName();
         //Possible ClassCastException can occur from this
         try {
-            List<Integer> homes = (List<Integer>) db.get(Constants.HOME_ROOMS(site));
+            List<Long> homes = (List<Long>) db.get(Constants.HOME_ROOMS(site));
             List<Map<String, Object>> dbRank = (List<Map<String, Object>>) db.get(Constants.RANKS(site));
 
             Map<Long, RankInfo> ranked = new HashMap<>();
@@ -198,7 +200,7 @@ public final class Utils {
     }
 
     public static boolean isHome(int room, BotConfig conf){
-        for(int u : conf.getHomes()){
+        for(long u : conf.getHomes()){
             if(u == room){
                 return true;
             }
@@ -233,16 +235,25 @@ public final class Utils {
             String key = (String) s.getKey();
 
             if(key.equals("bot."+ c.getSite().getName() + ".admin")){
-                String[] rooms = ((String) s.getValue()).split(",");
-
-                for(String room : rooms){
-                    try{
-                        c.getHardcodedAdmins().add(Long.parseLong(room));
-                    }catch(ClassCastException e){
-                        System.err.println("The room supplied could not be parsed as a number: " + room);
+                String[] admins = ((String) s.getValue()).split(",");
+                if(c.getSite().getName().equals("twitch")){
+                    if(c instanceof TwitchChat) {
+                        for (String admin : admins) {
+                            c.getHardcodedAdmins().add(((TwitchChat) c).getUID(admin));
+                        }
                     }
+                }else {
+
+
+                    for (String admin : admins) {
+                        try {
+                            c.getHardcodedAdmins().add(Long.parseLong(admin));
+                        } catch (ClassCastException e) {
+                            System.err.println("The userID supplied could not be parsed as a number: " + admin);
+                        }
+                    }
+                    break;
                 }
-                break;
             }
         }
 

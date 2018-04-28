@@ -27,6 +27,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
+
 /**
  * The Stack Exchange network is a massive blob of communities, and there are at least three known chat domains:
  * * chat.stackoverflow.com
@@ -37,6 +39,8 @@ import java.util.regex.Pattern;
  * more or less the same core architecture, but the login on regular SE is different from SO and MSE. The general
  * system in chat is the same, but because there are differences, this is made abstract to allow for customization
  * for a specific site.
+ *
+ * Editors note: Hackish Solutions
  */
 public class SEChat implements Chat {
     public static boolean NSFW = false;
@@ -69,7 +73,6 @@ public class SEChat implements Chat {
     public List<Long> hardcodedAdmins = new ArrayList<>();
     public Properties botProps;
     private Thread thread;
-    private Message stopMessage = new Message("", 0, 0, "", 0);
     Timer timer = new Timer();
 
     public SEChat(Site site, CloseableHttpClient httpClient, WebSocketContainer webSocket, Properties botProps, Database database) throws IOException {
@@ -107,8 +110,8 @@ public class SEChat implements Chat {
 
         Utils.loadHardcodedAdmins(this);
 
-        for(Integer room : config.getHomes()){
-            join(room);
+        for(long room : config.getHomes()){
+            join((int) room);
             System.out.println("Trying to join " + room + "@" + site.getName());
         }
         //Ignore unchecked cast warning
@@ -130,8 +133,9 @@ public class SEChat implements Chat {
         }
         data = null;
 
-        commands = new CommandCenter(botProps, true, this);
+        commands = new CommandCenter(botProps, true, false, this);
         commands.loadSE();
+        commands.loadInterconnected();
         http = new Http(httpClient);
 
         logIn();
@@ -219,6 +223,7 @@ public class SEChat implements Chat {
             try {
                 addRoom(new SERoom(joining.get(i), this));
             }catch(RoomNotFoundException e){
+                e.printStackTrace();
                 //Uncontrolled event like room doesn't exist, can't write in the room, etc
                 System.out.println("Cannot join room");
             }catch(IllegalArgumentException e){
@@ -423,6 +428,9 @@ public class SEChat implements Chat {
         List<BMessage> replies = commands.parseMessage(m.content, user, false);
         if (replies != null && getRoom(m.roomID) != null) {
             for (BMessage bm : replies) {
+                if(bm == Constants.bStopMessage)
+                    return;
+
                 if(bm.content == null)
                     continue;
                 if (bm.content.length() >= 500 && !bm.content.contains("\n")) {

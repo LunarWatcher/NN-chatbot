@@ -48,7 +48,8 @@ interface Command{
 /**
  * Info about a user.
  */
-class User(var site: String, var userID: Long, var userName: String, var roomID: Int, var nsfwSite: Boolean = false)
+class User(var site: String, var userID: Long, var userName: String, var roomID: Int, var nsfwSite: Boolean = false,
+           vararg val args: Pair<String, String> = arrayOf())
 
 /**
  * Utility implementation of [Command]
@@ -159,10 +160,14 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         return input;
     }
 
+    fun lowRank() : BMessage
+            = BMessage("You need rank $rankRequirement or higher ot use this command.", true)
 
+    fun lowRank(reason: String) : BMessage
+            = BMessage("You need rank $rankRequirement or higher ot use this command. Supplied reason: $reason", true)
 }
 
-class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("halp", "hilfen", "help"),
+class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractCommand("help", listOf("halp", "hilfen", "help"),
         "Lists all the commands the bot has",
         "Use `" + CommandCenter.TRIGGER + "help` to list all the commands and `" + CommandCenter.TRIGGER + "help [command name]` to get more info about a specifc command"){
 
@@ -173,16 +178,9 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
 
         val `in` = splitCommand(input)
         if(`in`.size == 1) {
-
-            //No arguments supplied
-            val reply = ReplyBuilder(center.site.name == "discord");
-            reply.fixedInput().append("###################### Help ######################")
-                    .nl().fixedInput().nl();
             var commands: MutableMap<String, String> = mutableMapOf()
             val learnedCommands: MutableList<String> = mutableListOf()
             var listeners: MutableMap<String, String> = mutableMapOf();
-
-            val names: MutableList<String> = mutableListOf()
 
             if (!center.commands.isEmpty()) {
 
@@ -197,8 +195,8 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
                 }
             }
 
-            if(!center.listeners.isEmpty()){
-                for(listener in center.listeners){
+            if (!center.listeners.isEmpty()) {
+                for (listener in center.listeners) {
                     listeners[listener.name] = listener.description;
                 }
             }
@@ -206,49 +204,65 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
             listeners = listeners.toSortedMap()
             commands = commands.toSortedMap()
 
-            names.addAll(commands.keys);
-            names.addAll(learnedCommands.toSet())
-            names.addAll(listeners.keys);
+            if(!truncated) {
 
-            val maxLen = getMaxLen(names);
+                val reply = ReplyBuilder(center.site.name == "discord");
+                reply.fixedInput().append("###################### Help ######################")
+                        .nl().fixedInput().nl();
+                val names: MutableList<String> = mutableListOf()
 
-            if (!commands.isEmpty()) {
-                reply.fixedInput().append("==================== Commands").nl()
-                for (command in commands) {
-                    reply.fixedInput().append(TRIGGER + command.key);
-                    reply.append(repeat(" ", maxLen - command.key.length + 2) + "| ")
-                            .append(command.value).nl();
+                names.addAll(commands.keys);
+                names.addAll(learnedCommands.toSet())
+                names.addAll(listeners.keys);
+
+                val maxLen = getMaxLen(names);
+
+                if (!commands.isEmpty()) {
+                    reply.fixedInput().append("==================== Commands").nl()
+                    for (command in commands) {
+                        reply.fixedInput().append(TRIGGER + command.key);
+                        reply.append(repeat(" ", maxLen - command.key.length + 2) + "| ")
+                                .append(command.value).nl();
+                    }
                 }
-            }
 
-            if (!learnedCommands.isEmpty()) {
-                reply.fixedInput().append("==================== Learned Commands").nl()
-                reply.fixedInput();
-                for(i in 0 until CommandCenter.tc.commands.values.toList().size){
-                    val command = CommandCenter.tc.commands.values.toList()[i]
-                    if (command.nsfw && !user.nsfwSite) {
-                        continue
+                if (!learnedCommands.isEmpty()) {
+                    reply.fixedInput().append("==================== Learned Commands").nl()
+                    reply.fixedInput();
+                    for (i in 0 until CommandCenter.tc.commands.values.toList().size) {
+                        val command = CommandCenter.tc.commands.values.toList()[i]
+                        if (command.nsfw && !user.nsfwSite) {
+                            continue
+                        }
+
+                        reply.append(command.name);
+                        if (command.nsfw)
+                            reply.append(" - NSFW");
+
+                        if (i < CommandCenter.tc.commands.size - 1) reply.append(", ")
                     }
 
-                    reply.append(command.name);
-                    if (command.nsfw)
-                        reply.append(" - NSFW");
-
-                    if (i < CommandCenter.tc.commands.size - 1)reply.append(", ")
                 }
+                reply.fixedInput().newLine()
+                if (!listeners.isEmpty()) {
+                    reply.fixedInput().append("==================== Listeners").newLine()
 
-            }
-            reply.fixedInput().newLine()
-            if(!listeners.isEmpty()){
-                reply.fixedInput().append("==================== Listeners").newLine()
-
-                for(listener in listeners){
-                    reply.fixedInput().append(listener.key);
-                    reply.append(repeat(" ", maxLen - listener.key.length + 2) + "| ")
-                            .append(listener.value).nl();
+                    for (listener in listeners) {
+                        reply.fixedInput().append(listener.key);
+                        reply.append(repeat(" ", maxLen - listener.key.length + 2) + "| ")
+                                .append(listener.value).nl();
+                    }
                 }
+                return BMessage(reply.toString(), false);
+            }else{
+                val builder = ReplyBuilder()
+                builder.append("Commands: ")
+                builder.append(commands.keys.joinToString(", "))
+                        .append(". User taught commands: ")
+                        .append(learnedCommands.toSortedSet().joinToString(", "))
+                        .append(". Listeners: " + listeners.keys.joinToString(", "))
+                return BMessage(builder.toString(), false)
             }
-            return BMessage(reply.toString(), false);
         }else{
             val cmd = (`in`["content"] ?: return null).toLowerCase();
             val desc: String
@@ -278,7 +292,7 @@ class HelpCommand(var center: CommandCenter) : AbstractCommand("help", listOf("h
                     help = CommandCenter.tc.get(cmd)?.help ?: return null;
                     name = CommandCenter.tc.get(cmd)?.name ?: return null;
                     d = "Taught command. (Taught to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
-                    aliases = "None"
+                    aliases = "None. "
                     rank = 1
                 }
 
@@ -537,6 +551,10 @@ class StatusCommand(val statusListener: StatusListener, val site: Chat) : Abstra
     }
 }
 
+class GitHubCommand : AbstractCommand("github", listOf("borked"), desc="Sends the link to GitHub in chat (also available through the about command). " +
+        "Raise any concerns there."){
+    override fun handleCommand(input: String, user: User): BMessage? = BMessage("Here you go: ${Configurations.GITHUB}", true)
+}
 
 fun <K, V> Map<K, V>.getMaxLen() : Int{
     var current = 0

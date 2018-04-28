@@ -12,19 +12,12 @@ import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 @Suppress("NAME_SHADOWING")
-class BotConfig{
-    val site: Chat;
-    val ranks: MutableMap<Long, RankInfo>;
-    val homes: MutableList<Int>;
+class BotConfig(val site: Chat){
 
-    constructor(site: Chat){
-        this.site = site;
+    val ranks: MutableMap<Long, RankInfo> = mutableMapOf();
+    val homes: MutableList<Long> = mutableListOf();
 
-        ranks = mutableMapOf();
-        homes = mutableListOf()
-    }
-
-    fun addHomeRoom(newRoom: Int) : Boolean{
+    fun addHomeRoom(newRoom: Long) : Boolean{
         homes.filter { it == newRoom }
                 .forEach { return false }
 
@@ -32,7 +25,7 @@ class BotConfig{
         return true;
     }
 
-    fun removeHomeRoom(rr: Int) : Boolean{
+    fun removeHomeRoom(rr: Long) : Boolean{
         for(i in (homes.size - 1)downTo 0){
             if(homes[i] == rr){
                 homes.removeAt(i)
@@ -43,9 +36,9 @@ class BotConfig{
         return false;
     }
 
-    fun set(homes: List<Int>?, ranked: Map<Long, RankInfo>?){
+    fun set(homes: List<Long>?, ranked: Map<Long, RankInfo>?){
         if(homes != null) {
-            this.homes.addAll(homes)
+            homes.forEach { this.homes.add(it.toLong() )}
         }
         ranked?.forEach{
             this.ranks[it.key] = it.value

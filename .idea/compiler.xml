@@ -7,6 +7,8 @@
     <bytecodeTargetLevel>
       <module name="chatbot_main" target="1.8" />
       <module name="chatbot_test" target="1.8" />
+      <module name="nnchat_main" target="1.8" />
+      <module name="nnchat_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

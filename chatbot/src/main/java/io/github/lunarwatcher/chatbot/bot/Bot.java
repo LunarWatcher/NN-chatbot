@@ -1,24 +1,24 @@
 package io.github.lunarwatcher.chatbot.bot;
 
 
-import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.LogStorage;
-import io.github.lunarwatcher.chatbot.Site;
+import io.github.lunarwatcher.chatbot.*;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.commands.CentralBlacklistStorage;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
+import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
-import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -42,11 +42,12 @@ public class Bot {
         for(Site site : sites){
             if(site.getName().equals("discord")) {
                 chats.add(new DiscordChat(site, botProps, database));
+            }else if(site.getName().equals("twitch")){
+                chats.add(new TwitchChat(site, botProps, database));
             }else {
                 CloseableHttpClient httpClient = HttpClients.createDefault();
                 ClientManager websocketClient = ClientManager.createClient(JdkClientContainer.class.getName());
                 websocketClient.setDefaultMaxSessionIdleTimeout(0);
-
                 websocketClient.getProperties().put(ClientProperties.RETRY_AFTER_SERVICE_UNAVAILABLE, true);
                 chats.add(new SEChat(site, httpClient, websocketClient, botProps, database));
             }
@@ -63,6 +64,8 @@ public class Bot {
                 ((SEChat) s).stop();
             }else if(s instanceof DiscordChat){
                 ((DiscordChat) s).close();
+            }else if(s instanceof TwitchChat){
+                ((TwitchChat) s).stop();
             }
         }
 
@@ -92,14 +95,7 @@ public class Bot {
         }
         return null;
     }
-    public void restart(){
-        kill();
-        try{ Thread.sleep(1000);}catch(InterruptedException ignored){}
-        try {
-            initialize();
-        }catch(IOException ignore){}
 
-    }
     public void save(){
         for(Chat s : chats){
             s.save();
@@ -107,6 +103,7 @@ public class Bot {
         CommandCenter.saveTaught();
         CentralBlacklistStorage.Companion.getInstance(database).save();
         database.commit();
+
     }
 
     public List<Chat> getChats(){

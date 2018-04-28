@@ -25,23 +25,28 @@ repositories {
     maven {
         url  "https://jitpack.io"
     }
+    maven { url "https://dl.bintray.com/twitch4j/maven" }
     jcenter()
 }
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // The Discord API
-    compile "com.github.austinv11:Discord4J:2.9.2"
+    compile "com.github.austinv11:Discord4J:2.10.1"
     // Lombok for lazy coding
     compileOnly 'org.projectlombok:lombok:1.16.18'
     //JSON
     //compile 'org.json:json:20171018'
-    compile 'com.fasterxml.jackson.core:jackson-core:2.8.7'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.7'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.7'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.9.4'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.4'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.4'
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.4"
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
     compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.8'
+    //Twitch API
+    compile 'com.github.twitch4j:twitch4j:0.10.1'
 
     compile group: 'org.glassfish.tyrus.bundles', name: 'tyrus-standalone-client-jdk', version: '1.13.1'
 

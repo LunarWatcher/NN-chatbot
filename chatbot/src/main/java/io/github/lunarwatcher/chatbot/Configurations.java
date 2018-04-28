@@ -1,5 +1,7 @@
 package io.github.lunarwatcher.chatbot;
 
+import io.github.lunarwatcher.chatbot.bot.Bot;
+
 public class Configurations {
     public static String CREATOR;
     public static String CREATOR_GITHUB;

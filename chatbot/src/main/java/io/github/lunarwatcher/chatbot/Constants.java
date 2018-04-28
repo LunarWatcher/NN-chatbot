@@ -1,6 +1,8 @@
 package io.github.lunarwatcher.chatbot;
 
 import com.sun.xml.internal.bind.v2.TODO;
+import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
+import io.github.lunarwatcher.chatbot.bot.chat.Message;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +31,10 @@ public final class Constants {
     public static final boolean AUTO_SAVE_WHEN_PUT = true;
     public static final String BANNED_REPLY = "Go away.";
     public static final int FLASK_PORT = 8213;
+    public static final int MAX_RETRIES_ON_RESTART = 10;
+    public static final String INVALID_COMMAND = "Maybe you should consider looking up the manual.";
+    public static final Message stopMessage = new Message("", 0, 0, "", 0);
+    public static final BMessage bStopMessage = new BMessage("", false);
 
     public static final String[] joinMessages = {
             "Joined",

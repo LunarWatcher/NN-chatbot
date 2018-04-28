@@ -4,8 +4,25 @@ package io.github.lunarwatcher.chatbot
 
 import java.io.Reader
 import java.util.concurrent.TimeUnit
+import java.util.function.Predicate
 import javax.script.Invocable
 import javax.script.ScriptEngine
+
+/**
+ * Changelog:
+ *
+Version | Description
+--------|-------------------
+1       | Added something
+2       | Removed something
+ *
+ *
+ * **b** this is a test
+ *
+ */
+data class MyKotlinDTO(var x: Int) {
+
+}
 
 val mapped = mutableListOf(
         "&lt;" to "<",
@@ -43,6 +60,12 @@ fun cleanInput(input: String) : String {
     return cleaned
 }
 
+fun <T, O> map(list: List<T>, function: () -> O) : List<O>{
+    return list.map { function() }
+}
+
+fun String.clean() = cleanInput(this)
+
 fun String.createInvocable(engine: ScriptEngine) : Invocable {
     engine.eval(this)
     return engine as Invocable
@@ -60,3 +83,6 @@ fun getRevision() : String{
     val revision = process.inputStream.bufferedReader().readLine()
     return if(revision == null) "Unknown revision" else "Revision $revision"
 }
+
+fun <A, B> zip(one: Collection<A>, two: Collection<B>) : Map<A, B>
+        = one.zip(two).toMap()

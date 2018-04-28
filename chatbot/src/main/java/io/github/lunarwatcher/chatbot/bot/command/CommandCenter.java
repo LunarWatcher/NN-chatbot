@@ -35,7 +35,7 @@ public class CommandCenter {
     private StatusListener statusListener;
     public CrashLogs crash;
 
-    public CommandCenter(Properties botProps, boolean shrugAlt, Chat site) {
+    public CommandCenter(Properties botProps, boolean shrugAlt, boolean truncated, Chat site) {
         this.db = site.getDatabase();
         if (tc == null) {
             tc = new TaughtCommands(db);
@@ -48,7 +48,7 @@ public class CommandCenter {
         LocationCommand location = new LocationCommand();
         Alive alive = new Alive();
 
-        addCommand(new HelpCommand(this));
+        addCommand(new HelpCommand(this, truncated));
         addCommand(new ShrugCommand(shrugAlt ? "¯\\\\_(ツ)_/¯" : "¯\\_(ツ)_/¯"));
         addCommand(new AboutCommand());
         addCommand(new Learn(tc, this));
@@ -90,6 +90,7 @@ public class CommandCenter {
         addCommand(new NPECommand(site));
         addCommand(new RevisionCommand());
         addCommand(new NetIpCommand());
+        addCommand(new GitHubCommand());
         statusListener = new StatusListener(site, db);
         addCommand(new StatusCommand(statusListener, site));
 
@@ -108,6 +109,11 @@ public class CommandCenter {
         listeners.add(ml);
 
 
+    }
+
+    public void loadInterconnected(){
+        addCommand(new JoinTwitch());
+        addCommand(new LeaveTwitch());
     }
 
     public void loadSE() {

@@ -8,6 +8,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
+import io.github.lunarwatcher.chatbot.clean
 import io.github.lunarwatcher.chatbot.utils.Http
 import jdk.nashorn.internal.runtime.regexp.joni.encoding.CharacterType.W
 import jodd.jerry.Jerry
@@ -32,20 +33,20 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             return null;
         }
 
-        if (site is SEChat){
-            try {
-                //To avoid this stupidity: https://i.imgur.com/N8lZ4Q9.png
-                //TODO fix - currently gives a 302 status code.
-                if(site.mentionIds.size > 0) {
-                    val ids = site.mentionIds.joinToString(",")
-                    site.mentionIds.clear()
-                    site.http.post("${site.site.url}/messages/ack", arrayOf("Content-Type", "text/plain"), "fkey", site.rooms.first { it.id == user.roomID }.fKey, "id", ids)
-
-                }
-            }catch(e: Exception){
-                site.commands.crash.crash(e)
-            }
-        }
+        //[tag:wontfix]
+        //if (site is SEChat){
+        //    try {
+        //        //To avoid this stupidity: https://i.imgur.com/N8lZ4Q9.png
+        //        //
+        //        if(site.mentionIds.size > 0) {
+        //            val ids = site.mentionIds.joinToString(",")
+        //            site.mentionIds.clear()
+        //            site.http.post("${site.site.url}/messages/ack", arrayOf("Content-Type", "text/plain"), "fkey", site.rooms.first { it.id == user.roomID }.fKey, "id", ids)
+        //        }
+        //    }catch(e: Exception){
+        //        site.commands.crash.crash(e)
+        //    }
+        //}
 
         if(ignoreNext){
             ignoreNext = false;
@@ -76,22 +77,6 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
     }
 
     /**
-     * Commands or whatever you wanna call it that's handled through pings. Returns null
-     * if there's no reply specified for the input
-     */
-    fun getMessage(input: String) : BMessage?{
-        //Shadowing name by intent
-        val input = input.toLowerCase();
-        return when {
-            input.contains("help") -> BMessage("You can see my commands by doing //help", false)
-            //TODO add more stuff here
-            else -> {
-                null;
-            }
-        }
-    }
-
-    /**
      * TODO This is a TODO as this is critical for function if a new site is added. Please read:
      * This defaults to a `@Username` system. Should the site run a system similar to discord (@username is formatted
      * in the API as @1234 (userID instead of username) this has to be edited to add support for that site. Otherwise
@@ -103,9 +88,13 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
                     || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
             "stackexchange" -> containsUsername(input);
             "stackoverflow" -> containsUsername(input);
+            /**
+             * Asserts a full match on MSE; experimental to see which is better on sites where the length of the username isn't fixed
+             */
             "metastackexchange" -> input.toLowerCase().contains("@${site.site.config.username.toLowerCase()}\\W".toRegex())
+            "twitch" -> containsUsername(input)
             else ->{
-                println("Else");
+                println("WARNING: mention on unregistered site. Defaulting to \"@username\"");
                 input.contains("@" + site.site.config.username)
             };
         }
@@ -118,24 +107,20 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             "stackexchange" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
             "stackoverflow" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
             "metastackexchange" -> containsUsername("^" + input.split(" ")[0]);//^ asserts start of the string in regex.
+            "twitch" -> containsUsername("^" + input.split(" ")[0])
             else ->{
-                println("Else");
+                println("WARNING: mention on unregistered site. Defaulting to \"@username\"");
                 input.contains("@" + site.site.config.username)
             };
         }
     }
 
 
-    fun containsUsername(input: String) : Boolean = (site.site.config.username.length downTo 3).any {
+    private fun containsUsername(input: String) : Boolean = (site.site.config.username.length downTo 3).any {
         input.toLowerCase().contains("${("@" + site.site.config.username.substring(0, it).toLowerCase())}\\b".toRegex())
     };
 
     fun ignoreNext(){
         ignoreNext = true;
     }
-}
-
-fun String.clean() : String{
-    return this.replace("&quot;", "\"").replace("&#39;", "'")
-            .replace("&gt;", ">").replace("&lt;", "<")
 }

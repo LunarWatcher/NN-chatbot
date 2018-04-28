@@ -18,6 +18,21 @@ import java.util.*;
 import static io.github.lunarwatcher.chatbot.Constants.*;
 import static io.github.lunarwatcher.chatbot.utils.Utils.assertion;
 
+/**
+ * Changelog:
+ *
+ * <table>
+ *     <tr><th>Version</th><th>Description</th></tr>
+ *     <tr>
+ *         <td>2</td>
+ *         <td>Added field 'something'</td>
+ *     </tr>
+ *     <tr>
+ *         <td>3</td>
+ *         <td>Added field 'somethingElse'</td>
+ *     </tr>
+ * </table>
+ */
 public class BotCore {
     /**
      * The username the bot goes by. On some sites (like Discord) the actual username has a number after it
@@ -61,7 +76,13 @@ public class BotCore {
                     if(identifier.equals(IDENTIFIER_EMAIL)){
                         email = (String) siteDet.getValue();
                     }else if(identifier.equals(IDENTIFIER_ID)){
-                        userID = Long.parseLong(((String) siteDet.getValue()));
+                        try {
+                            userID = Long.parseLong(((String) siteDet.getValue()));
+                        }catch(NumberFormatException e){
+                            if(name.toLowerCase().equals("twitch")){
+                                userID = -1;
+                            }
+                        }
                     }else if(identifier.equals(IDENTIFIER_PASSWORD)){
                         password = (String) siteDet.getValue();
                     }else if(identifier.equals(IDENTIFIER_USERNAME)){
@@ -93,47 +114,6 @@ public class BotCore {
         String LROUH = (String) botProps.get("bot.home.leave");
         if(LROUH != null)
             Constants.LEAVE_ROOM_ON_UNHOME = Boolean.parseBoolean(LROUH);
-
-        dropPrep();
-        boolean ti = true;
-        while(ti && !Constants.AUTO_BOOT){
-            System.out.print("Command: ");
-            input = scanner.nextLine();
-            if(input.equals("start") || input.equals("-b")){
-                ti = false;
-
-                break;
-            }
-            if(input.contains("quiet")){
-                quiet = Utils.invertBoolean(quiet);
-            }else if(input.contains("-s")){
-                int size = sites.size();
-                String site = input.replace("-s ", "");
-                for(Site s : availableSites){
-                    if(s.is(site)){
-                        specificSite = true;
-                        sites.add(s);
-                    }
-                }
-                if(size == sites.size()){
-                    System.err.println("Site not added, not listed in bot.properties");
-                }
-            }else if(input.contains("db")){
-                if(input.contains("-reset")){
-                    database = DEFAULT_DATABASE;
-                }else {
-                    if(input.replace("db ", "").contains(".json")) {
-                        database = input.replace("db ", "");
-
-                    }else{
-                        System.out.println("The database has to be in .json format!");
-                    }
-
-                }
-                System.out.println("Current database: " + database);
-
-            }
-        }
 
         if(sites.size() == 0)
             sites = availableSites;

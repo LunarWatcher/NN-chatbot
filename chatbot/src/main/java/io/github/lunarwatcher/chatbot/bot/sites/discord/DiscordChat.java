@@ -13,6 +13,8 @@ import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.Getter;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Marker;
+import sx.blah.discord.Discord4J;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -20,6 +22,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEditEvent
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.StatusType;
 import sx.blah.discord.util.DiscordException;
 
 import java.io.IOException;
@@ -47,9 +50,10 @@ public class DiscordChat implements Chat{
         this.db = db;
         this.botProps = botProps;
         logIn();
-        commands = new CommandCenter(botProps, false, this);
+        commands = new CommandCenter(botProps, false, true,this);
         commands.loadDiscord();
         commands.loadNSFW();
+        commands.loadInterconnected();
 
         channels = new ArrayList<>();
 
@@ -99,10 +103,12 @@ public class DiscordChat implements Chat{
     public void logIn() throws IOException {
         client = new ClientBuilder()
                 .withToken(site.getConfig().getEmail())
-                .online()
+                .setMaxReconnectAttempts(20)
                 .build();
         client.getDispatcher().registerListener(this);
         client.login();
+        client.changePresence(StatusType.ONLINE);
+
 
     }
 
@@ -171,6 +177,8 @@ public class DiscordChat implements Chat{
                     }
                 } else {
                     for (BMessage r : replies) {
+                        if(r == Constants.bStopMessage)
+                            return;
                         List<String> items = new ArrayList<>();
                         if (r.content.length() > 2000) {
                             boolean fixedFont = r.content.startsWith("```");

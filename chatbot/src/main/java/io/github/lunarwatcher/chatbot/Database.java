@@ -150,7 +150,6 @@ public class Database {
         try (Writer writer = Files.newBufferedWriter(file, options)) {
             JsonFactory factory = new JsonFactory();
             try (JsonGenerator generator = factory.createGenerator(writer)) {
-                generator.setPrettyPrinter(new DefaultPrettyPrinter());
                 generator.writeStartObject();
 
                 for (Map.Entry<String, Object> entry : cache.entrySet()) {
@@ -235,5 +234,9 @@ public class Database {
         return (List<Object>) get(key);
     }
 
+    public void purge(){
+        cache.clear();
+        cache = new HashMap<>();
+    }
 
 }
