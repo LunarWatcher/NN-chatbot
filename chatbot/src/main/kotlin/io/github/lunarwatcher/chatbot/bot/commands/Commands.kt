@@ -169,7 +169,9 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
 
 class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractCommand("help", listOf("halp", "hilfen", "help"),
         "Lists all the commands the bot has",
-        "Use `" + CommandCenter.TRIGGER + "help` to list all the commands and `" + CommandCenter.TRIGGER + "help [command name]` to get more info about a specifc command"){
+        "Use `" + CommandCenter.TRIGGER + "help` to list all the commands and `" + CommandCenter.TRIGGER + "help [command name]` to get more info about a specifc command\n" +
+                "Call `${CommandCenter.TRIGGER}help trucated` for a small version of the help command, or `${CommandCenter.TRIGGER}help full` for the full version. " +
+                "Note that not passing full or trucated leads to it defaulting to the site specific settings (for this site, it's ${if(truncated) "truncated" else "full"})"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
@@ -177,7 +179,14 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
         }
 
         val `in` = splitCommand(input)
-        if(`in`.size == 1) {
+        if(`in`.size == 1 ||
+                (`in`.size == 2 && `in`.containsKey("content")
+                        && (`in`["content"] == "truncated" || `in`["content"] == "full")
+                        )){
+            val content = `in`["content"]
+            val truncated = if(content == null) this.truncated
+                        else content == "truncated"
+
             var commands: MutableMap<String, String> = mutableMapOf()
             val learnedCommands: MutableList<String> = mutableListOf()
             var listeners: MutableMap<String, String> = mutableMapOf();
@@ -256,11 +265,11 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                 return BMessage(reply.toString(), false);
             }else{
                 val builder = ReplyBuilder()
-                builder.append("Commands: ")
+                builder.append("**Commands**: ")
                 builder.append(commands.keys.joinToString(", "))
-                        .append(". User taught commands: ")
+                        .append(". **User taught commands:** ")
                         .append(learnedCommands.toSortedSet().joinToString(", "))
-                        .append(". Listeners: " + listeners.keys.joinToString(", "))
+                        .append(". **Listeners**: " + listeners.keys.joinToString(", "))
                 return BMessage(builder.toString(), false)
             }
         }else{
@@ -308,7 +317,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                             "${if(rank == NO_DEFINED_RANK)
                                 "1 (WARNING: Undefined in code. Actual rank may differ from listed)"
                             else rank.toString()} " +
-                            "(your rank: ${Utils.getRank(user.userID, center.site.config)}")
+                            "(your rank: ${Utils.getRank(user.userID, center.site.config)})")
 
 
             return BMessage(reply.toString(), true);

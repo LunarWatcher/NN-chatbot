@@ -83,7 +83,6 @@ public class CommandCenter {
         addCommand(new Blame(site));
         addCommand(new WakeCommand());
         addCommand(new WhoIs(site));
-        addCommand(new JSEval());
         addCommand(new BlacklistRoom(site));
         addCommand(new UnblacklistRoom(site));
         addCommand(new TellCommand(site));
