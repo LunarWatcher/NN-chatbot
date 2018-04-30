@@ -19,12 +19,16 @@ import io.github.lunarwatcher.chatbot.utils.Utils.random
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
 import org.joda.time.*
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
 
-val formatter = SimpleDateFormat("E, d MMMM HH:mm:ss.SSSS Y z ('GMT' Z)", Locale.ENGLISH)
-const val FLAG_REGEX = "( -[a-zA-Z]+)([a-zA-Z ]+(?!-\\w))"
+const val DATE_PATTERN = "E, d MMMM HH:mm:ss.SSSS Y z ('GMT' ZZ)"
+
+val formatter = SimpleDateFormat(DATE_PATTERN, Locale.ENGLISH)
+const val FLAG_REGEX = "( -[a-zA-Z]+)( \"[a-zA-Z ]+\")?"
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
 const val NO_DEFINED_RANK = -1
 interface Command{
@@ -94,12 +98,18 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         val iMap = parseArguments(input);
         val initialSplit = input.split(FLAG_REGEX.toRegex())[0];
         val name = initialSplit.split(" ")[0];
+
         if(name == input){
             //No arguments, just the name
             return mapOf("name" to name.trim())
         }
-        val content = initialSplit.substring(name.length + 1/*avoid the space*/)
-        val dMap = mutableMapOf("name" to name.trim(), "content" to content.trim())
+
+        val dMap = try{
+            val content = initialSplit.substring(name.length + 1/*avoid the space*/)
+            mutableMapOf("name" to name.trim(), "content" to content.trim())
+        }catch(e: StringIndexOutOfBoundsException){
+            mutableMapOf("name" to name.trim())
+        }
 
         if(initialSplit == input){
             return dMap
@@ -134,7 +144,10 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
                 val g1 = matcher.group(1)
                 val g2 = matcher.group(2);
 
-                retval[g1.substring(1, g1.length)] = g2.substring(1, g2.length)
+                retval[g1.substring(1, g1.length)] = g2?.substring(1, g2.length) ?: "true"
+            }else if(groups == 1){
+                val g1 = matcher.group(1)
+                retval[g1.substring(1, g1.length)] = "true"
             }
         }
 
@@ -377,14 +390,30 @@ class Alive : AbstractCommand("alive", listOf(), "Used to check if the bot is wo
     }
 }
 
-class TimeCommand : AbstractCommand("time", listOf(), "What time is it?"){
+class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="Displays the current time at the bots location.\n" +
+        "`-get` as an argument without content displays all the available timezones.\n" +
+        "Supplying a timezone (see `${CommandCenter.TRIGGER}time -get` for the available ones) shows the current time in that timezone"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        val content = splitCommand(input)["content"] ?: return BMessage(formatter.format(System.currentTimeMillis()), true);
-        if(content.trim().toLowerCase().contains("139") || content.trim().toLowerCase().contains("java")){
+        val raw = splitCommand(input)
+        val content = raw["content"]
+        if(content == null && raw.size == 1)
+            return BMessage(formatter.format(System.currentTimeMillis()), true);
+
+        if(content != null && (content.trim().toLowerCase().contains("139") || content.trim().toLowerCase().contains("java"))){
             return BMessage("Morning", true)
+        }else if(raw["-get"] != null)
+            return BMessage("Available timezones: " + DateTimeZone.getAvailableIDs(), false)
+
+        return try{
+            val applicable = DateTimeZone.forID(content)
+            val formatter = DateTimeFormat.forPattern(DATE_PATTERN)
+                    .withLocale(Locale.ENGLISH)
+                    .withZone(applicable)
+            BMessage(Instant().toString(formatter), true)
+        }catch(e: IllegalArgumentException){
+            BMessage(e.message, true)
         }
-        return BMessage(formatter.format(System.currentTimeMillis()), true)
     }
 }
 

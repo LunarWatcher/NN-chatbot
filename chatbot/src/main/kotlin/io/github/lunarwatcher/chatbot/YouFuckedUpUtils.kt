@@ -26,7 +26,7 @@ object LogStorage{
 
 }
 
-class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups"){
+class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups", rankRequirement = 5){
 
     fun crash(e: Exception){
         LogStorage.crash(e)
@@ -34,8 +34,8 @@ class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs
     }
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        if (Utils.getRank(user.userID, site.config) < 8){
-            return BMessage("You need rank 5 or higher to view crash logs", true);
+        if (!canUserRun(user)){
+            return BMessage("You need rank 5 or higher to view crash logs.", true);
         }
         if (logs.size != 0){
             val reply = ReplyBuilder()
