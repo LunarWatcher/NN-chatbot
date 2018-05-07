@@ -116,7 +116,8 @@ class TaughtCommands(val db: Database){
 }
 
 class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied",
-                     val output: String, val reply: Boolean, val creator: Long, var nsfw: Boolean = false, val site: String)
+                     val output: String, val reply: Boolean, val creator: Long,
+                     override var nsfw: Boolean = false, val site: String)
     : AbstractCommand(cmdName, listOf(), cmdDesc, "This is a learned command and does not have help"){
 
     override fun handleCommand(input: String, user: User): BMessage? {

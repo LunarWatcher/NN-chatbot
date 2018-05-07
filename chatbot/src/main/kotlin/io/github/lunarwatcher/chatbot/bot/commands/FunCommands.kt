@@ -149,9 +149,12 @@ class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone m
         val problem = splitCommand(input)["content"]
 
         val blamable = site.config.ranks.values.map{it.username}.filter{it != null}
+        if(blamable.isEmpty())
+            return BMessage("I don't know!!", true)
         return if(problem == null)
             BMessage("It is ${blamable[random.nextInt(blamable.size)]}'s fault!", true);
         else BMessage("blames ${blamable[random.nextInt(blamable.size)]} for $problem", true)
+
     }
 }
 
@@ -159,6 +162,20 @@ class StockComments(val site: Chat) {
     //TODO allow creation of stock comments for specific rooms saved in the dataabase
     //Also, this commit is a part in testing some doge aliases for git :3
 
+}
+
+class PollCommand : AbstractCommand("strawpoll", listOf(), desc="Creates a new strawpoll", help="Format: -title \"Title with quotes\" -optionN \"replace n with the question ID. Duplicated ones will be overridden\" -dupes \"Whether or not to allow duplicated posts. Default is false\""){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun parseBoolean(input: String){
+
+    }
+
+    companion object {
+
+    }
 }
 
 class Appul : AbstractCommand("appul", listOf("apple"), "Apples."){

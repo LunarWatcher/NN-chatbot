@@ -33,21 +33,6 @@ class MentionListener(val site: Chat) : AbstractListener("ping", "Reacts to ping
             return null;
         }
 
-        //[tag:wontfix]
-        //if (site is SEChat){
-        //    try {
-        //        //To avoid this stupidity: https://i.imgur.com/N8lZ4Q9.png
-        //        //
-        //        if(site.mentionIds.size > 0) {
-        //            val ids = site.mentionIds.joinToString(",")
-        //            site.mentionIds.clear()
-        //            site.http.post("${site.site.url}/messages/ack", arrayOf("Content-Type", "text/plain"), "fkey", site.rooms.first { it.id == user.roomID }.fKey, "id", ids)
-        //        }
-        //    }catch(e: Exception){
-        //        site.commands.crash.crash(e)
-        //    }
-        //}
-
         if(ignoreNext){
             ignoreNext = false;
             return null;

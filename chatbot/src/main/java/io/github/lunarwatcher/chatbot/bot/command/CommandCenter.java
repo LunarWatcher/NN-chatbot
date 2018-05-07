@@ -129,6 +129,7 @@ public class CommandCenter {
 
         if(site instanceof DiscordChat) {
             addCommand(new NSFWState((DiscordChat) site));
+            addCommand(new DiscordSummon(((DiscordChat)site).clientID));
         }
     }
 

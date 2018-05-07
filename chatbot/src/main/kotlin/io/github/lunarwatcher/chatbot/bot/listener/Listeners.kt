@@ -18,7 +18,7 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
 
         }else if(mention.isMentioned(input) && context == null) {
 
-            if (input.contains("knock knock")) {
+            if (input.contains("knock\\W*?knock".toRegex())) {
                 context = Context(0, user.userID)
             }else
                 return null
@@ -183,7 +183,10 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     }
 
     companion object {
-        const val WAIT = 60
+        /**
+         * Wait time in seconds
+         */
+        const val WAIT = 10 * 60 //10 minutes * 60 seconds
         
     }
 }

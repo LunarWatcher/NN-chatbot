@@ -72,7 +72,12 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
             return BMessage("I'm afraid I can't let you do that, User", true);
         }
         try {
-            val args = input.split(" ");
+            val content = splitCommand(input)["content"] ?: return BMessage("Which command do you want to change, and what's the new state?", true)
+
+            val args = content.split(" ");
+            if(args.size != 2){
+                return BMessage("Usage: ${CommandCenter.TRIGGER}declare commandname (n)sfw", true)
+            }
             val command = args[0];
 
             val newState: String = args[1];

@@ -1,6 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.utils.Utils
@@ -39,4 +40,8 @@ class NSFWState(val chat: DiscordChat) : AbstractCommand("nsfwtoggle", listOf(),
             BMessage("Successfully changed NSFW mode", false);
         }
     }
+}
+
+class DiscordSummon(var clientID: String) : AbstractCommand("summon", listOf("join")){
+    override fun handleCommand(input: String, user: User): BMessage? = BMessage("To make me join a server, use this URL: https://discordapp.com/oauth2/authorize?client_id=$clientID&scope=bot&permissions=0", true)
 }

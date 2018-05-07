@@ -37,6 +37,7 @@ interface Command{
     val desc: String;
     val help: String;
     val rankRequirement: Int
+    val nsfw: Boolean
     /**
      * Check if the input starts with the name or one of the command's aliases
      */
@@ -61,7 +62,8 @@ class User(var site: String, var userID: Long, var userName: String, var roomID:
 abstract class AbstractCommand(override val name: String, override val aliases: List<String>,
                                override val desc: String = Constants.NO_DESCRIPTION,
                                override val help: String = Constants.NO_HELP,
-                               override val rankRequirement: Int = NO_DEFINED_RANK) : Command{
+                               override val rankRequirement: Int = NO_DEFINED_RANK,
+                               override val nsfw: Boolean = false) : Command{
 
     init {
         if (rankRequirement != NO_DEFINED_RANK) {
@@ -294,6 +296,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
             //No clue what to call this thing
             val d: String;
             val rank: Int
+            val nsfw: Boolean
 
             when {
                 center.isBuiltIn(cmd) -> {
@@ -301,13 +304,14 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                     help = center.get(cmd)?.help ?: return null;
                     name = center.get(cmd)?.name ?: return null;
                     val aliasBuffer = center.get(cmd)?.aliases ?: return null
-                    if(aliasBuffer.size == 0)
-                        aliases = "None"
+                    aliases = if(aliasBuffer.isEmpty())
+                        "None"
                     else
-                        aliases = aliasBuffer.joinToString(", ")
+                        aliasBuffer.joinToString(", ")
                     rank = center.get(cmd)?.rankRequirement ?: return null
 
                     d = "Built in command. "
+                    nsfw = center.get(cmd)?.nsfw ?: return null
                 }
                 CommandCenter.tc.doesCommandExist(cmd) -> {
                     desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
@@ -316,6 +320,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                     d = "Taught command. (Taught to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
                     aliases = "None. "
                     rank = 1
+                    nsfw = CommandCenter.tc.get(cmd)?.nsfw ?: return null
                 }
 
                 else -> return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
@@ -404,6 +409,8 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
             return BMessage("Morning", true)
         }else if(raw["-get"] != null)
             return BMessage("Available timezones: " + DateTimeZone.getAvailableIDs(), false)
+        else if(content != null && (content.trim().toLowerCase().contains("internet")))
+            return BMessage("Morning UIT (Universal Internet Time)", true);
 
         return try{
             val applicable = DateTimeZone.forID(content)

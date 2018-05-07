@@ -8,22 +8,6 @@ import java.util.function.Predicate
 import javax.script.Invocable
 import javax.script.ScriptEngine
 
-/**
- * Changelog:
- *
-Version | Description
---------|-------------------
-1       | Added something
-2       | Removed something
- *
- *
- * **b** this is a test
- *
- */
-data class MyKotlinDTO(var x: Int) {
-
-}
-
 val mapped = mutableListOf(
         "&lt;" to "<",
         "&gt;" to ">",

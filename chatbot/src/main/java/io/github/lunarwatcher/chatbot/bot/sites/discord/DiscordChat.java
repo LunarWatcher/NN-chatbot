@@ -45,6 +45,8 @@ public class DiscordChat implements Chat{
     public List<Long> hardcodedAdmins = new ArrayList<>();
     List<Long> notifiedBanned = new ArrayList<>();
     Map<Long, Boolean> nsfw = new HashMap<>();
+    public String clientID;
+
     public DiscordChat(Site site, Properties botProps, Database db) throws IOException {
         this.site = site;
         this.db = db;
@@ -108,7 +110,7 @@ public class DiscordChat implements Chat{
         client.getDispatcher().registerListener(this);
         client.login();
         client.changePresence(StatusType.ONLINE);
-
+        clientID = client.getApplicationClientID();
 
     }
 

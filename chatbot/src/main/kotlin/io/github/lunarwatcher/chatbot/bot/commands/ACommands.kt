@@ -102,7 +102,7 @@ class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "
         try {
             val username = split[0]
             var uid = username.toLongOrNull()
-            val newRank = split[1].toIntOrNull() ?: 0
+            val newRank = split[1].toIntOrNull() ?: return BMessage("Invalid rank: ${split[1]}", true)
 
             if(uid == null){
                 val r = getRankOrMessage(username, site)
@@ -114,19 +114,21 @@ class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "
             if (newRank < 0 || newRank > 10)
                 return BMessage("That's not a valid rank within the range [0, 10]", true);
 
+
             val currentRank = Utils.getRank(uid, site.config)
 
             val cuRank = Utils.getRank(user.userID, site.config)
 
-            if (currentRank >= cuRank && !Utils.isHardcodedAdmin(user.userID, site))
-                return BMessage("You can't change the rank of users with the same or higher rank as yourself", true);
-
-            if (newRank >= cuRank && cuRank != 10)
-                return BMessage("You can't promote other users to the same or higher rank as yourself", true)
-
             if ((newRank == 0 || currentRank == 0) && cuRank < 8) {
                 return BMessage("You can't ban or unban users with your current rank", true);
             }
+            if (currentRank >= cuRank && !Utils.isHardcodedAdmin(user.userID, site))
+                return BMessage("You can't change the rank of users with the same or higher rank as yourself", true);
+
+            if (newRank > cuRank && cuRank != 10)
+                return BMessage("You can't promote other users to the same or higher rank as yourself", true)
+
+
 
             if (cuRank < 6)
                 return BMessage("You can't change ranks with your current rank", true);

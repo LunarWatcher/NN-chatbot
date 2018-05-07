@@ -2,37 +2,30 @@ package io.github.lunarwatcher.chatbot.bot.sites.twitch;
 
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.KUtilsKt;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
-import io.github.lunarwatcher.chatbot.bot.commands.Command;
 import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
-import lombok.experimental.var;
 import lombok.val;
 import me.philippheuer.twitch4j.TwitchClient;
 import me.philippheuer.twitch4j.TwitchClientBuilder;
 import me.philippheuer.twitch4j.endpoints.ChannelEndpoint;
 import me.philippheuer.twitch4j.events.EventSubscriber;
+import me.philippheuer.twitch4j.events.event.AbstractChannelEvent;
+import me.philippheuer.twitch4j.events.event.channel.FollowEvent;
 import me.philippheuer.twitch4j.events.event.irc.ChannelMessageEvent;
-import me.philippheuer.twitch4j.events.event.irc.IRCMessageEvent;
 import me.philippheuer.twitch4j.message.commands.CommandPermission;
 import me.philippheuer.twitch4j.model.Channel;
 
-
-import javax.validation.constraints.Null;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class TwitchChat implements Chat {
@@ -222,7 +215,7 @@ public class TwitchChat implements Chat {
     }
 
 
-    public void sendMessage(ChannelMessageEvent event, String message){
+    public void sendMessage(AbstractChannelEvent event, String message){
         if(message.length() <= 500) {
             event.sendMessage(message);
         }else{
@@ -307,7 +300,11 @@ public class TwitchChat implements Chat {
         for(CommandPermission permission : permissions) {
             switch (permission) {
                 case MODERATOR:
-                    lowestLevel = "moderator";
+                    /**
+                     * If the user isn't currently marked as a broadcaster, set the rank to moderator
+                     */
+                    if(!lowestLevel.toLowerCase().equals("broadcaster"))
+                        lowestLevel = "moderator";
                     break;
                 case BROADCASTER:
                     lowestLevel = "broadcaster";
@@ -326,6 +323,11 @@ public class TwitchChat implements Chat {
             //Catch it; it's fine.
         }
 
+    }
+
+    @EventSubscriber
+    public void onFollow(FollowEvent event) {
+        sendMessage(event,"Thanks for following " + event.getUser().getDisplayName() + " ^w^");
     }
 
 }
