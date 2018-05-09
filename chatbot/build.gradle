@@ -22,13 +22,14 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    jcenter()
     maven {
         url  "https://jitpack.io"
     }
     maven {
         url "https://dl.bintray.com/twitch4j/maven"
     }
-    jcenter()
+
 }
 
 kotlin {
@@ -63,6 +64,7 @@ dependencies {
     compile 'com.google.guava:guava:23.5-jre'
     compile 'joda-time:joda-time:2.9.9'
     compile 'org.jodd:jodd-all:4.3.0'
+    compile 'org.jsoup:jsoup:1.11.3'//To get rid of all the HTML char decoding; HTML parsing is still necessary though
 
 }
 

@@ -19,4 +19,12 @@ class KotlinTests {
         DateTimeZone.forID("Europe/Rome")//This is the main test; if it throws an exception, the test has failed
     }
 
+    @Test
+    fun typeCast(){
+        val x: String = "124321";
+        val y: Long = 84189
+
+        val z = x.toLong()
+
+    }
 }

@@ -2,6 +2,7 @@
 
 package io.github.lunarwatcher.chatbot
 
+import org.jsoup.parser.Parser
 import java.io.Reader
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
@@ -9,12 +10,7 @@ import javax.script.Invocable
 import javax.script.ScriptEngine
 
 val mapped = mutableListOf(
-        "&lt;" to "<",
-        "&gt;" to ">",
-        "&amp;" to "&",
-        "&quot;" to "\"",
         "\\\"" to "\"",//This has to come after the previous one; otherwise it breaks
-        "&#39;" to "'",
         "<i>" to "*",
         "</i>" to "*",
         "<b>" to "**",
@@ -33,6 +29,7 @@ val mappedRegex = mutableListOf(
 
 fun cleanInput(input: String) : String {
     var cleaned = input
+    cleaned = Parser.unescapeEntities(cleaned, true)
     for ((o, r) in mapped){
         cleaned = cleaned.replace(o, r)
     }

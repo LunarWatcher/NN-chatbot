@@ -30,7 +30,7 @@ class NSFWState(val chat: DiscordChat) : AbstractCommand("nsfwtoggle", listOf(),
         }catch(e: ClassCastException){
             return BMessage("The new value has to be a boolean!", true);
         }
-        val guild: Long = chat.getAssosiatedGuild(user.roomID);
+        val guild: Long = user.roomID;
         if(guild == -1L)
             return BMessage("You fucked up somewhere", false);
         return if(chat.getNsfw(guild) == arg["content"]?.toBoolean()){

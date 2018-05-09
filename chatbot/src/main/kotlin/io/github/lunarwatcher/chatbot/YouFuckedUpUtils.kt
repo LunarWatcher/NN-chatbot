@@ -23,7 +23,6 @@ object LogStorage{
 
     }
 
-
 }
 
 class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups", rankRequirement = 5){

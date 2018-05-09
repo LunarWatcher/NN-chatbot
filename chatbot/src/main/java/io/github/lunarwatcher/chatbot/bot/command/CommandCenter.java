@@ -90,6 +90,7 @@ public class CommandCenter {
         addCommand(new RevisionCommand());
         addCommand(new NetIpCommand());
         addCommand(new GitHubCommand());
+        addCommand(new WikiCommand());
         statusListener = new StatusListener(site, db);
         addCommand(new StatusCommand(statusListener, site));
 

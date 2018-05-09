@@ -53,7 +53,7 @@ interface Command{
 /**
  * Info about a user.
  */
-class User(var site: String, var userID: Long, var userName: String, var roomID: Int, var nsfwSite: Boolean = false,
+class User(var site: String, var userID: Long, var userName: String, var roomID: Long, var nsfwSite: Boolean = false,
            vararg val args: Pair<String, String> = arrayOf())
 
 /**

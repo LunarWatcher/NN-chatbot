@@ -99,7 +99,7 @@ class UnSummon(val votes: Int, val chat: SEChat) : AbstractCommand("unsummon", l
         try{
             val raw = input.split(" ")
             val iRoom : Int = if(raw.size == 1)
-                user.roomID
+                user.roomID.toInt()
             else
                 raw[1].toInt()
 

@@ -1,9 +1,12 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
+import com.google.common.net.UrlEscapers
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Utils
 import kotlinx.coroutines.experimental.*
+import java.net.URI
+import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeoutException
 import javax.script.ScriptEngineManager
@@ -60,13 +63,10 @@ class LMGTFY : AbstractCommand("lmgtfy", listOf("searchfor", "google"), "Sends a
             if(query.isEmpty())
                 return BMessage("You have to supply a query", true);
 
-            query = query.replace(" ", "+")
-            return BMessage("$DDG_LINK$query", false)
+            return BMessage(DDG_LINK + URLEncoder.encode(query, "UTF-8"), true)
         }
 
-        query = query.replace(" ", "+")
-
-        return BMessage("$GOOGLE_LINK$query", false)
+        return BMessage(GOOGLE_LINK + URLEncoder.encode(query, "UTF-8"), true)
     }
 }
 
@@ -155,6 +155,18 @@ class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone m
             BMessage("It is ${blamable[random.nextInt(blamable.size)]}'s fault!", true);
         else BMessage("blames ${blamable[random.nextInt(blamable.size)]} for $problem", true)
 
+    }
+}
+
+class WikiCommand : AbstractCommand("wiki", listOf(), desc="Links to Wikipedia", help="Gets a wikipedia page. Use `--lang \"languagecode\"` to link to a specific site", rankRequirement = 1){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val split = splitCommand(input)
+
+        val lang = split["--lang"] ?: "en"
+        val content = split["content"]?.replace(" ", "_") ?: return BMessage("https://www.google.com/teapot", true)
+        val article = UrlEscapers.urlPathSegmentEscaper()
+                .escape(content)
+        return BMessage("https://$lang.wikipedia.org/wiki/" + URLEncoder.encode(article, "UTF-8"), false)
     }
 }
 

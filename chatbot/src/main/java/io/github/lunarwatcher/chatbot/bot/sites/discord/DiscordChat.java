@@ -170,6 +170,7 @@ public class DiscordChat implements Chat{
                     }
                 }
 
+
                 User user = new User(site.getName(), event.getAuthor().getLongID(), event.getAuthor().getName(), index, getNsfw(event.getGuild().getLongID()));
 
                 List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
@@ -278,27 +279,6 @@ public class DiscordChat implements Chat{
 
     public void setNsfw(long server, boolean newState){
         nsfw.put(server, newState);
-    }
-
-    /**
-     * Since the {@link User} class takes the room (here: channel) as an integer, the discord handler puts all the channels
-     * into an ArrayList and then passes the index of a channel as the argument. This is then converted back into this method
-     * where it gets the assosiated channel and returns the guild ID
-     * @param channelIndex The channel index to get
-     * @return The guild ID or -1 if not found
-     */
-    public long getAssosiatedGuild(int channelIndex){
-        IChannel x;
-        try {
-            x = channels.get(channelIndex);
-            if (x == null) {
-                return -1;
-            }
-        }catch(IndexOutOfBoundsException e){
-            return -1;
-        }
-
-        return x.getGuild().getLongID();
     }
 
     public CommandCenter getCommands(){

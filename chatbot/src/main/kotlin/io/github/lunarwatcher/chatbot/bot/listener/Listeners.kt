@@ -133,7 +133,7 @@ class WaveListener : AbstractListener("wave", "Waves back when a wave is detecte
 }
 
 class StatusListener(val site: Chat, val database: Database) : AbstractListener("status", "tracks messages for statuses. See also the status command"){
-    var users: MutableMap<Int, MutableMap<Long, Long>>
+    var users: MutableMap<Long, MutableMap<Long, Long>>
 
     init{
         val b = database.getMap("status-" + site.name) as MutableMap<String, MutableMap<String, Long>>?
@@ -142,7 +142,7 @@ class StatusListener(val site: Chat, val database: Database) : AbstractListener(
                 users = mutableMapOf()
                 for (user in b){
                     try {
-                        users[user.key.toInt()] = user.value.map{it.key.toLong() to it.value}.associateBy({it.first}, {it.second}).toMutableMap()
+                        users[user.key.toLong()] = user.value.map{it.key.toLong() to it.value}.associateBy({it.first}, {it.second}).toMutableMap()
 
                     }catch(e: Exception){
                     }

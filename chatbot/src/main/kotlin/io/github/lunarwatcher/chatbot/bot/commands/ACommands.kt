@@ -22,7 +22,7 @@ class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
         val raw = input.split(" ");
         val iRoom = try {
             if (raw.size == 1)
-                user.roomID
+                user.roomID.toInt()
             else
                 raw[1].toInt()
         }catch(e: NumberFormatException){
@@ -54,7 +54,7 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
         val raw = input.split(" ");
         val iRoom = try {
             if (raw.size == 1)
-                user.roomID
+                user.roomID.toInt()
             else
                 raw[1].toInt()
         }catch(e: NumberFormatException){
