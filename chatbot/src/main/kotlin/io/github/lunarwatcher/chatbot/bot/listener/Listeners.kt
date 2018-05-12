@@ -191,6 +191,17 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     }
 }
 
+class BasicListener(val output: String, val pattern: Regex, name: String, description: String, val reply: Boolean = false) : AbstractListener(name, description){
+    constructor(output: String, pattern: String, name: String, description: String) : this(output, pattern.toRegex(), name, description)
+
+    override fun handleInput(input: String, user: User): BMessage? {
+        if(input.matches(pattern)){
+            return BMessage(output, reply)
+        }
+        return null
+    }
+}
+
 /**
  * Saves some time in casting; but it will throw a NPE if Map\[what] == null
  */

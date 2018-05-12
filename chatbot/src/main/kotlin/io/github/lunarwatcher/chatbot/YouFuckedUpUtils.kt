@@ -51,3 +51,4 @@ class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs
         return BMessage("No logs. All good! :D", true)
     }
 }
+

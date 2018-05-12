@@ -1,5 +1,10 @@
+@file:Suppress("NAME_SHADOWING")
+
+import junit.framework.TestCase.assertEquals
 import org.joda.time.DateTimeZone
 import org.junit.Test
+import kotlin.math.exp
+import kotlin.math.pow
 
 class KotlinTests {
 

@@ -91,6 +91,8 @@ public class CommandCenter {
         addCommand(new NetIpCommand());
         addCommand(new GitHubCommand());
         addCommand(new WikiCommand());
+        addCommand(new CatCommand());
+        addCommand(new DogCommand());
         statusListener = new StatusListener(site, db);
         addCommand(new StatusCommand(statusListener, site));
 
@@ -98,6 +100,8 @@ public class CommandCenter {
         listeners.add(new WaveListener());
         listeners.add(new TestListener());
         listeners.add(new MorningListener());
+        listeners.add(new BasicListener(shrugAlt ? "¯\\\\_(ツ)_/¯" : "¯\\_(ツ)_/¯", "^\\/shrug$", "Discord-shrug", "Shrugs @ /shrug"));
+
 
         listeners.add(statusListener);
         /**

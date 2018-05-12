@@ -16,6 +16,8 @@ import io.github.lunarwatcher.chatbot.cleanInput
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
+import jodd.jerry.Jerry
+import jodd.lagarto.dom.Node
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
 import org.joda.time.*
@@ -328,7 +330,10 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
 
             val reply = ReplyBuilder(center.site.name == "discord");
 
-            reply.fixedInput().append(d).append("`$TRIGGER").append(name).append("`: $desc")
+            reply.fixedInput().append(d).append("`$TRIGGER")
+                    .append(name)
+                    .append(if(nsfw) "` (NSFW)" else "`")
+                    .append(": $desc")
                     .nl().fixedInput().append(help)
                     .nl().fixedInput().append("Known aliases: $aliases")
                     .nl().fixedInput().append("Rank required: " +
@@ -606,6 +611,7 @@ fun <K, V> Map<K, V>.getMaxLen() : Int{
     for (k in this){
         if(k.toString().length > current)
             current = k.toString().length
+
     }
     return current
 }
@@ -614,7 +620,52 @@ class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){
     override fun handleCommand(input: String, user: User): BMessage?{
         val content = splitCommand(input)["content"] ?: return BMessage("What?", true)
         if(content.trim().isEmpty()) return BMessage("What?", true)
+
+        if(user.site == "twitch" && content.startsWith("/") && Utils.getRank(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config) < 9)
+            return BMessage("No", true)
+
         return BMessage(content, false)
+    }
+}
+
+class CatCommand : AbstractCommand("cat", listOf("kitten"), desc = "Sends a random cat picture in chat"){
+    private var http = Http(HttpClients.createDefault())
+
+    override fun handleCommand(input: String, user: User): BMessage? {
+        //TODO add support for API keys
+        val response = http.get(API_URL)
+        if(response.statusCode > 400)
+            return BMessage("API returned status code ${response.statusCode}", false)
+
+        val jDoc = Jerry.jerry(response.body)
+        val imgElement = jDoc.`$`("img")?.get(0)
+                ?: return BMessage("Image not found? Blame ${Configurations.CREATOR}", true)
+        if(!imgElement.hasAttribute("src"))
+            return BMessage("Image not found? Blame ${Configurations.CREATOR}", true)
+        return BMessage(imgElement.getAttribute("src")!!, false)
+    }
+
+    companion object {
+        //TODO add API key support
+        const val API_URL = "https://thecatapi.com/api/images/get?format=html"
+    }
+}
+
+class DogCommand : AbstractCommand("dog", listOf("woof", "bark", "puppy"), desc = "Sends a random dog picture in chat"){
+    private var http = Http(HttpClients.createDefault())
+
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val response = http.get(API_URL)
+        if(response.statusCode > 400)
+            return BMessage("API returned status code ${response.statusCode}", false)
+
+        val json = response.bodyAsJson
+        val url = json.get("message") ?: return BMessage("Image not found? Blame ${Configurations.CREATOR}", true)
+        return BMessage(url.textValue(), false)
+    }
+
+    companion object {
+        const val API_URL = "https://dog.ceo/api/breeds/image/random"
     }
 }
 
