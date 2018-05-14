@@ -5,6 +5,7 @@ import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
@@ -29,6 +30,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TwitchChat implements Chat {
+    private static final boolean truncated = true;
+    private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.TWITCH, CommandGroup.NSFW);
 
     private TwitchClient client;
     CommandCenter commandCenter;
@@ -45,9 +48,7 @@ public class TwitchChat implements Chat {
         this.site = site;
         this.botProps = botProps;
         this.db = db;
-        commandCenter = new CommandCenter(botProps, false, true, this);
-        commandCenter.loadNSFW();
-        commandCenter.loadInterconnected();
+        commandCenter = CommandCenter.INSTANCE;
 
         config = new BotConfig(this);
 
@@ -138,9 +139,7 @@ public class TwitchChat implements Chat {
     }
 
     @Override
-    public void leaveServer(int serverId) {
-
-    }
+    public void leaveServer(long serverId) {/*Useless stub atm*/}
 
     public Long getUID(String username){
         Optional<Long> user = client.getUserEndpoint().getUserIdByUserName(username);
@@ -156,14 +155,14 @@ public class TwitchChat implements Chat {
             return;
         }
         try {
-            getCommands().hookupToRanks(event.getUser().getId(), event.getUser().getDisplayName());
+            getCommands().hookupToRanks(event.getUser().getId(), event.getUser().getDisplayName(), this);
 
             String message = event.getMessage();
-            if(message.startsWith("!!") && !CommandCenter.TRIGGER.equals("!!"))
-                message = CommandCenter.TRIGGER + message.substring(2);
+            if(message.startsWith("!!") && !CommandCenter.Companion.getTRIGGER().equals("!!"))
+                message = CommandCenter.Companion.getTRIGGER() + message.substring(2);
 
             if (Utils.isBanned(event.getUser().getId(), config)) {
-                if (CommandCenter.isCommand(message)) {
+                if (CommandCenter.Companion.isCommand(message)) {
                     boolean mf = false;
 
                     for (Long u : notifiedBanned) {
@@ -182,15 +181,15 @@ public class TwitchChat implements Chat {
             }
 
             if(message.equals("@" + username + " trigger")) {
-                if (!CommandCenter.TRIGGER.equals("!!")) {
-                    sendMessage(event, "Unfortunately, using " + CommandCenter.TRIGGER + " here isn't an option as Twitch sees that as integrated commands (because /whatever triggers internal commands). " +
-                            "As a result, this site uses !! as the trigger, but converts it to " + CommandCenter.TRIGGER + " for processing. TL;DR: the trigger here on Twitch is \"!!\"");
+                if (!CommandCenter.Companion.getTRIGGER().equals("!!")) {
+                    sendMessage(event, "Unfortunately, using " + CommandCenter.Companion.getTRIGGER() + " here isn't an option as Twitch sees that as integrated commands (because /whatever triggers internal commands). " +
+                            "As a result, this site uses !! as the trigger, but converts it to " + CommandCenter.Companion.getTRIGGER() + " for processing. TL;DR: the trigger here on Twitch is \"!!\"");
                 }else{
-                    sendMessage(event, "The command trigger is \"" + CommandCenter.TRIGGER + "\"");
+                    sendMessage(event, "The command trigger is \"" + CommandCenter.Companion.getTRIGGER() + "\"");
                 }
             }
 
-            List<BMessage> messages = commandCenter.parseMessage(message, new User(getName(), event.getUser().getId(),
+            List<BMessage> messages = commandCenter.parseMessage(message, new User(this, event.getUser().getId(),
                     event.getUser().getDisplayName(), getIdForChannel(event.getChannel()), true,
                     new Pair<>("permission", computePermission(event.getPermissions()))), true);
 
@@ -205,7 +204,7 @@ public class TwitchChat implements Chat {
                     }
                 }
             }else{
-                if(CommandCenter.isCommand(message)){
+                if(CommandCenter.Companion.isCommand(message)){
                     sendMessage(event, Constants.INVALID_COMMAND);
                 }
             }
@@ -330,4 +329,10 @@ public class TwitchChat implements Chat {
         sendMessage(event,"Thanks for following " + event.getUser().getDisplayName() + " ^w^");
     }
 
+    public boolean getTruncated(){
+        return truncated;
+    }
+    public List<CommandGroup> getCommandGroup(){
+        return groups;
+    }
 }

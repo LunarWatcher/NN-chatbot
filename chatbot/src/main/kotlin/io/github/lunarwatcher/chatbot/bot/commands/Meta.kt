@@ -10,8 +10,6 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
-import org.json.JSONArray
-import org.json.JSONObject
 
 @Suppress("NAME_SHADOWING")
 class BotConfig(val site: Chat){
@@ -68,7 +66,7 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
     override fun handleCommand(input: String, user: User): BMessage? {
 
 
-        if(Utils.getRank(user.userID, center.site.config) < 7){
+        if(Utils.getRank(user.userID, user.chat.config) < 7){
             return BMessage("I'm afraid I can't let you do that, User", true);
         }
         try {
@@ -88,7 +86,7 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
                 else -> newState.toBoolean()
             };
 
-            if (center.isBuiltIn(command)) {
+            if (center.isBuiltIn(command, user.chat)) {
                 System.out.println(command);
                 return BMessage("You can't change the status of included commands.", true);
             }
@@ -116,8 +114,12 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
 }
 
 @Suppress("UNCHECKED_CAST")
-class SERooms(val chat: SEChat) : AbstractCommand("inRooms", listOf()){
+class SERooms : AbstractCommand("inRooms", listOf()){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site : SEChat = if(user.chat is SEChat){
+            user.chat as SEChat
+        }else
+            return BMessage("Invalid site. Blame ${Configurations.CREATOR}", true)
         val sechats: List<SEChat> = CommandCenter.bot.chats.filter { it is SEChat } as List<SEChat>
 
         val (ids, sites) =
@@ -226,8 +228,9 @@ class CentralBlacklistStorage private constructor(var database: Database){
     }
 }
 
-class BlacklistRoom(val site: Chat) : AbstractCommand("ban-room", listOf(), "Blacklists a room"){
+class BlacklistRoom : AbstractCommand("ban-room", listOf(), "Blacklists a room"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me which room", true);
         val where = site.site.name
         val which = content.toIntOrNull() ?: return BMessage("You have to tell me which room to blacklist", true)
@@ -239,13 +242,14 @@ class BlacklistRoom(val site: Chat) : AbstractCommand("ban-room", listOf(), "Bla
         val result = CentralBlacklistStorage.getInstance(site.database).blacklist(where, which)
         if(!result)
             return BMessage("Room already blacklisted", true)
-        site.leaveServer(which);
+        site.leaveServer(which.toLong());
         return BMessage("Room blacklisted", true);
     }
 }
 
-class UnblacklistRoom(val site: Chat) : AbstractCommand("unban-room", listOf(), "Removes the blacklisting of a room."){
+class UnblacklistRoom : AbstractCommand("unban-room", listOf(), "Removes the blacklisting of a room."){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me which room", true);
         val where = site.site.name
         val which = content.toIntOrNull() ?: return BMessage("You have to tell me which room to unblock", true)

@@ -34,8 +34,9 @@ public class Bot {
         this.database = db;
         this.botProps = botProps;
         this.sites = sites;
+        CommandCenter.Companion.setBot(this);
+        CommandCenter.Companion.initialize(botProps, db);
 
-        CommandCenter.bot = this;
     }
 
     public void initialize() throws IOException {
@@ -100,7 +101,7 @@ public class Bot {
         for(Chat s : chats){
             s.save();
         }
-        CommandCenter.saveTaught();
+        CommandCenter.Companion.saveTaught();
         CentralBlacklistStorage.Companion.getInstance(database).save();
         database.commit();
 

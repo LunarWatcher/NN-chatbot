@@ -1,15 +1,21 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
+import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
-class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listOf("join"),
+class Summon(val votes: Int) : AbstractCommand("summon", listOf("join"),
         "Summon the bot to a room", "Joins a room after $votes votes"){
     var vts: MutableMap<Int, MutableList<Long>> = mutableMapOf();
 
     override fun handleCommand(input: String, user: User): BMessage? {
+
+        val chat: SEChat = if(user.chat is SEChat){
+            user.chat as SEChat
+        }else
+            return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
         if(!matchesCommand(input)){
             return null;
         }
@@ -82,12 +88,15 @@ class Summon(val votes: Int, val chat: SEChat) : AbstractCommand("summon", listO
     }
 }
 
-class UnSummon(val votes: Int, val chat: SEChat) : AbstractCommand("unsummon", listOf("leave", "gtfo"),
+class UnSummon(val votes: Int) : AbstractCommand("unsummon", listOf("leave", "gtfo"),
         "Makes the bot leave a specified room", "Leaves a room after $votes votes"){
     var vts: MutableMap<Int, MutableList<Long>> = mutableMapOf();
 
     override fun handleCommand(input: String, user: User): BMessage? {
-
+        val chat: SEChat = if(user.chat is SEChat){
+            user.chat as SEChat
+        }else
+            return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
         if(!matchesCommand(input)){
             return null;
         }

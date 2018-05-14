@@ -4,6 +4,7 @@ import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 
 import java.io.IOException;
@@ -31,5 +32,7 @@ public interface Chat {
      * @return The username, or a stringified form of the UID if not found.
      */
     String getUsername(long uid);
-    void leaveServer(int serverId);
+    void leaveServer(long serverId);
+    boolean getTruncated();
+    List<CommandGroup> getCommandGroup();
 }

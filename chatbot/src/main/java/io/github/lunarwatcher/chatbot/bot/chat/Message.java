@@ -1,6 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.chat;
 
 import io.github.lunarwatcher.chatbot.KUtilsKt;
+import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -24,6 +25,7 @@ public class Message {
 
     public String username;
     public int userid;
+    private Chat chat;
 
     public Message(String content, long messageId, int roomId, String username, int userId){
         cleanContentAndSet(content);
@@ -35,5 +37,8 @@ public class Message {
 
     public void cleanContentAndSet(String original){
         content = KUtilsKt.cleanInput(original);
+    }
+    public Chat getChat(){
+        return chat;
     }
 }

@@ -143,7 +143,7 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
         }
 
 
-        if(user.site == "discord"){
+        if(user.chat.site.name == "discord"){
             output = output.replace("\\\\", "\\")
         }
         return BMessage(output, reply);
@@ -168,7 +168,7 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
         //on Discord there may appear commands that one would consider unwanted on sites like the Stack Exchange network.
         //These are just called NSFW because I have nothing better to call them.
         //If they are manually added as SFW they will appear everywhere. Otherwise, only some sites will have access
-        if(center.site.name == "discord") {
+        if(user.chat.name == "discord") {
             nsfw = true
         }
         val args = splitCommand(input);
@@ -200,9 +200,9 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
                 "-d" -> desc = args["-d"] ?: "No description supplied"
                 "-nsfw" -> {
                     nsfw = try {
-                        (args["-nsfw"] ?: (center.site.name == "discord")).toString().toBoolean()
+                        (args["-nsfw"] ?: (user.chat.name == "discord")).toString().toBoolean()
                     }catch(e: Exception){
-                        center.site.name == "discord";
+                        user.chat.name == "discord";
                     }
                 }
             }
@@ -211,11 +211,11 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
         if(name == "undefined" || output == "undefined")
             return BMessage("Something went wrong. Command not added", true)
 
-        if(commands.doesCommandExist(name) || center.isBuiltIn(name)){
+        if(commands.doesCommandExist(name) || center.isBuiltIn(name, user.chat)){
             return BMessage("That command already exists", true);
         }
 
-        commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, center.site.name))
+        commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, user.chat.name))
 
         return BMessage(Utils.getRandomLearnedMessage(), true);
     }
@@ -230,7 +230,7 @@ class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : Abstrac
 
         val name = `in`["content"] ?: return BMessage("I need to know what to forget", true);
 
-        if(center.isBuiltIn(name)){
+        if(center.isBuiltIn(name, user.chat)){
             return BMessage("You can't make me forget something that's hard-coded :>", true);
         }
 

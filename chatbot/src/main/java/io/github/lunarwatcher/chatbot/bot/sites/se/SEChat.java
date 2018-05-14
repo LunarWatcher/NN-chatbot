@@ -8,6 +8,7 @@ import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.events.ScheduledEvent;
@@ -43,6 +44,8 @@ import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
  * Editors note: Hackish Solutions
  */
 public class SEChat implements Chat {
+    private static final boolean truncated = false;
+    private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
     public static boolean NSFW = false;
     @Getter
     Site site;
@@ -133,9 +136,7 @@ public class SEChat implements Chat {
         }
         data = null;
 
-        commands = new CommandCenter(botProps, true, false, this);
-        commands.loadSE();
-        commands.loadInterconnected();
+        commands = CommandCenter.Companion.getINSTANCE();
         http = new Http(httpClient);
 
         logIn();
@@ -170,11 +171,11 @@ public class SEChat implements Chat {
                             }
                         }
                     } catch (Exception e) {
-                        commands.crash.crash(e);
+                        commands.getCrash().crash(e);
                     }
                 }
             }catch(Exception e){
-                commands.crash.crash(e);
+                commands.getCrash().crash(e);
             }
         });
         thread.start();
@@ -270,7 +271,7 @@ public class SEChat implements Chat {
             }catch(RoomNotFoundException e){
                 throw e;//re-throw for the outer catch statement
             }catch(Exception e){
-                commands.crash.crash(e);
+                commands.getCrash().crash(e);
                 return new BMessage("An exception occured when trying to check the validity of the room", true);
             }
             SERoom room = new SERoom(rid, this);
@@ -283,7 +284,7 @@ public class SEChat implements Chat {
         }catch(RoomNotFoundException e){
             return new BMessage("That's not a real room or I can't write there", true);
         }catch(Exception e){
-            commands.crash.crash(e);
+            commands.getCrash().crash(e);
             e.printStackTrace();
         }
 
@@ -397,12 +398,12 @@ public class SEChat implements Chat {
 
     public void handleMessage(Message m) throws IOException {
 
-        commands.hookupToRanks(m.userid, m.username);
+        commands.hookupToRanks(m.userid, m.username, this);
 
         if (m.userid == site.getConfig().getUserID())
             return;
         if (Utils.isBanned(m.userid, config)) {
-            if (CommandCenter.isCommand(m.content)) {
+            if (CommandCenter.Companion.isCommand(m.content)) {
                 boolean mf = false;
 
                 for (Integer u : notifiedBanned) {
@@ -424,7 +425,7 @@ public class SEChat implements Chat {
             return;
         }
 
-        User user = new User(getName(), m.userid, m.username, m.roomID, false);
+        User user = new User(this, m.userid, m.username, m.roomID, false);
         List<BMessage> replies = commands.parseMessage(m.content, user, false);
         if (replies != null && getRoom(m.roomID) != null) {
             for (BMessage bm : replies) {
@@ -443,7 +444,7 @@ public class SEChat implements Chat {
                 }
             }
         } else {
-            if (CommandCenter.isCommand(m.content)) {
+            if (CommandCenter.Companion.isCommand(m.content)) {
                 SERoom r = getRoom(m.roomID);
                 if (r != null) {
                     r.reply("Maybe you should consider looking up the manual", m.messageID);
@@ -455,8 +456,8 @@ public class SEChat implements Chat {
     }
 
     @Override
-    public void leaveServer(int serverId) {
-        leaveRoom(serverId);
+    public void leaveServer(long serverId) {
+        leaveRoom((int) serverId);
     }
 
     private void scheduleEvent(ScheduledEvent event){
@@ -467,5 +468,12 @@ public class SEChat implements Chat {
                 scheduleEvent(event);
             }
         }, event.planNext());
+    }
+
+    public boolean getTruncated(){
+        return truncated;
+    }
+    public List<CommandGroup> getCommandGroup(){
+        return groups;
     }
 }

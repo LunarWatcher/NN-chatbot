@@ -7,12 +7,24 @@ import java.util.List;
 
 public class CmdInfo{
     List<String> names;
+    public CommandGroup group;
 
+    /**
+     * Constructor for commands not defining the command group. Note that this should only be used by taught commands,
+     * as the other commands are routed through the other constructor by {@link CommandCenter#addCommand}.
+     *
+     * @param name The command name
+     * @param aliases A list of the commands aliases
+     */
     public CmdInfo(@NonNull String name, List<String> aliases){
+        this(name, aliases, CommandGroup.COMMON);
+    }
+    public CmdInfo(@NonNull String name, List<String> aliases, CommandGroup group){
         this.names = new ArrayList<>();
         if(aliases != null)
             names.addAll(aliases);
 
+        this.group = group;
         names.add(name);
     }
 

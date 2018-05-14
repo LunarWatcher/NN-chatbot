@@ -25,7 +25,7 @@ object LogStorage{
 
 }
 
-class CrashLogs(val site: Chat) : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups", rankRequirement = 5){
+class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups", rankRequirement = 5){
 
     fun crash(e: Exception){
         LogStorage.crash(e)

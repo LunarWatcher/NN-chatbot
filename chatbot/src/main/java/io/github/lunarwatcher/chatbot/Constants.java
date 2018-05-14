@@ -110,7 +110,8 @@ public final class Constants {
             "*Licks %s. passes out*",
             "*Licks %s.* Tastes AWFUL! *goes back in time to avoid licking it in the first place*",
             "*Licks %s.* Tastes like coffee!",
-            "*Licks %s.* Tastes like a cow!", "*Licks %s. Beams self into space*"
+            "*Licks %s.* Tastes like a cow!", "*Licks %s. Beams self into space*",
+            "*Licks %s.* Tastes like chocolate!!"
 
     };
 

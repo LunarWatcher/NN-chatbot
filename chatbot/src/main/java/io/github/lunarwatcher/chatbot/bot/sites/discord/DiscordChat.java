@@ -5,16 +5,13 @@ import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.Site;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
-import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand;
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.Getter;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Marker;
-import sx.blah.discord.Discord4J;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -27,13 +24,12 @@ import sx.blah.discord.util.DiscordException;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.github.lunarwatcher.chatbot.Constants.DEFAULT_NSFW;
-import static io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER;
 
 public class DiscordChat implements Chat{
+    private static final boolean truncated = true;
+    private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.DISCORD, CommandGroup.NSFW);
     Site site;
     CommandCenter commands;
     IDiscordClient client;
@@ -52,10 +48,7 @@ public class DiscordChat implements Chat{
         this.db = db;
         this.botProps = botProps;
         logIn();
-        commands = new CommandCenter(botProps, false, true,this);
-        commands.loadDiscord();
-        commands.loadNSFW();
-        commands.loadInterconnected();
+        commands = CommandCenter.INSTANCE;
 
         channels = new ArrayList<>();
 
@@ -125,12 +118,12 @@ public class DiscordChat implements Chat{
     public void onMessageReceived(MessageReceivedEvent event){
         try {
 
-            commands.hookupToRanks(event.getAuthor().getLongID(), event.getAuthor().getName());
+            commands.hookupToRanks(event.getAuthor().getLongID(), event.getAuthor().getName(), this);
 
             String msg = event.getMessage().getContent();
 
             if (Utils.isBanned(event.getAuthor().getLongID(), config)) {
-                if (CommandCenter.isCommand(msg)) {
+                if (CommandCenter.Companion.isCommand(msg)) {
                     boolean mf = false;
 
                     for (Long u : notifiedBanned) {
@@ -162,20 +155,14 @@ public class DiscordChat implements Chat{
                     channels.add(event.getChannel());
                 }
 
-                int index = 0;
-                for (int i = 0; i < channels.size(); i++) {
-                    if (channels.get(i).getLongID() == event.getChannel().getLongID()) {
-                        index = i;
-                        break;
-                    }
-                }
-
-
-                User user = new User(site.getName(), event.getAuthor().getLongID(), event.getAuthor().getName(), index, getNsfw(event.getGuild().getLongID()));
+                System.out.println(event.getChannel().getCategory().isNSFW());
+                User user = new User(this, event.getAuthor().getLongID(), event.getAuthor().getName(),
+                        event.getGuild().getLongID(), event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()));
 
                 List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
+
                 if (replies == null) {
-                    if (CommandCenter.isCommand(msg)) {
+                    if (CommandCenter.Companion.isCommand(msg)) {
                         event.getChannel().sendMessage("Look up the manual maybe?");
                     }
                 } else {
@@ -285,10 +272,10 @@ public class DiscordChat implements Chat{
         return commands;
     }
 
+
     @Override
-    public void leaveServer(int id){
-        val server = channels.get(id).getGuild().getLongID();
-        client.getGuildByID(server).leave();
+    public void leaveServer(long id){
+        client.getGuildByID(id).leave();
     }
 
     public void close(){
@@ -297,4 +284,12 @@ public class DiscordChat implements Chat{
         }catch(DiscordException ignored){ /* Logout throws an exception during shutdown (because the shutdown is detected and it's logged out before this method is called)
         as a result, the exception needs to be caught for the shutdown to work properly*/ }
     }
+
+    public boolean getTruncated(){
+        return truncated;
+    }
+    public List<CommandGroup> getCommandGroup(){
+        return groups;
+    }
+
 }

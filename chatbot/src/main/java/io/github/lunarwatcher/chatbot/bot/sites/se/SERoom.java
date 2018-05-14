@@ -224,7 +224,7 @@ public class SERoom implements Closeable {
                             parent.mentionIds.add(event.get("message_id").asInt());
                         }
                     }catch(Exception e){
-                        parent.commands.crash.crash(e);
+                        parent.commands.getCrash().crash(e);
                     }
                 }else if(eventCode == 10){
                     //The message was deleted. Ignore it
@@ -325,7 +325,7 @@ public class SERoom implements Closeable {
                             try {
                                 sendMessage(message);
                             }catch(IOException e){
-                                parent.commands.crash.crash(e);
+                                parent.commands.getCrash().crash(e);
                             }
                         }
                     },

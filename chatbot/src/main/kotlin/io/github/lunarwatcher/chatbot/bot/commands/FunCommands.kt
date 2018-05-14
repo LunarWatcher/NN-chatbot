@@ -71,9 +71,10 @@ class LMGTFY : AbstractCommand("lmgtfy", listOf("searchfor", "google"), "Sends a
 }
 
 
-class Kill(val chat: Chat) : AbstractCommand("kill", listOf("assassinate"), "They must be disposed of!"){
+class Kill : AbstractCommand("kill", listOf("assassinate"), "They must be disposed of!"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
+        val chat = user.chat
         if(!matchesCommand(input))
             return null;
         val split = splitCommand(input);
@@ -97,7 +98,7 @@ class Kill(val chat: Chat) : AbstractCommand("kill", listOf("assassinate"), "The
     }
 }
 
-class Lick(val chat: Chat) : AbstractCommand("lick", listOf(), "Licks someone. Or something"){
+class Lick : AbstractCommand("lick", listOf(), "Licks someone. Or something"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input))
             return null;
@@ -112,7 +113,7 @@ class Lick(val chat: Chat) : AbstractCommand("lick", listOf(), "Licks someone. O
     }
 }
 
-class Give(val chat: Chat) : AbstractCommand("give", listOf(), "Gives someone something"){
+class Give : AbstractCommand("give", listOf(), "Gives someone something"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
@@ -142,10 +143,12 @@ class Ping : AbstractCommand("ping", listOf("poke"), "Pokes someone"){
     }
 }
 
-class Blame(val site: Chat) : AbstractCommand("blame", listOf(), help="Someone must be blamed for this!"){
+class Blame : AbstractCommand("blame", listOf(), help="Someone must be blamed for this!"){
     private val random = Random();
 
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site: Chat = user.chat
+
         val problem = splitCommand(input)["content"]
 
         val blamable = site.config.ranks.values.map{it.username}.filter{it != null}
@@ -170,7 +173,7 @@ class WikiCommand : AbstractCommand("wiki", listOf(), desc="Links to Wikipedia",
     }
 }
 
-class StockComments(val site: Chat) {
+class StockComments {
     //TODO allow creation of stock comments for specific rooms saved in the dataabase
     //Also, this commit is a part in testing some doge aliases for git :3
 

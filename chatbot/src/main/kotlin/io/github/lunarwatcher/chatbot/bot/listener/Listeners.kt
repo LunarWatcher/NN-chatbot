@@ -4,8 +4,8 @@ package io.github.lunarwatcher.chatbot.bot.listener
 
 import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.commands.User
-import io.github.lunarwatcher.chatbot.bot.sites.Chat
 
 @Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
@@ -13,10 +13,10 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
 
     override fun handleInput(input: String, user: User): BMessage? {
         val input = input.toLowerCase();
-        if(!mention.isMentioned(input) && context == null){
+        if(!mention.isMentioned(input, user.chat) && context == null){
             return null;
 
-        }else if(mention.isMentioned(input) && context == null) {
+        }else if(mention.isMentioned(input, user.chat) && context == null) {
 
             if (input.contains("knock\\W*?knock".toRegex())) {
                 context = Context(0, user.userID)
@@ -132,31 +132,46 @@ class WaveListener : AbstractListener("wave", "Waves back when a wave is detecte
     }
 }
 
-class StatusListener(val site: Chat, val database: Database) : AbstractListener("status", "tracks messages for statuses. See also the status command"){
-    var users: MutableMap<Long, MutableMap<Long, Long>>
+class StatusListener(val database: Database) : AbstractListener("status", "tracks messages for statuses. See also the status command"){
+    var users: MutableMap<String, MutableMap<Long, MutableMap<Long, Long>>>
 
     init{
-        val b = database.getMap("status-" + site.name) as MutableMap<String, MutableMap<String, Long>>?
-        if (b != null){
-            try {
-                users = mutableMapOf()
-                for (user in b){
-                    try {
-                        users[user.key.toLong()] = user.value.map{it.key.toLong() to it.value}.associateBy({it.first}, {it.second}).toMutableMap()
+        users = mutableMapOf()
+        for(site in CommandCenter.bot.chats) {
+            val b = database.getMap("status-" + site.name) as MutableMap<String, MutableMap<String, Long>>?
+            if (b != null) {
+                try {
+                    users[site.name] = mutableMapOf()
+                    for (user in b) {
+                        try {
+                            users[site.name]!![user.key.toLong()] =
+                                    user.value.map {
+                                        it.key.toLong() to it.value
+                                    }
+                                    .associateBy({ it.first }, { it.second })
+                                    .toMutableMap()
 
-                    }catch(e: Exception){
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
+                } catch (e: ClassCastException) {
+                    users[site.name] = mutableMapOf()
+                    e.printStackTrace()
                 }
-            }catch(e: ClassCastException){
-                users = mutableMapOf()
-                e.printStackTrace()
+            } else {
+                users[site.name] = mutableMapOf()
             }
-        }else{
-            users = mutableMapOf()
         }
     }
 
     override fun handleInput(input: String, user: User): BMessage? {
+        val site = user.chat.site.name
+        if(!users.keys.contains(site))
+            users[site] = mutableMapOf()
+
+        val users = this.users[site]!!
+
         val uid = user.userID
         if(!users.keys.contains(user.roomID))
             users[user.roomID] = mutableMapOf()
@@ -168,7 +183,9 @@ class StatusListener(val site: Chat, val database: Database) : AbstractListener(
     }
 
     fun save(){
-        database.put("status-" + site.name, users.toMap())
+        for((site, status) in users) {
+            database.put("status-$site", status)
+        }
     }
 }
 

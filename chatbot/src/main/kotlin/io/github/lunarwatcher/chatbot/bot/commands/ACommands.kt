@@ -10,9 +10,13 @@ import io.github.lunarwatcher.chatbot.utils.Utils
 import sun.security.krb5.Config
 import java.io.IOException
 
-class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
+class AddHome : AbstractCommand("home", listOf(),
         "Adds a home room - Admins only", "Adds a home room for the bot on this site"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site: SEChat = if(user.chat is SEChat){
+            user.chat as SEChat
+        }else
+            return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
         if(!matchesCommand(input))
             return null;
         if(!Utils.isAdmin(user.userID, site.config)){
@@ -42,9 +46,13 @@ class AddHome(val site: SEChat) : AbstractCommand("home", listOf(),
     }
 }
 
-class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
+class RemoveHome : AbstractCommand("remhome", listOf(),
         "Removes a home room - Admins only", "Removes a home room for the bot on this site"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site: SEChat = if(user.chat is SEChat){
+            user.chat as SEChat
+        }else
+            return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
         if(!matchesCommand(input))
             return null;
         if(!Utils.isAdmin(user.userID, site.config)){
@@ -88,9 +96,10 @@ class RemoveHome(val site: SEChat) : AbstractCommand("remhome", listOf(),
     }
 }
 
-class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "promote"), "Changes a users rank."){
+class UpdateRank : AbstractCommand("setRank", listOf("demote", "promote"), "Changes a users rank."){
 
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input)){
             //final command match assertion check
             return null;
@@ -141,8 +150,9 @@ class UpdateRank(val site: Chat) : AbstractCommand("setRank", listOf("demote", "
     }
 }
 
-class BanUser(val site: Chat) : AbstractCommand("ban", listOf(), "Bans a user from using the bot. Only usable by hardcoded bot admins"){
+class BanUser : AbstractCommand("ban", listOf(), "Bans a user from using the bot. Only usable by hardcoded bot admins"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input))
             return null;
 
@@ -187,8 +197,9 @@ class BanUser(val site: Chat) : AbstractCommand("ban", listOf(), "Bans a user fr
     }
 }
 
-class Unban(val site: Chat) : AbstractCommand("unban", listOf(), "Unbans a banned user. Only usable by hardcoded bot admins"){
+class Unban : AbstractCommand("unban", listOf(), "Unbans a banned user. Only usable by hardcoded bot admins"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to ban", true)
         val split = content.split(" ")
         if(split.size != 1)
@@ -231,8 +242,9 @@ class Unban(val site: Chat) : AbstractCommand("unban", listOf(), "Unbans a banne
     }
 }
 
-class SaveCommand(val site: Chat) : AbstractCommand("save", listOf(), "Saves the database"){
+class SaveCommand : AbstractCommand("save", listOf(), "Saves the database"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input))
             return null;
         if(Utils.getRank(user.userID, site.config) < 8)
@@ -245,7 +257,7 @@ class SaveCommand(val site: Chat) : AbstractCommand("save", listOf(), "Saves the
     }
 }
 
-class WhoMade(val commands: CommandCenter) : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user ID of the user who created a command"){
+class WhoMade : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user ID of the user who created a command"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input))
             return null;
@@ -256,7 +268,7 @@ class WhoMade(val commands: CommandCenter) : AbstractCommand("whoMade", listOf("
             if(arg.size < 2)
                 return BMessage("Missing arguments!", true);
 
-            if(commands.isBuiltIn(arg["content"])){
+            if(CommandCenter.INSTANCE.isBuiltIn(arg["content"], user.chat)){
                 return BMessage("It's a built-in command, meaning it was made by the project developer(s)", true);
             }
 
@@ -288,8 +300,9 @@ class WhoMade(val commands: CommandCenter) : AbstractCommand("whoMade", listOf("
     }
 }
 
-class DebugRanks(val site: Chat) : AbstractCommand("rankdebug", listOf(), "Debugs ranks"){
+class DebugRanks : AbstractCommand("rankdebug", listOf(), "Debugs ranks"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input))
             return null;
 
@@ -307,8 +320,9 @@ class DebugRanks(val site: Chat) : AbstractCommand("rankdebug", listOf(), "Debug
     }
 }
 
-class KillBot(val site: Chat) : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep"), "Shuts down the bot. Rank 10 only"){
+class KillBot : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep", "die"), "Shuts down the bot. Rank 10 only", rankRequirement = 10){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input))
             return null
         if(Utils.getRank(user.userID, site.config) < 10)
@@ -342,8 +356,9 @@ fun getUsername(type: String, site: Chat): String?{
     }
 }
 
-class NPECommand(val site: Chat) : AbstractCommand("npe", listOf(), "Throws an NPE"){
-    override fun handleCommand(input: String, user: User): BMessage? {
+class NPECommand : AbstractCommand("npe", listOf(), "Throws an NPE"){
+    override fun handleCommand(input: String, user: User): BMessage?{
+        val site = user.chat
         if(Utils.getRank(user.userID, site.config) < 10)
             return BMessage("Rank 10 only! This feature could potentially kill the bot, which is why rank 10 is required", true)
         throw NullPointerException("Manually requested exception from NPECommand")

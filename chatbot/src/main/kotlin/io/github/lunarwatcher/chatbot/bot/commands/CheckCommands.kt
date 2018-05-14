@@ -3,15 +3,16 @@ package io.github.lunarwatcher.chatbot.bot.commands
 import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Utils
 
-class CheckCommand(var site: Chat) : AbstractCommand("getRank", listOf(), "Checks as user's role",
+class CheckCommand : AbstractCommand("getRank", listOf(), "Checks as user's role",
         "Supported roles: `admin`, `normal`, `privileged`(/`priv`) and `banned`. Unknown roles defaults to a normal check." +
                 " Example usage: `" + TRIGGER + "check admin 6296561`"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site = user.chat
         if(!matchesCommand(input)){
             return null;
         }

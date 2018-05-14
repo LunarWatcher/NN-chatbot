@@ -9,20 +9,20 @@ import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.TRIGGER
 import io.github.lunarwatcher.chatbot.bot.listener.StatusListener
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.cleanInput
+import io.github.lunarwatcher.chatbot.equalsAny
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
 import jodd.jerry.Jerry
-import jodd.lagarto.dom.Node
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.impl.client.HttpClients
-import org.joda.time.*
+import org.joda.time.DateTimeZone
+import org.joda.time.Instant
+import org.joda.time.Period
 import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
@@ -55,7 +55,7 @@ interface Command{
 /**
  * Info about a user.
  */
-class User(var site: String, var userID: Long, var userName: String, var roomID: Long, var nsfwSite: Boolean = false,
+class User(var chat: Chat, var userID: Long, var userName: String, var roomID: Long, var nsfwSite: Boolean = false,
            vararg val args: Pair<String, String> = arrayOf())
 
 /**
@@ -90,11 +90,11 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
      * method exists to enable classes where ranks appy to easily check for validity vs [rankRequirement]
      */
     override fun canUserRun(user: User) : Boolean {
-        if(rankRequirement == NO_DEFINED_RANK && !Utils.isBanned(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config)){
+        if(rankRequirement == NO_DEFINED_RANK && !Utils.isBanned(user.userID, user.chat.config)){
             // rank not defined (req == 1) && user !banned - can run
             return true;
         }else if(rankRequirement != NO_DEFINED_RANK){
-            return Utils.getRank(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config) >= rankRequirement
+            return Utils.getRank(user.userID, user.chat.config) >= rankRequirement
         }
         return false
     }
@@ -184,16 +184,17 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
             = BMessage("You need rank $rankRequirement or higher ot use this command. Supplied reason: $reason", true)
 }
 
-class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractCommand("help", listOf("halp", "hilfen", "help"),
+class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
         "Lists all the commands the bot has",
         "Use `" + CommandCenter.TRIGGER + "help` to list all the commands and `" + CommandCenter.TRIGGER + "help [command name]` to get more info about a specifc command\n" +
                 "Call `${CommandCenter.TRIGGER}help trucated` for a small version of the help command, or `${CommandCenter.TRIGGER}help full` for the full version. " +
-                "Note that not passing full or trucated leads to it defaulting to the site specific settings (for this site, it's ${if(truncated) "truncated" else "full"})"){
+                "Note that not passing full or trucated leads to it defaulting to the site specific settings"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
             return null;
         }
+        val center = user.chat.commands
 
         val `in` = splitCommand(input)
         if(`in`.size == 1 ||
@@ -201,16 +202,16 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                         && (`in`["content"] == "truncated" || `in`["content"] == "full")
                         )){
             val content = `in`["content"]
-            val truncated = if(content == null) this.truncated
+            val truncated = if(content == null) user.chat.truncated
                         else content == "truncated"
 
             var commands: MutableMap<String, String> = mutableMapOf()
             val learnedCommands: MutableList<String> = mutableListOf()
             var listeners: MutableMap<String, String> = mutableMapOf();
 
-            if (!center.commands.isEmpty()) {
+            if (!user.chat.commands.getCommands(user.chat).isEmpty()) {
 
-                for (command: Command in center.commands.values) {
+                for (command: Command in center.getCommands(user.chat).values) {
                     commands[command.name] = command.desc;
                 }
             }
@@ -232,7 +233,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
 
             if(!truncated) {
 
-                val reply = ReplyBuilder(center.site.name == "discord");
+                val reply = ReplyBuilder(user.chat.name == "discord");
                 reply.fixedInput().append("###################### Help ######################")
                         .nl().fixedInput().nl();
                 val names: MutableList<String> = mutableListOf()
@@ -299,21 +300,21 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
             val d: String;
             val rank: Int
             val nsfw: Boolean
-
+            val chat = user.chat
             when {
-                center.isBuiltIn(cmd) -> {
-                    desc = center.get(cmd)?.desc ?: return null;
-                    help = center.get(cmd)?.help ?: return null;
-                    name = center.get(cmd)?.name ?: return null;
-                    val aliasBuffer = center.get(cmd)?.aliases ?: return null
+                center.isBuiltIn(cmd, chat) -> {
+                    desc = center[cmd, chat]?.desc ?: return null;
+                    help = center[cmd, chat]?.help ?: return null;
+                    name = center[cmd, chat]?.name ?: return null;
+                    val aliasBuffer = center[cmd, user.chat]?.aliases ?: return null
                     aliases = if(aliasBuffer.isEmpty())
                         "None"
                     else
                         aliasBuffer.joinToString(", ")
-                    rank = center.get(cmd)?.rankRequirement ?: return null
+                    rank = center[cmd, chat]?.rankRequirement ?: return null
 
                     d = "Built in command. "
-                    nsfw = center.get(cmd)?.nsfw ?: return null
+                    nsfw = center[cmd, chat]?.nsfw ?: return null
                 }
                 CommandCenter.tc.doesCommandExist(cmd) -> {
                     desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
@@ -328,7 +329,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                 else -> return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
             }
 
-            val reply = ReplyBuilder(center.site.name == "discord");
+            val reply = ReplyBuilder(user.chat.name == "discord");
 
             reply.fixedInput().append(d).append("`$TRIGGER")
                     .append(name)
@@ -340,7 +341,7 @@ class HelpCommand(var center: CommandCenter, var truncated: Boolean) : AbstractC
                             "${if(rank == NO_DEFINED_RANK)
                                 "1 (WARNING: Undefined in code. Actual rank may differ from listed)"
                             else rank.toString()} " +
-                            "(your rank: ${Utils.getRank(user.userID, center.site.config)})")
+                            "(your rank: ${Utils.getRank(user.userID, user.chat.config)})")
 
 
             return BMessage(reply.toString(), true);
@@ -358,12 +359,15 @@ fun getMaxLen(list: MutableList<String>) : Int{
     return longest;
 }
 
-class ShrugCommand(val shrug: String): AbstractCommand("shrug", listOf("dunno", "what"), "Shrugs", "Use `" + TRIGGER + "shrug` to use the command"){
+class ShrugCommand : AbstractCommand("shrug", listOf("dunno", "what"), "Shrugs", "Use `" + TRIGGER + "shrug` to use the command"){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
             return null;
         }
-        return BMessage(shrug, false);
+        return BMessage(if (user.chat.site.name.equalsAny("metastackexchange", "stackexchange", "stackoverflow"))
+            "¯\\\\_(ツ)_/¯"
+        else "¯\\_(ツ)_/¯"
+                , false);
     }
 }
 
@@ -429,8 +433,9 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
     }
 }
 
-class NetStat(val site: Chat) : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network"){
+class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network"){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site: Chat = user.chat
         if(Utils.getRank(user.userID, site.config) < 3)
             return BMessage("You need rank 3 or higher to use this command.", true)
 
@@ -491,8 +496,9 @@ class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
     }
 }
 
-class WhoIs(val site: Chat) : AbstractCommand("whois", listOf("identify")){
+class WhoIs : AbstractCommand("whois", listOf("identify")){
     override fun handleCommand(input: String, user: User): BMessage? {
+        val site: Chat = user.chat
         if(!matchesCommand(input))
             return null;
         val who = splitCommand(input)["content"]?.trim() ?: return BMessage("You have to tell me who to identify", true)
@@ -519,28 +525,22 @@ class WhoIs(val site: Chat) : AbstractCommand("whois", listOf("identify")){
     }
 }
 
-class StatusCommand(val statusListener: StatusListener, val site: Chat) : AbstractCommand("status", listOf("leaderboard"), desc="Shows the leading chatters"){
+class StatusCommand(val statusListener: StatusListener) : AbstractCommand("status", listOf("leaderboard"), desc="Shows the leading chatters"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(clear){
-            if(!cleared.contains(site.name)){
-                statusListener.users.clear()
-                cleared.add(site.name)
-            }
+        val siteS = user.chat.site.name
+        val site = user.chat
 
-            if(cleared.size == 4){
-                clear = false
-                cleared.clear()
-            }
-        }
+        if(statusListener.users[siteS] == null)
+            statusListener.users[siteS] = mutableMapOf()
 
-        if (statusListener.users.isEmpty() || statusListener.users[user.roomID] == null)
+        if (statusListener.users.isEmpty() || statusListener.users[siteS]!![user.roomID] == null)
             return BMessage("No users registered yet. Try again later", true)
-        if(statusListener.users[user.roomID]!!.isEmpty())
+        if(statusListener.users[siteS]!![user.roomID]!!.isEmpty())
             return BMessage("No users registered yet. Try again later", true)
 
-        if(!statusListener.users.keys.contains(user.roomID))
-            statusListener.users[user.roomID] = mutableMapOf()
+        if(!statusListener.users[siteS]!!.keys.contains(user.roomID))
+            statusListener.users[siteS]!![user.roomID] = mutableMapOf()
 
 
 
@@ -549,14 +549,12 @@ class StatusCommand(val statusListener: StatusListener, val site: Chat) : Abstra
                 return BMessage("You need rank 9 or higher to clear the status", true);
             if(input.contains("--confirm")){
                 statusListener.users.clear()
-                clear = true
-                cleared.add(site.name)
-                return BMessage("Flag sent!", true)
+                return BMessage("Erased like your browser history.", true)
             }
             return BMessage("Confirm with --confirm", true)
         }
 
-        val buffer = statusListener.users[user.roomID]!!.map{
+        val buffer = statusListener.users[siteS]!![user.roomID]!!.map{
                 it.key.toString() to it.value
             }.associateBy({it.first}, {it.second})
                     .toMutableMap()
@@ -594,11 +592,7 @@ class StatusCommand(val statusListener: StatusListener, val site: Chat) : Abstra
         return BMessage(reply.toString(), false)
     }
 
-    companion object {
-        var clear = false
 
-        val cleared = mutableListOf<String>()
-    }
 }
 
 class GitHubCommand : AbstractCommand("github", listOf("borked"), desc="Sends the link to GitHub in chat (also available through the about command). " +
@@ -621,7 +615,7 @@ class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){
         val content = splitCommand(input)["content"] ?: return BMessage("What?", true)
         if(content.trim().isEmpty()) return BMessage("What?", true)
 
-        if(user.site == "twitch" && content.startsWith("/") && Utils.getRank(user.userID, CommandCenter.bot.getChatByName(user.site)!!.config) < 9)
+        if(user.chat.name == "twitch" && content.startsWith("/") && Utils.getRank(user.userID, user.chat.config) < 9)
             return BMessage("No", true)
 
         return BMessage(content, false)

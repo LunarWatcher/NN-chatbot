@@ -65,5 +65,6 @@ fun getRevision() : String{
     return if(revision == null) "Unknown revision" else "Revision $revision"
 }
 
+fun <T> T.equalsAny(vararg others: T) : Boolean = others.firstOrNull { it == this } != null
 fun <A, B> zip(one: Collection<A>, two: Collection<B>) : Map<A, B>
         = one.zip(two).toMap()
