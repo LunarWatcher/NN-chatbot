@@ -2,13 +2,7 @@
 
 Contributions are always welcome, whether it's as a pull request, fixing typos, documentation writing, an issue or in any other form. There are, however, some contribution *guidelines*. They aren't rules ("anything that doesn't follow these standards will be denied") but they are here to help creating good contributions.
 
-In order to contribute, you'll need a GitHub account. If you plan on contributing to the code, installing a Python IDE and Git is a good idea too. This allows you to make changes in multiple files in a single commit, which also saves some clicking compared to using the browser version of GitHub.
-
-## Extensive pull requests
-
-Extensive pull requests are prefered. If you're going to make changes, put all of them in one pull request. This saves time in having to pull, because 1 pull takes less time than 5. This is because the code is reviewed before it's merged (to avoid conflicts, fix missed bugs, etc.).
-
-Obviously, if a single-change commit in a PR is of high priority, it'll be merged into master as soon as possible. Note that, again, these are only guidelines and not rules. There are other cases where single-change commits will be merged into master, but multiple of these in a row from the same author are better off in a single PR.
+In order to contribute, you'll need a GitHub account. If you plan on contributing to the code, installing a Python/Java IDE and Git is a good idea too. This allows you to make changes in multiple files in a single commit, which also saves some clicking compared to using the browser version of GitHub.
 
 ## Issues
 
@@ -22,7 +16,7 @@ Feature requests are accepted, as long as they haven't been requested before. Ad
 
 ## Documentation writing
 
-Documentation is necessary to have (in most cases). Feel free to expand the documentation available. Anything beyond quick setup goes in the wiki, though setup belongs there too. The wiki hasn't been created (yet), but it is available. 
+Documentation is necessary to have (in most cases). Feel free to expand the documentation available. Anything beyond quick setup goes in the wiki, though setup belongs there too. 
 
 ## Issue tagging
 
