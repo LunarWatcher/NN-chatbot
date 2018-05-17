@@ -404,16 +404,7 @@ public class SEChat implements Chat {
             return;
         if (Utils.isBanned(m.userid, config)) {
             if (CommandCenter.Companion.isCommand(m.content)) {
-                boolean mf = false;
-
-                for (Integer u : notifiedBanned) {
-                    if (u == m.userid) {
-                        mf = true;
-                        break;
-                    }
-                }
-
-                if (!mf) {
+                if (notifiedBanned.contains(m.userid)) {
                     notifiedBanned.add(m.userid);
                     SERoom s = getRoom(m.roomID);
                     System.out.println(m.username + " : " + m.content);

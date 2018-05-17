@@ -22,8 +22,8 @@ enum class CommandGroup{
 
 
 class CommandCenter private constructor(botProps: Properties, val db: Database) {
-    private var commandSets = mutableMapOf<List<CommandGroup>, MutableMap<CmdInfo, Command>>()
-    private var commands: MutableMap<CmdInfo, Command>
+    private var commandSets = mutableMapOf<List<CommandGroup>, List<Command>>()
+    private var commands: MutableList<Command>
 
     var listeners = mutableListOf<Listener>()
     private var statusListener: StatusListener
@@ -33,7 +33,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         tc = TaughtCommands(db)
 
         TRIGGER = botProps.getProperty("bot.trigger")
-        commands = HashMap()
+        commands = mutableListOf()
 
         val location = LocationCommand()
         val alive = Alive()
@@ -101,6 +101,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         listeners.add(Train(5))
         listeners.add(ml)
 
+        addCommand(JoinTwitch())
+        addCommand(LeaveTwitch())
         ///////////////////////////////////////////////
         addCommand(NSFWState(), CommandGroup.DISCORD)
         addCommand(DiscordSummon(), CommandGroup.DISCORD)
@@ -113,8 +115,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(SERooms(), CommandGroup.STACKEXCHANGE)
 
         //////////////////////////////////////////////
-        addCommand(JoinTwitch(), CommandGroup.TWITCH)
-        addCommand(LeaveTwitch(), CommandGroup.TWITCH)
+
 
     }
 
@@ -124,13 +125,13 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         var message: String = message ?: return null
         message = message.replace("&#8238;", "")
         message = message.replace("\u202E", "")
-        message = message.trim { it <= ' ' }
-        message = message.replace(" +".toRegex(), " ")
+        message = message.trim()
+        //message = message.replace(" +".toRegex(), " ")
         message = cleanInput(message)
 
 
         val om = message
-        var replies: MutableList<BMessage>? = ArrayList()
+        val replies = mutableListOf<BMessage>()
         try {
             if (isCommand(message)) {
                 message = message.substring(TRIGGER.length)
@@ -145,7 +146,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
                     val x = c.handleCommand(message, user)
                     if (x != null) {
                         //There are still some commands that could return null here
-                        replies!!.add(x)
+                        replies.add(x)
                     }
                 }
 
@@ -157,7 +158,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
                         val x = lc.handleCommand(message, user)
                         if (x != null)
-                            replies!!.add(x)
+                            replies.add(x)
                     }
                 }
             }
@@ -165,30 +166,18 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
             for (l in listeners) {
                 val x = l.handleInput(om, user)
                 if (x != null) {
-                    replies!!.add(x)
+                    replies.add(x)
                 }
             }
 
-            if (replies!!.size == 0)
-                replies = null
+            if (replies.size == 0)
+                return null
         } catch (e: Exception) {
             crash.crash(e)
-            if (replies == null)
-                replies = ArrayList()
             replies.add(BMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true))
         }
 
         return replies
-    }
-
-    /**
-     * Manual command injection into the public storage
-     */
-    fun manualCommandInjection(c: Command?) {
-        if (c == null)
-            return
-
-        addCommand(c)
     }
 
     fun isBuiltIn(cmdName: String?, chat: Chat): Boolean {
@@ -200,18 +189,15 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     }
 
     fun addCommand(c: Command, group: CommandGroup = CommandGroup.COMMON) {
-        val name = c.name
-        val aliases = c.aliases
-        commands.putIfAbsent(CmdInfo(name, aliases, group), c)
+        if(group != CommandGroup.COMMON)
+            c.commandGroup = group
+        commands.add(c)
     }
 
-    operator fun get(key: String, chat: Chat): Command? {
-        return MapUtils.get(key, getCommands(chat)) as Command?
+    operator fun get(key: String, chat: Chat): Command? = getCommands(chat).firstOrNull{
+            it.matchesCommand(key)
     }
 
-    operator fun get(key: CmdInfo, chat: Chat): Command? {
-        return MapUtils.get(key, getCommands(chat)) as Command?
-    }
 
     fun hookupToRanks(user: Long, username: String, site: Chat) {
         if (site.config.getRank(user) == null) {
@@ -226,17 +212,12 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         }
     }
 
-    fun getCommands(site: Chat) : MutableMap<CmdInfo, Command>{
-        val buffer = mutableMapOf<CmdInfo, Command>()
+    fun getCommands(site: Chat) : List<Command>{
+
         if(commandSets[site.commandGroup] != null)
             return commandSets[site.commandGroup]!!
-
-        commands.forEach {(info, command) ->
-            if(info.group in site.commandGroup || info.group == CommandGroup.COMMON) {
-
-                buffer[info] = command
-            }
-
+        val buffer = commands.filter{
+            it.commandGroup in site.commandGroup || it.commandGroup == CommandGroup.COMMON
         }
         commandSets[site.commandGroup] = buffer
         return buffer
@@ -255,9 +236,9 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
         fun isCommand(input: String): Boolean {
             if (input.startsWith(TRIGGER)) {
-                val stripped = input.substring(TRIGGER.length).replace("\n", "")
+                val stripped = input.substring(TRIGGER.length).replace("\n", "").trim()
 
-                return if (stripped.isEmpty() || stripped.trim { it <= ' ' }.isEmpty()) false else stripped.matches("(?!\\s+)(.*)".toRegex())
+                return if (stripped.isEmpty()) false else stripped.matches("(?!\\s+)(.*)".toRegex())
             }
             return false
         }

@@ -92,11 +92,11 @@ class ChangeCommandStatus(val center: CommandCenter) : AbstractCommand("declare"
             }
             if (CommandCenter.tc.doesCommandExist(command)) {
                 CommandCenter.tc.commands.forEach{
-                    if(it.value.name == command) {
-                        if(it.value.nsfw == actual){
+                    if(it.name == command) {
+                        if(it.nsfw == actual){
                             return BMessage("The status was already set to " + (if (actual) "NSFW" else "SFW"), true);
                         }
-                        it.value.nsfw = actual;
+                        it.nsfw = actual;
 
                         return BMessage("Command status changed to " + (if (actual) "NSFW" else "SFW"), true);
                     }

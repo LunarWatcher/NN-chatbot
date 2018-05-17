@@ -94,8 +94,6 @@ public class TwitchChat implements Chat {
                 joinChannel(channel);
             }
         }
-
-
     }
 
     @Override

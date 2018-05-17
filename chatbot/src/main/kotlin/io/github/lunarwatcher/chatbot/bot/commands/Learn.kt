@@ -6,22 +6,21 @@ import io.github.lunarwatcher.chatbot.Constants.LEARNED_COMMANDS
 import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.MapUtils
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
-import io.github.lunarwatcher.chatbot.bot.command.CmdInfo
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 @Suppress("UNCHECKED_CAST", "UNUSED")
 class TaughtCommands(val db: Database){
 
-    val commands: MutableMap<CmdInfo, LearnedCommand>
+    val commands: MutableList<LearnedCommand>
 
     init{
-        commands = mutableMapOf()
+        commands = mutableListOf()
         load()
     }
 
-    fun doesCommandExist(name: String) : Boolean{
-        return MapUtils.get(name, commands) != null;
+    fun doesCommandExist(name: String) : Boolean = commands.any{
+        it.matchesCommand(name)
     }
 
     fun save(){
@@ -31,9 +30,9 @@ class TaughtCommands(val db: Database){
          */
         val map: MutableList<Map<String, Any?>> = mutableListOf()
 
-        commands.forEach{
+        commands.forEach{it ->
             val cmdMap = mutableMapOf<String, Any?>()
-            val lc: LearnedCommand = it.value;
+            val lc: LearnedCommand = it
 
             cmdMap["name"] = lc.name;
             cmdMap["desc"] = lc.desc;
@@ -89,29 +88,28 @@ class TaughtCommands(val db: Database){
             if(c != LearnedCommand::class){
                 return
             }
-            val name = c.name
-            val aliases = c.aliases
-            commands.putIfAbsent(CmdInfo(name, aliases), c as LearnedCommand)
+            commands.add(c as LearnedCommand)
         }
     }
 
-    fun addCommand(command: LearnedCommand) = addCommand(CmdInfo(command.name, command.aliases), command)
 
-    fun addCommand(cmdInfo: CmdInfo, command: LearnedCommand) = commands.put(cmdInfo, command)
+    fun addCommand(command: LearnedCommand) = commands.add(command)
     fun removeCommand(command: LearnedCommand){
         removeCommand(command.name);
     }
     fun removeCommand(name: String){
-        commands.remove((commands.entries.firstOrNull{it.value.name == name} ?: return).key)
+        commands.remove(commands.firstOrNull{ it.name == name} ?: return)
     }
-    fun removeCommands(creator: Long) = commands.entries.removeIf{it.value.creator == creator}
+    fun removeCommands(creator: Long) {
+        commands.removeIf{it.creator == creator}
+    }
 
     fun commandExists(cmdName: String) : Boolean{
-        return commands.entries.firstOrNull{it.value.name == cmdName} != null
+        return commands.any{it.name == cmdName}
     }
 
     fun get(cmdName: String) : LearnedCommand? {
-        return commands.entries.firstOrNull{it.value.name == cmdName}?.value
+        return commands.firstOrNull { it.name == cmdName }
     }
 }
 

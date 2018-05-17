@@ -10,6 +10,7 @@ import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.TRIGGER
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.listener.StatusListener
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.equalsAny
@@ -40,6 +41,7 @@ interface Command{
     val help: String;
     val rankRequirement: Int
     val nsfw: Boolean
+    var commandGroup: CommandGroup
     /**
      * Check if the input starts with the name or one of the command's aliases
      */
@@ -65,7 +67,8 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
                                override val desc: String = Constants.NO_DESCRIPTION,
                                override val help: String = Constants.NO_HELP,
                                override val rankRequirement: Int = NO_DEFINED_RANK,
-                               override val nsfw: Boolean = false) : Command{
+                               override val nsfw: Boolean = false,
+                               override var commandGroup: CommandGroup = CommandGroup.COMMON) : Command{
 
     init {
         if (rankRequirement != NO_DEFINED_RANK) {
@@ -211,13 +214,13 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
 
             if (!user.chat.commands.getCommands(user.chat).isEmpty()) {
 
-                for (command: Command in center.getCommands(user.chat).values) {
+                for (command: Command in center.getCommands(user.chat)) {
                     commands[command.name] = command.desc;
                 }
             }
 
             if (!CommandCenter.tc.commands.isEmpty()) {
-                for (cmd: LearnedCommand in CommandCenter.tc.commands.values) {
+                for (cmd: LearnedCommand in CommandCenter.tc.commands) {
                     learnedCommands.add(cmd.name)
                 }
             }
@@ -256,8 +259,8 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                 if (!learnedCommands.isEmpty()) {
                     reply.fixedInput().append("==================== Learned Commands").nl()
                     reply.fixedInput();
-                    for (i in 0 until CommandCenter.tc.commands.values.toList().size) {
-                        val command = CommandCenter.tc.commands.values.toList()[i]
+                    for (i in 0 until CommandCenter.tc.commands.size) {
+                        val command = CommandCenter.tc.commands[i]
                         if (command.nsfw && !user.nsfwSite) {
                             continue
                         }

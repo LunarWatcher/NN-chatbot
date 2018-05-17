@@ -155,7 +155,6 @@ public class DiscordChat implements Chat{
                     channels.add(event.getChannel());
                 }
 
-                System.out.println(event.getChannel().getCategory().isNSFW());
                 User user = new User(this, event.getAuthor().getLongID(), event.getAuthor().getName(),
                         event.getGuild().getLongID(), event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()));
 

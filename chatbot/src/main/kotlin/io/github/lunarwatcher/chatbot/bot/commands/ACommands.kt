@@ -273,13 +273,13 @@ class WhoMade : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user I
             }
 
             if(CommandCenter.tc.doesCommandExist(arg["content"] ?: return null)){
-                CommandCenter.tc.commands.entries
+                CommandCenter.tc.commands
                         .forEach {
-                            if(it.value.name == arg["content"])
+                            if(it.name == arg["content"])
                                 return BMessage("The command `" + arg["content"] + "` was made by a user with the User ID "
-                                        + grabLink(it.value.creator, it.value.site) + ". The command was created on " +
-                                        (if(it.value.site == "Unknown") "an unknown site"
-                                        else it.value.site) + ".", true)
+                                        + grabLink(it.creator, it.site) + ". The command was created on " +
+                                        (if(it.site == "Unknown") "an unknown site"
+                                        else it.site) + ".", true)
                         }
             }
         }catch(e: ClassCastException){
