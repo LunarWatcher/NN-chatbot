@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/Network/Network.iml" filepath="$PROJECT_DIR$/Network/Network.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/chatbot.iml" filepath="$PROJECT_DIR$/.idea/modules/chatbot.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/chatbot_main.iml" filepath="$PROJECT_DIR$/.idea/modules/chatbot_main.iml" group="chatbot" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/chatbot_test.iml" filepath="$PROJECT_DIR$/.idea/modules/chatbot_test.iml" group="chatbot" />

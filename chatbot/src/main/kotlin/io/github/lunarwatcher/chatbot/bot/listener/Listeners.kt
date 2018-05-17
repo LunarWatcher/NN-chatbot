@@ -192,9 +192,14 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
 class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     private var lastMessage = 0L
     override fun handleInput(input: String, user: User): BMessage? {
-        if(input.toLowerCase() == "morning" && System.currentTimeMillis() - lastMessage > (WAIT * 1000)) {
-            lastMessage = System.currentTimeMillis()
-            return BMessage("morning", false)
+        if(System.currentTimeMillis() - lastMessage > (WAIT * 1000)) {
+            for(match in matches) {
+                if(input.replace("[^a-zA-Z]".toRegex(), "")
+                                .matches("(?i)^$match$".toRegex())) {
+                    lastMessage = System.currentTimeMillis()
+                    return BMessage(input, false)
+                }
+            }
         }
         return null
     }
@@ -204,6 +209,14 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
          * Wait time in seconds
          */
         const val WAIT = 10 * 60 //10 minutes * 60 seconds
+
+        val matches = listOf(
+                "morn",
+                "morning",
+                "morno",
+                "gm",
+                "good morning"
+        )
         
     }
 }
