@@ -2,7 +2,6 @@
 
 package io.github.lunarwatcher.chatbot.bot.listener
 
-import ch.qos.logback.core.joran.conditional.ElseAction
 import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.WelcomeMessages
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
