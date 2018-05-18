@@ -55,6 +55,8 @@ public class Bot {
             }
         }
 
+        CommandCenter.INSTANCE.postSiteInit();
+
     }
 
     public void kill(){

@@ -532,16 +532,20 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
         val siteS = user.chat.site.name
         val site = user.chat
 
+        val room = if(user.chat is DiscordChat)
+            user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (user.chat as DiscordChat).getChannel(user.roomID)?.guild?.longID ?: return null
+        else user.roomID
+
         if(statusListener.users[siteS] == null)
             statusListener.users[siteS] = mutableMapOf()
 
-        if (statusListener.users.isEmpty() || statusListener.users[siteS]!![user.roomID] == null)
+        if (statusListener.users.isEmpty() || statusListener.users[siteS]!![room] == null)
             return BMessage("No users registered yet. Try again later", true)
-        if(statusListener.users[siteS]!![user.roomID]!!.isEmpty())
+        if(statusListener.users[siteS]!![room]!!.isEmpty())
             return BMessage("No users registered yet. Try again later", true)
 
-        if(!statusListener.users[siteS]!!.keys.contains(user.roomID))
-            statusListener.users[siteS]!![user.roomID] = mutableMapOf()
+        if(!statusListener.users[siteS]!!.keys.contains(room))
+            statusListener.users[siteS]!![room] = mutableMapOf()
 
 
 
@@ -555,7 +559,7 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
             return BMessage("Confirm with --confirm", true)
         }
 
-        val buffer = statusListener.users[siteS]!![user.roomID]!!.map{
+        val buffer = statusListener.users[siteS]!![room]!!.map{
                 it.key.toString() to it.value
             }.associateBy({it.first}, {it.second})
                     .toMutableMap()

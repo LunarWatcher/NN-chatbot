@@ -140,24 +140,17 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
 
     init{
         users = mutableMapOf()
+    }
+
+    fun initialize(){
         for(site in CommandCenter.bot.chats) {
             val b = database.getMap("status-" + site.name) as MutableMap<String, MutableMap<String, Long>>?
             if (b != null) {
                 try {
-                    users[site.name] = mutableMapOf()
-                    for (user in b) {
-                        try {
-                            users[site.name]!![user.key.toLong()] =
-                                    user.value.map {
-                                        it.key.toLong() to it.value
-                                    }
-                                    .associateBy({ it.first }, { it.second })
-                                    .toMutableMap()
-
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
+                    users[site.name] = b.map{
+                        it.key.toLong() to it.value.map{
+                            it.key.toLong() to it.value}.toMap().toMutableMap()
+                    }.toMap().toMutableMap()
                 } catch (e: ClassCastException) {
                     users[site.name] = mutableMapOf()
                     e.printStackTrace()

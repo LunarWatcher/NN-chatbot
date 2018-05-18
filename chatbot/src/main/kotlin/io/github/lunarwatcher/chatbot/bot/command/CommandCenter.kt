@@ -258,4 +258,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         }
     }
 
+    fun postSiteInit(){
+        statusListener.initialize()
+    }
+
 }
