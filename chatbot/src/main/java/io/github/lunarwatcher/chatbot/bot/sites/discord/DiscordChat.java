@@ -10,8 +10,10 @@ import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
 import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.utils.Utils;
+import kotlin.Pair;
 import lombok.Getter;
 import lombok.val;
+import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -156,7 +158,8 @@ public class DiscordChat implements Chat{
                 }
 
                 User user = new User(this, event.getAuthor().getLongID(), event.getAuthor().getName(),
-                        event.getGuild().getLongID(), event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()));
+                        event.getChannel().getLongID(), event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()),
+                        new Pair<>("guildID", Long.toString(event.getGuild().getLongID())));
 
                 List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
 
@@ -168,6 +171,9 @@ public class DiscordChat implements Chat{
                     for (BMessage r : replies) {
                         if(r == Constants.bStopMessage)
                             return;
+                        if(r.replyIfPossible){
+                            r.content = "<@" + event.getAuthor().getLongID() + "> " + r.content;
+                        }
                         List<String> items = new ArrayList<>();
                         if (r.content.length() > 2000) {
                             boolean fixedFont = r.content.startsWith("```");
@@ -204,8 +210,9 @@ public class DiscordChat implements Chat{
                                 }
                             }
 
-                        } else
+                        } else {
                             event.getChannel().sendMessage(r.content);
+                        }
                     }
                 }
 
@@ -289,6 +296,14 @@ public class DiscordChat implements Chat{
     }
     public List<CommandGroup> getCommandGroup(){
         return groups;
+    }
+
+    @Nullable
+    public IChannel getChannel(long id){
+        System.out.println(id);
+        IChannel channel = client.getChannelByID(id);
+        System.out.println(channel);
+        return channel;
     }
 
 }

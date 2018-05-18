@@ -2,10 +2,14 @@
 
 package io.github.lunarwatcher.chatbot.bot.listener
 
+import ch.qos.logback.core.joran.conditional.ElseAction
 import io.github.lunarwatcher.chatbot.Database
+import io.github.lunarwatcher.chatbot.WelcomeMessages
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.commands.User
+import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 
 @Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
@@ -170,15 +174,19 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
         if(!users.keys.contains(site))
             users[site] = mutableMapOf()
 
+        val room = if(user.chat is DiscordChat)
+            user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (user.chat as DiscordChat).getChannel(user.roomID)?.guild?.longID ?: return null
+        else user.roomID
+
         val users = this.users[site]!!
 
         val uid = user.userID
-        if(!users.keys.contains(user.roomID))
-            users[user.roomID] = mutableMapOf()
-        if(users[user.roomID]!![uid] == null)
-            users[user.roomID]!![uid] = 0
+        if(!users.keys.contains(room))
+            users[room] = mutableMapOf()
+        if(users[room]!![uid] == null)
+            users[room]!![uid] = 0
 
-        users[user.roomID]!![uid] = users[user.roomID]!!.getNonNull(uid) + 1
+        users[room]!![uid] = users[room]!!.getNonNull(uid) + 1
         return null
     }
 
@@ -190,13 +198,15 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
 }
 
 class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
-    private var lastMessage = 0L
+    private var lastMessages = mutableMapOf<Long, Long>()
+
     override fun handleInput(input: String, user: User): BMessage? {
-        if(System.currentTimeMillis() - lastMessage > (WAIT * 1000)) {
+        if(lastMessages[user.roomID] == null || System.currentTimeMillis() - lastMessages[user.roomID]!! > (WAIT * 1000)) {
+
             for(match in matches) {
-                if(input.replace("[^a-zA-Z]".toRegex(), "")
+                if(input.replace("[^a-zA-Z@<>0-9]".toRegex(), "")
                                 .matches("(?i)^$match$".toRegex())) {
-                    lastMessage = System.currentTimeMillis()
+                    lastMessages[user.roomID] = System.currentTimeMillis()
                     return BMessage(input, false)
                 }
             }
@@ -229,6 +239,44 @@ class BasicListener(val output: String, val pattern: Regex, name: String, descri
             return BMessage(output, reply)
         }
         return null
+    }
+}
+
+class WelcomeListener : AbstractListener("Welcome", "Sends welcome messages to new users if there's a welcome message registered", CommandGroup.STACKEXCHANGE){
+    val mappedUsers: MutableMap<String, MutableMap<Long, MutableList<Long>>>
+    init{
+        val mappedUsers = CommandCenter.INSTANCE.db.getMap("welcomed") as Map<String, Map<String, MutableList<Long>>>?
+        this.mappedUsers = mappedUsers?.map{ it.key to it.value.map{
+            it.key.toLong() to it.value.map{
+                it.toLong()
+            }.toMutableList()
+        }.toMap().toMutableMap()
+        }?.toMap()?.toMutableMap() ?: mutableMapOf()
+    }
+
+    override fun handleInput(input: String, user: User): BMessage? {
+
+        val room = if(user.chat is DiscordChat)
+            user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (user.chat as DiscordChat).getChannel(user.roomID)?.guild?.longID ?: return null
+        else user.roomID
+
+        if (mappedUsers[user.chat.name] == null)
+            mappedUsers[user.chat.name] = mutableMapOf()
+        if(mappedUsers[user.chat.name]!![room] == null)
+            mappedUsers[user.chat.name]!![room] = mutableListOf()
+
+        if (user.userID !in mappedUsers[user.chat.name]!![room]!!) {
+
+            mappedUsers[user.chat.name]!![room]!!.add(user.userID)
+            if (WelcomeMessages.INSTANCE!!.hasMessage(user.chat.name, room))
+                return BMessage(WelcomeMessages.INSTANCE!!.messages[user.chat.name]!![room]!!, true)
+
+        }
+        return null
+    }
+
+    fun save(){
+        CommandCenter.INSTANCE.db.put("welcomed", mappedUsers)
     }
 }
 

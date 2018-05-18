@@ -26,15 +26,16 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     private var commands: MutableList<Command>
 
     var listeners = mutableListOf<Listener>()
-    private var statusListener: StatusListener
-    var crash: CrashLogs
-
+    private lateinit var statusListener: StatusListener
+    lateinit var crash: CrashLogs
+    lateinit var welcomeListener: WelcomeListener
     init {
         tc = TaughtCommands(db)
 
         TRIGGER = botProps.getProperty("bot.trigger")
         commands = mutableListOf()
-
+    }
+    private fun init(){
         val location = LocationCommand()
         val alive = Alive()
 
@@ -83,14 +84,18 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(WikiCommand())
         addCommand(CatCommand())
         addCommand(DogCommand())
+        addCommand(DefineCommand())
+        addCommand(RegisterWelcome())
         statusListener = StatusListener(db)
+        welcomeListener = WelcomeListener()
+
         addCommand(StatusCommand(statusListener))
 
         listeners = ArrayList()
         listeners.add(WaveListener())
         listeners.add(TestListener())
         listeners.add(MorningListener())
-
+        listeners.add(welcomeListener)
 
         listeners.add(statusListener)
         /**
@@ -186,6 +191,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
     fun save() {
         statusListener.save()
+        welcomeListener.save()
     }
 
     fun addCommand(c: Command, group: CommandGroup = CommandGroup.COMMON) {
@@ -228,6 +234,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
         fun initialize(botProps: Properties, db: Database){
             INSTANCE = CommandCenter(botProps, db)
+            INSTANCE.init()
         }
 
         lateinit var TRIGGER: String

@@ -36,6 +36,7 @@ public class Bot {
         this.sites = sites;
         CommandCenter.Companion.setBot(this);
         CommandCenter.Companion.initialize(botProps, db);
+        WelcomeMessages.Companion.initialize(db);
 
     }
 
@@ -103,6 +104,8 @@ public class Bot {
         }
         CommandCenter.Companion.saveTaught();
         CentralBlacklistStorage.Companion.getInstance(database).save();
+        //noinspection ConstantConditions
+        WelcomeMessages.Companion.getINSTANCE().save();
         database.commit();
 
     }

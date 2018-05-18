@@ -3,9 +3,7 @@
 package io.github.lunarwatcher.chatbot.bot.commands
 
 import com.google.common.base.Strings.repeat
-import io.github.lunarwatcher.chatbot.BotCore
-import io.github.lunarwatcher.chatbot.Configurations
-import io.github.lunarwatcher.chatbot.Constants
+import io.github.lunarwatcher.chatbot.*
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
@@ -13,7 +11,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.TRIGGE
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.listener.StatusListener
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.equalsAny
+import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.utils.Http
 import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
@@ -664,6 +662,32 @@ class DogCommand : AbstractCommand("dog", listOf("woof", "bark", "puppy"), desc 
     companion object {
         const val API_URL = "https://dog.ceo/api/breeds/image/random"
     }
+}
+
+class RegisterWelcome : AbstractCommand("registerWelcome", listOf("set-welcome-message", "setWelcomeMessage", "setWelcome", "set-welcome", "register-welcome"),
+        desc="Registers a welcome message for a room, or removes it by giving the string literal \"null\" as an argument.",
+        help="Call the command with the string literal \"null\" (without quotation) to remove the current message. " +
+                "Call it with \"get\" (without quotation) to get the current message (if it exists)",
+        rankRequirement = 5){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        if(!canUserRun(user)){
+            return lowRank()
+        }
+        val room = if(user.chat is DiscordChat)
+            user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (user.chat as DiscordChat).getChannel(user.roomID)?.guild?.longID ?: return null
+        else user.roomID
+
+        val content = splitCommand(input)["content"] ?: return  BMessage("What should I set the welcome message to?", true)
+        if(content == "null"){//The string literal "null" is for clearing the message
+            WelcomeMessages.INSTANCE!!.removeMessage(user.chat.name, room)
+            return BMessage("Successfully removed welcome message for channel $room", true)
+        }else if(content == "get"){
+            return BMessage("The current welcome message for this room is: ${WelcomeMessages.INSTANCE!!.getMessage(user.chat.name, room) ?: "Undefined"}", true)
+        }
+        WelcomeMessages.INSTANCE!!.addMessage(user.chat.name, room, content)
+        return BMessage("Successfully registered welcome message.", true)
+    }
+
 }
 
 fun <T> List<T>.randomItem() : T{

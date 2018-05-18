@@ -1,3 +1,5 @@
+# Stack Overflow, Stack Exchange and Meta Stack Exchange: The username, email, password and ID are exactly what you
+# think they'd be. There's nothing special about them (compared to Twitch and Discord)
 # Stack Overflow
 stackoverflow.user.name=Alisha
 stackoverflow.user.email=example@example.com
@@ -13,17 +15,25 @@ stackexchange.user.name=Alisha
 stackexchange.user.email=example@example.com
 stackexchange.user.password=1234
 stackexchange.user.id=8910
+
 # Discord
+# The bots username
 discord.user.name=Alisha#1234
+# The Discord token. (get one from https://discordapp.com/developers/applications/me)
 discord.user.email=token here
 discord.user.password=none
+# The bot ID
 discord.user.id=1234
+
 # Twitch
+# Write your accounts username here:
 twitch.user.name=ShadowOfZoe
+# Twitch app ID (get one from https://glass.twitch.tv/console/apps/create)
 twitch.user.email=Client ID
+# Put your password here:
 twitch.user.password=Secret
 # The user ID doesn't matter on twitch; usernames are unique
 twitch.user.id=none
-# Get one at https://twitchapps.com/tmi/
+# The OAuth key (get one at https://twitchapps.com/tmi/). Must be logged in as the user who is posting the chat messages
 twitch.oauth.credential=none
 # Other sites in the same pattern here

@@ -2,6 +2,7 @@ package io.github.lunarwatcher.chatbot.bot.commands
 
 import com.google.common.net.UrlEscapers
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.utils.Utils
 import kotlinx.coroutines.experimental.*
@@ -191,6 +192,12 @@ class PollCommand : AbstractCommand("strawpoll", listOf(), desc="Creates a new s
     companion object {
 
     }
+}
+
+class DefineCommand : AbstractCommand("define", listOf(), desc="Links the definition of a word", help="Do `${CommandCenter.TRIGGER}define word` to get the definition for a word", rankRequirement = 1){
+    override fun handleCommand(input: String, user: User): BMessage?
+            = BMessage("https://en.wiktionary.org/wiki/${URLEncoder.encode(splitCommand(input)["content"] ?:"invalid", "UTF-8")}",
+            false)
 }
 
 class Appul : AbstractCommand("appul", listOf("apple"), "Apples."){

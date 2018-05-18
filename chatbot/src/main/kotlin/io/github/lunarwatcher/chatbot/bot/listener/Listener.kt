@@ -2,6 +2,7 @@ package io.github.lunarwatcher.chatbot.bot.listener
 
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.TRIGGER
+import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.commands.ARGUMENT_PATTERN
 import io.github.lunarwatcher.chatbot.bot.commands.FLAG_REGEX
 import io.github.lunarwatcher.chatbot.bot.commands.User
@@ -10,11 +11,13 @@ import io.github.lunarwatcher.chatbot.bot.commands.User
 interface Listener{
     val name: String;
     val description: String;
+    var commandGroup: CommandGroup
 
     fun handleInput(input: String, user: User) : BMessage?;
 }
 
-abstract class AbstractListener(override val name: String, override val description: String) : Listener{
+abstract class AbstractListener(override val name: String, override val description: String,
+                                override var commandGroup: CommandGroup = CommandGroup.COMMON) : Listener{
 
 
     fun isCommand(input: String) : Boolean = input.startsWith(TRIGGER)
