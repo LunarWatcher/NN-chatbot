@@ -29,13 +29,14 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     private lateinit var statusListener: StatusListener
     lateinit var crash: CrashLogs
     lateinit var welcomeListener: WelcomeListener
+    lateinit var mentionListener: MentionListener
+
     init {
         tc = TaughtCommands(db)
 
         TRIGGER = botProps.getProperty("bot.trigger")
         commands = mutableListOf()
-    }
-    private fun init(){
+
         val location = LocationCommand()
         val alive = Alive()
 
@@ -87,7 +88,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(DefineCommand())
         addCommand(RegisterWelcome())
         statusListener = StatusListener(db)
-        welcomeListener = WelcomeListener()
+        welcomeListener = WelcomeListener(this)
 
         addCommand(StatusCommand(statusListener))
 
@@ -101,10 +102,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         /**
          * Pun not intended:
          */
-        val ml = MentionListener()
-        listeners.add(KnockKnock(ml))
+        mentionListener = MentionListener()
+        listeners.add(KnockKnock(mentionListener))
         listeners.add(Train(5))
-        listeners.add(ml)
+        listeners.add(mentionListener)
 
         addCommand(JoinTwitch())
         addCommand(LeaveTwitch())
@@ -175,6 +176,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
                 }
             }
 
+            mentionListener.done()
+
             if (replies.size == 0)
                 return null
         } catch (e: Exception) {
@@ -234,7 +237,6 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
         fun initialize(botProps: Properties, db: Database){
             INSTANCE = CommandCenter(botProps, db)
-            INSTANCE.init()
         }
 
         lateinit var TRIGGER: String

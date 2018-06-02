@@ -467,4 +467,9 @@ public class SEChat implements Chat {
     public List<CommandGroup> getCommandGroup(){
         return groups;
     }
+
+    public List<SEUser> getPresentUsers(int roomId){
+        return new ArrayList<>();
+    }
+
 }

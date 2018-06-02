@@ -27,16 +27,20 @@ class RandomNumber : AbstractCommand("random", listOf("dice"), "Generates a rand
                 split.size == 2 -> return BMessage(randomNumber(split[1].toInt(), 1), true)
                 split.size >= 3 -> return BMessage(randomNumber(split[1].toInt(), split[2].toInt()), true)
                 else -> {
+                    return BMessage("Too many arguments", true)
                 }
             }
+        }catch(e: NumberFormatException){
+            return BMessage("Invalid number", true)
+        }catch(e: ClassCastException){
+            return BMessage("Invalid number", true)
         }catch(e: Exception){
             return BMessage("Something went terribly wrong", true);
         }
-        return BMessage("You shouldn't see this", true);
     }
 
     fun randomNumber(limit: Int, count: Int): String{
-        val count = if(count > 500) 500 else count;
+        val count = if(count > 200) 200 else count;
         val builder = StringBuilder()
         for(i in 0 until count){
             builder.append((if(i == count - 1) random.nextInt(limit) else random.nextInt(limit).toString() + ", "))
@@ -55,7 +59,7 @@ class LMGTFY : AbstractCommand("lmgtfy", listOf("searchfor", "google"), "Sends a
             return null;
         }
 
-        var query = removeName(input).trim()
+        var query = splitCommand(input)["content"] ?: ""
         if(query.isEmpty())
             return BMessage("You have to supply a query", true);
 
@@ -171,26 +175,6 @@ class WikiCommand : AbstractCommand("wiki", listOf(), desc="Links to Wikipedia",
         val article = UrlEscapers.urlPathSegmentEscaper()
                 .escape(content)
         return BMessage("https://$lang.wikipedia.org/wiki/" + URLEncoder.encode(article, "UTF-8"), false)
-    }
-}
-
-class StockComments {
-    //TODO allow creation of stock comments for specific rooms saved in the dataabase
-    //Also, this commit is a part in testing some doge aliases for git :3
-
-}
-
-class PollCommand : AbstractCommand("strawpoll", listOf(), desc="Creates a new strawpoll", help="Format: -title \"Title with quotes\" -optionN \"replace n with the question ID. Duplicated ones will be overridden\" -dupes \"Whether or not to allow duplicated posts. Default is false\""){
-    override fun handleCommand(input: String, user: User): BMessage? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    fun parseBoolean(input: String){
-
-    }
-
-    companion object {
-
     }
 }
 

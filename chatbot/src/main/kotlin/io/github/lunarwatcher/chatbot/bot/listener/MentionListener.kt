@@ -27,14 +27,15 @@ class MentionListener : AbstractListener("ping", "Reacts to pings") {
         val site = user.chat
         if(input.startsWith(CommandCenter.TRIGGER))
             return null;
+
         if(!isMentioned(input, site)){
             return null;
         }
-
         if(ignoreNext){
             ignoreNext = false;
             return null;
         }
+
         val split = splitCommand(input)
         if(split.keys.contains("content")){
             var message = split["content"] ?: ""
@@ -103,7 +104,11 @@ class MentionListener : AbstractListener("ping", "Reacts to pings") {
         input.toLowerCase().contains("${("@" + site.site.config.username.substring(0, it).toLowerCase())}\\b".toRegex())
     };
 
-    fun ignoreNext(){
+    fun ignoreNext() {
         ignoreNext = true;
+    }
+
+    fun done(){
+        ignoreNext = false;
     }
 }

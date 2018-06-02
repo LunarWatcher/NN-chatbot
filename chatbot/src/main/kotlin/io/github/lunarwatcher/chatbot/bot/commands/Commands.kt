@@ -466,10 +466,11 @@ class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much comm
         val converted = if (raw.size < 2) defaultMsg else raw[1]
 
         val msg = ReplyBuilder()
-        val what = converted.split(",").map{ it.trim() }
+        val what = converted.split(",").map{ it.trim() }.filter{ it.isNotEmpty() && it.isNotBlank() }
         if (what.isEmpty()){
             return BMessage("Much user. Few arguments. Such attempt", true)
         }
+
 
         if (random.nextBoolean())
             msg.fixedInput().append(StringUtils.repeat(" ", random.nextInt(10))).append("wow").nl()

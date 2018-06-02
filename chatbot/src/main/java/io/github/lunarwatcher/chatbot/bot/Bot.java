@@ -22,13 +22,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Timer;
 
 public class Bot {
     Database database;
     Properties botProps;
     List<Site> sites;
     List<Chat> chats = new ArrayList<>();
-
+    Timer timer;
 
     public Bot(Database db, Properties botProps, List<Site> sites) {
         this.database = db;
@@ -37,6 +38,8 @@ public class Bot {
         CommandCenter.Companion.setBot(this);
         CommandCenter.Companion.initialize(botProps, db);
         WelcomeMessages.Companion.initialize(db);
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new SaveTask(this), 0, 10 * 60 * 1000);//
 
     }
 
@@ -89,6 +92,8 @@ public class Bot {
             }
         }
 
+        timer.cancel();
+
     }
 
 
@@ -101,6 +106,8 @@ public class Bot {
     }
 
     public void save(){
+        if(chats.size() == 0)
+            return;
         for(Chat s : chats){
             s.save();
         }

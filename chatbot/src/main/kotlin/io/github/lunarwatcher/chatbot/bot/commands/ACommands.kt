@@ -5,6 +5,7 @@ import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 import sun.security.krb5.Config
@@ -405,5 +406,58 @@ class NetIpCommand : AbstractCommand("ip", listOf(), rankRequirement = 10){
             return false
         }
         return true;
+    }
+}
+
+class ForceIndex : AbstractCommand("force-index", listOf(), desc="Forces indexing of a user, server, or chat room.", rankRequirement = 7){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        val chat = user.chat
+        val content = splitCommand(input)["content"] ?: return BMessage("Index what?", true)
+
+        return if(chat is DiscordChat){
+
+            val uid = content.toLongOrNull()
+            if(uid == null){
+                when (content.toLowerCase()){
+                    "server" -> {
+                        val users = chat.getChannel(user.roomID)?.guild?.users ?: return BMessage("Indexing failed: channel or guild not found", true)
+                        for(usr in users){
+                            val id = usr.longID;
+                            val name = usr.name;
+                            CommandCenter.INSTANCE.hookupToRanks(id, name, chat);
+                        }
+                        BMessage("Successfully indexed guild", true);
+                    }
+                    "channel" -> {
+                        val users = chat.getChannel(user.roomID)?.usersHere ?: return BMessage("Indexing failed: channel not found", true);
+                        for(usr in users){
+                            val id = usr.longID;
+                            val name = usr.name;
+                            CommandCenter.INSTANCE.hookupToRanks(id, name, chat);
+                        }
+
+                        BMessage("Successfully indexed channel", true)
+                    }
+                    else -> {
+                        val users = chat.getChannel(user.roomID)?.guild?.users ?: return BMessage("Indexing failed: channel or guild not found", true)
+                        val usr = users.firstOrNull {
+                            it.name.toLowerCase().replace(" ", "") == content.toLowerCase().replace(" ", "")
+                        } ?: return BMessage("User not found!", true)
+                        CommandCenter.INSTANCE.hookupToRanks(usr.longID, usr.name, chat)
+                        BMessage("Successfully indexed user " + usr.name, true)
+                    }
+                }
+            }else{
+                val users = chat.getChannel(user.roomID)?.guild?.users ?: return BMessage("Indexing failed: channel or guild not found", true)
+                val usr = users.firstOrNull { it.longID == uid } ?: return BMessage("User not found!", true)
+                val username = usr.name
+                CommandCenter.INSTANCE.hookupToRanks(uid, username, chat)
+                BMessage("Successfully indexed user " + usr.name, true)
+            }
+        }else if(chat is SEChat){
+            BMessage("Not implemented yet", true);
+        }else{
+            BMessage("Unsupported site for force indexing", true)
+        }
     }
 }

@@ -9,19 +9,23 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
+import io.github.lunarwatcher.chatbot.safeGet
 
 @Suppress("NAME_SHADOWING")
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
     var context: Context? = null
 
     override fun handleInput(input: String, user: User): BMessage? {
-        val input = input.toLowerCase();
+        println("Enter")
+        var input = input
         if(!mention.isMentioned(input, user.chat) && context == null){
+            println("Enter 1")
             return null;
 
         }else if(mention.isMentioned(input, user.chat) && context == null) {
-
-            if (input.contains("knock\\W*?knock".toRegex())) {
+            input = input.split(" ", limit = 2).safeGet(1) ?: ""
+            println("Input = $input")
+            if (input.contains("(?i)knock\\W*?knock".toRegex())) {
                 context = Context(0, user.userID)
             }else
                 return null
@@ -33,6 +37,7 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
         }
 
         mention.ignoreNext();
+
         when(context?.index){
             0 ->{
                 context?.next()
@@ -234,10 +239,10 @@ class BasicListener(val output: String, val pattern: Regex, name: String, descri
     }
 }
 
-class WelcomeListener : AbstractListener("Welcome", "Sends welcome messages to new users if there's a welcome message registered", CommandGroup.STACKEXCHANGE){
+class WelcomeListener(center: CommandCenter) : AbstractListener("Welcome", "Sends welcome messages to new users if there's a welcome message registered", CommandGroup.STACKEXCHANGE){
     val mappedUsers: MutableMap<String, MutableMap<Long, MutableList<Long>>>
     init{
-        val mappedUsers = CommandCenter.INSTANCE.db.getMap("welcomed") as Map<String, Map<String, MutableList<Long>>>?
+        val mappedUsers = center.db.getMap("welcomed") as Map<String, Map<String, MutableList<Long>>>?
         this.mappedUsers = mappedUsers?.map{ it.key to it.value.map{
             it.key.toLong() to it.value.map{
                 it.toLong()
