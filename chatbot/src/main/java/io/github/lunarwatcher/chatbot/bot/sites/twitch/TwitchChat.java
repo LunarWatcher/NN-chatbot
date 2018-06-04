@@ -74,6 +74,7 @@ public class TwitchChat implements Chat {
 
     }
 
+
     @Override
     public void save() {
         Utils.saveConfig(config, db);
@@ -203,7 +204,7 @@ public class TwitchChat implements Chat {
                 }
             }else{
                 if(CommandCenter.Companion.isCommand(message)){
-                    sendMessage(event, Constants.INVALID_COMMAND);
+                    sendMessage(event, Constants.INVALID_COMMAND + " (!!help)");
                 }
             }
         }catch(IOException e){
@@ -213,6 +214,7 @@ public class TwitchChat implements Chat {
 
 
     public void sendMessage(AbstractChannelEvent event, String message){
+        //This works for some reason.
         if(message.length() <= 500) {
             event.sendMessage(message);
         }else{

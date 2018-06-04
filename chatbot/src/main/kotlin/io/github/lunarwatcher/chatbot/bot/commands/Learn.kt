@@ -109,7 +109,7 @@ class TaughtCommands(val db: Database){
     }
 
     fun get(cmdName: String) : LearnedCommand? {
-        return commands.firstOrNull { it.name == cmdName }
+        return commands.firstOrNull { it.name.toLowerCase() == cmdName.toLowerCase() } ?: commands.firstOrNull{ cmdName.toLowerCase() in it.aliases.map{ it.toLowerCase() } }
     }
 }
 
@@ -214,7 +214,7 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
         }
 
         commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, user.chat.name))
-
+        center.refreshBuckets()
         return BMessage(Utils.getRandomLearnedMessage(), true);
     }
 }
@@ -237,6 +237,7 @@ class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : Abstrac
         }
 
         commands.removeCommand(name);
+        center.refreshBuckets()
 
         return BMessage(Utils.getRandomForgottenMessage(), true);
     }

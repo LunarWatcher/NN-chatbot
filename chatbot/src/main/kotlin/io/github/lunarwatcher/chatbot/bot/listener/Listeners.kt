@@ -16,12 +16,9 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
     var context: Context? = null
 
     override fun handleInput(input: String, user: User): BMessage? {
-        println("Enter")
         var input = input
         if(!mention.isMentioned(input, user.chat) && context == null){
-            println("Enter 1")
             return null;
-
         }else if(mention.isMentioned(input, user.chat) && context == null) {
             input = input.split(" ", limit = 2).safeGet(1) ?: ""
             println("Input = $input")
@@ -29,7 +26,6 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
                 context = Context(0, user.userID)
             }else
                 return null
-
         }
 
         if(context?.user != user.userID){
@@ -200,12 +196,10 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     override fun handleInput(input: String, user: User): BMessage? {
         if(lastMessages[user.roomID] == null || System.currentTimeMillis() - lastMessages[user.roomID]!! > (WAIT * 1000)) {
 
-            for(match in matches) {
-                if(input.replace("[^a-zA-Z@<>0-9]".toRegex(), "")
-                                .matches("(?i)^$match$".toRegex())) {
-                    lastMessages[user.roomID] = System.currentTimeMillis()
-                    return BMessage(input, false)
-                }
+            if(input.replace("[.,!\\-~]*".toRegex(), "").toLowerCase()
+                            .matches(regex)) {
+                lastMessages[user.roomID] = System.currentTimeMillis()
+                return BMessage(input, false)
             }
         }
         return null
@@ -218,12 +212,11 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
         const val WAIT = 10 * 60 //10 minutes * 60 seconds
 
         val matches = listOf(
-                "morn",
-                "morning",
-                "morno",
-                "gm",
-                "good morning"
+                "(?:good\\W*)?morn(?:ing|o)?",
+                "gm"
         )
+
+        val regex = """(?i)^(${matches.joinToString("|")})$""".toRegex()
         
     }
 }

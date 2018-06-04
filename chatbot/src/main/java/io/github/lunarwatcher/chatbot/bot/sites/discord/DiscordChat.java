@@ -165,7 +165,7 @@ public class DiscordChat implements Chat{
 
                 if (replies == null) {
                     if (CommandCenter.Companion.isCommand(msg)) {
-                        event.getChannel().sendMessage("Look up the manual maybe?");
+                        event.getChannel().sendMessage(Constants.INVALID_COMMAND + " (//help)");
                     }
                 } else {
                     for (BMessage r : replies) {

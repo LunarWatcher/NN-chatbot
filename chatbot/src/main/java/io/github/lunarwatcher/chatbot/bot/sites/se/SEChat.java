@@ -438,7 +438,7 @@ public class SEChat implements Chat {
             if (CommandCenter.Companion.isCommand(m.content)) {
                 SERoom r = getRoom(m.roomID);
                 if (r != null) {
-                    r.reply("Maybe you should consider looking up the manual", m.messageID);
+                    r.reply(Constants.INVALID_COMMAND + " (//help)", m.messageID);
                 } else {
                     System.err.println("Room is null!");
                 }

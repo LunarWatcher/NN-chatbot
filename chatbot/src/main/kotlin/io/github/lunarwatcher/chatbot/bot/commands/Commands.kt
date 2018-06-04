@@ -29,7 +29,7 @@ import java.util.regex.Pattern
 const val DATE_PATTERN = "E, d MMMM HH:mm:ss.SSSS Y z ('GMT' ZZ)"
 
 val formatter = SimpleDateFormat(DATE_PATTERN, Locale.ENGLISH)
-const val FLAG_REGEX = "( -[a-zA-Z]+)( \"[a-zA-Z ]+\")?"
+const val FLAG_REGEX = "( --?[a-zA-Z]+)( \"[a-zA-Z ]+\")?"
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
 const val NO_DEFINED_RANK = -1
 interface Command{
@@ -78,11 +78,11 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
     override fun matchesCommand(input: String): Boolean{
         val input = input.toLowerCase();
         val split = input.split(" ");
-        if(split[0] == name.toLowerCase()){
+        if(split[0].toLowerCase() == name.toLowerCase()){
             return true;
         }
 
-        return aliases.any{split[0] == it.toLowerCase()}
+        return aliases.any{split[0].toLowerCase() == it.toLowerCase()}
     }
 
     /**
@@ -110,7 +110,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         }
 
         val dMap = try{
-            val content = initialSplit.substring(name.length + 1/*avoid the space*/)
+            val content = initialSplit.substring(name.length + 1/*avoid the space*/).replace(FLAG_REGEX, "")
             mutableMapOf("name" to name.trim(), "content" to content.trim())
         }catch(e: StringIndexOutOfBoundsException){
             mutableMapOf("name" to name.trim())
@@ -195,6 +195,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
         if(!matchesCommand(input)){
             return null;
         }
+
         val center = user.chat.commands
 
         val `in` = splitCommand(input)
@@ -292,7 +293,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                 return BMessage(builder.toString(), false)
             }
         }else{
-            val cmd = (`in`["content"] ?: return null).toLowerCase();
+            val cmd = (`in`["content"] ?: return BMessage("in[content] == null. /cc @Zoe", false)).toLowerCase();
             val desc: String
             val help: String
             val name: String
@@ -304,27 +305,27 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
             val chat = user.chat
             when {
                 center.isBuiltIn(cmd, chat) -> {
-                    desc = center[cmd, chat]?.desc ?: return null;
-                    help = center[cmd, chat]?.help ?: return null;
-                    name = center[cmd, chat]?.name ?: return null;
-                    val aliasBuffer = center[cmd, user.chat]?.aliases ?: return null
+                    desc = center[cmd, chat]!!.desc;
+                    help = center[cmd, chat]!!.help;
+                    name = center[cmd, chat]!!.name;
+                    val aliasBuffer = center[cmd, user.chat]!!.aliases
                     aliases = if(aliasBuffer.isEmpty())
                         "None"
                     else
                         aliasBuffer.joinToString(", ")
-                    rank = center[cmd, chat]?.rankRequirement ?: return null
+                    rank = center[cmd, chat]!!.rankRequirement
 
                     d = "Built in command. "
-                    nsfw = center[cmd, chat]?.nsfw ?: return null
+                    nsfw = center[cmd, chat]!!.nsfw
                 }
                 CommandCenter.tc.doesCommandExist(cmd) -> {
-                    desc = CommandCenter.tc.get(cmd)?.desc ?: return null;
-                    help = CommandCenter.tc.get(cmd)?.help ?: return null;
-                    name = CommandCenter.tc.get(cmd)?.name ?: return null;
+                    desc = CommandCenter.tc.get(cmd)!!.desc;
+                    help = CommandCenter.tc.get(cmd)!!.help;
+                    name = CommandCenter.tc.get(cmd)!!.name;
                     d = "Taught command. (Taught to the bot by user " + CommandCenter.tc.get(cmd)?.creator + " on " + CommandCenter.tc.get(cmd)?.site + "). "
                     aliases = "None. "
                     rank = 1
-                    nsfw = CommandCenter.tc.get(cmd)?.nsfw ?: return null
+                    nsfw = CommandCenter.tc.get(cmd)!!.nsfw
                 }
 
                 else -> return BMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)

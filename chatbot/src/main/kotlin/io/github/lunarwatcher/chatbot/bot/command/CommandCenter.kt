@@ -260,6 +260,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         }
     }
 
+    fun refreshBuckets(){
+        commandSets.clear()
+    }
+
     fun postSiteInit(){
         statusListener.initialize()
     }
