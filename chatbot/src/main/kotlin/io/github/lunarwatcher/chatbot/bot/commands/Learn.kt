@@ -7,7 +7,10 @@ import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.MapUtils
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
+import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.splitCommand
 import io.github.lunarwatcher.chatbot.utils.Utils
+import java.text.MessageFormat
+import java.util.*
 
 @Suppress("UNCHECKED_CAST", "UNUSED")
 class TaughtCommands(val db: Database){
@@ -41,6 +44,7 @@ class TaughtCommands(val db: Database){
             cmdMap["reply"] = lc.reply;
             cmdMap["site"] = lc.site;
             cmdMap["nsfw"] = lc.nsfw
+            cmdMap["disableInput"] = lc.disableInput
             map.add(cmdMap)
 
         }
@@ -64,7 +68,7 @@ class TaughtCommands(val db: Database){
             val output: String = map["output"] as String;
             val site: String = map["site"] as String? ?: "Unknown";
             val nsfw: Boolean = map["nsfw"] as Boolean? ?: true;
-
+            val disableInput = map["disableInput"] as Boolean? ?: false
             //Since at this time there are some commands that have been created before this system was added, allow for the site
             //to be null and instead loaded to "unknown". This is not going to happen often so it isn't going to be a big problem
             //when the bot is actively used
@@ -81,7 +85,7 @@ class TaughtCommands(val db: Database){
                 (map["reply"] as String).toBoolean();
             }
 
-            addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, site))
+            addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, site, disableInput))
         }
 
         fun addCommand(c: Command) {
@@ -115,7 +119,7 @@ class TaughtCommands(val db: Database){
 
 class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied",
                      val output: String, val reply: Boolean, val creator: Long,
-                     override var nsfw: Boolean = false, val site: String)
+                     override var nsfw: Boolean = false, val site: String, val disableInput: Boolean = false)
     : AbstractCommand(cmdName, listOf(), cmdDesc, "This is a learned command and does not have help"){
 
     override fun handleCommand(input: String, user: User): BMessage? {
@@ -126,18 +130,27 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
 
         output = output.replace("""(?i)\\un""".toRegex(), user.userName).replace("""(?i)\\uid""".toRegex(), user.userID.toString())
 
-        if(output.contains("%s")){
-            val arguments = output.split("%s").size - 1
-            val given = (splitCommand(input)["content"]?: return BMessage(
-                    "You need $arguments ${if (arguments == 1) "argument" else "arguments"} to run this command",
-                    true))
+        if(!disableInput) {
+            if (output.contains("\\{[0-9]+}".toRegex())) {
+                println("Group is TRIGGERED AND SUPER OFFENDED SHØ!! :p");
+                val items = (splitCommand(input)["content"]?.split(",")?.map { it.trim() }?.toTypedArray()
+                        ?: arrayOf());
+                println(items);
+                output = MessageFormat.format(output, *items);
+            } else if (output.contains("%s")) {
+                println(output)
+                val arguments = output.split("%s").size - 1
+                val given = (splitCommand(input)["content"] ?: return BMessage(
+                        "You need $arguments ${if (arguments == 1) "argument" else "arguments"} to run this command",
+                        true))
 
-                    .split(",");
-            if(given.size != arguments){
-                return BMessage("Not enough arguments. Found ${given.size}, requires $arguments", true)
+                        .split(",");
+                if (given.size != arguments) {
+                    return BMessage("Not enough arguments. Found ${given.size}, requires $arguments", true)
+                }
+                output = output.format(*given.toTypedArray())
+
             }
-            output = output.format(*given.toTypedArray())
-
         }
 
 
@@ -152,7 +165,7 @@ class LearnedCommand(cmdName: String, cmdDesc: String = "No description supplied
 class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("learn", listOf("teach"), "Teaches the bot a new command. ",
         help = "Syntax: ${CommandCenter.TRIGGER}help commandName commandOutput -d (optional) description -nsfw (optional) whether the command is NSFW or not (boolean)\n" +
                 "Symbols:\n" +
-                "* %s - requires input for the command to be used\n" +
+                "* %s - requires input for the command to be used. Alternatively {number}, where \"number\" is replaced with the ID of the supplied item. It should increment from 0 (the number corresponds with the item in the supplied arguments)\n" +
                 "* \\un - adds the username for whoever uses the command\n" +
                 "* \\uid - adds the user ID for whoever uses the command" ){
 
@@ -186,7 +199,8 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
         var desc = "No description was supplied";
         val creator = user.userID;
         var output = "undefined";
-        val reply = false;
+        var reply = false;
+        var a: Boolean = false
 
         for(i in 0 until args.size){
             val key = args.keys.elementAt(i);
@@ -203,6 +217,20 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
                         user.chat.name == "discord";
                     }
                 }
+                "-reply" ->{
+                    reply = try{
+                        args["-reply"]?.toBoolean() ?: false
+                    }catch(e: Exception){
+                        false
+                    }
+                }
+                "-noArgs" ->{
+                    a = try{
+                        (args["-noArgs"]?.toBoolean() ?: false)
+                    }catch(e: Exception){
+                        false
+                    }
+                }
             }
         }
 
@@ -213,7 +241,11 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
             return BMessage("That command already exists", true);
         }
 
-        commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, user.chat.name))
+        if(output.contains("%s") && output.contains("\\{[0-9]+}".toRegex()) && !a){
+            return BMessage("Warning: ambiguous arguments detected (%s and {[0-9]+} formats were detected). This is not compatible with the system. Append -noArgs after the command output (with a space between) to disable input.", true)
+        }
+
+        commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, user.chat.name, a))
         center.refreshBuckets()
         return BMessage(Utils.getRandomLearnedMessage(), true);
     }

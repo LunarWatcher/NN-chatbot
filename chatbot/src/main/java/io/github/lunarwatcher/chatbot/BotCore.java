@@ -45,10 +45,12 @@ public class BotCore {
     public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
     public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
+        //Used when running from the jar without the command line. Just enables easy shutdown.
         JFrame frame = new JFrame("Window");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(new Dimension(300, 300));
         frame.setResizable(false);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
         LOCATION = Long.toHexString(System.currentTimeMillis());
