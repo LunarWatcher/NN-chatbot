@@ -1,19 +1,18 @@
 package io.github.lunarwatcher.chatbot;
 
 import io.github.lunarwatcher.chatbot.bot.Bot;
-import io.github.lunarwatcher.chatbot.utils.Http;
-import io.github.lunarwatcher.chatbot.utils.Utils;
-import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.joda.time.Instant;
-import sun.security.krb5.Config;
 
-import java.io.*;
-import java.net.SocketException;
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 
 import static io.github.lunarwatcher.chatbot.Constants.*;
 import static io.github.lunarwatcher.chatbot.utils.Utils.assertion;
@@ -46,6 +45,11 @@ public class BotCore {
     public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
     public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
+        JFrame frame = new JFrame("Window");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setSize(new Dimension(300, 300));
+        frame.setResizable(false);
+        frame.setVisible(true);
 
         LOCATION = Long.toHexString(System.currentTimeMillis());
 

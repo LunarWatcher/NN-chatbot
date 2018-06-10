@@ -1,6 +1,5 @@
 package io.github.lunarwatcher.chatbot;
 
-import com.sun.xml.internal.bind.v2.TODO;
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 

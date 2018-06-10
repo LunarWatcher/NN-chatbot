@@ -7,6 +7,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
+import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
 import io.github.lunarwatcher.chatbot.clean
 import io.github.lunarwatcher.chatbot.utils.Http
 import org.apache.http.impl.client.HttpClients
@@ -56,7 +57,7 @@ class MentionListener : AbstractListener("ping", "Reacts to pings") {
                 return res[0]
         }
 
-        return BMessage("How can I `${CommandCenter.TRIGGER}help`?", true)
+        return BMessage("How can I `${if(user.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true)
 
     }
 

@@ -32,6 +32,25 @@ repositories {
 
 }
 
+/**
+ * Compiles the chatbot for use outside an IDE
+ * Usage:
+ *
+ *     gradlew fatJar
+ */
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Neural network chatbot',
+                'Implementation-Version': version,
+                'Main-Class': 'io.github.lunarwatcher.chatbot.BotCore'
+    }
+    baseName = project.name
+    from { configurations.compile.collect {
+        it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
 kotlin {
     experimental {
         coroutines 'enable'

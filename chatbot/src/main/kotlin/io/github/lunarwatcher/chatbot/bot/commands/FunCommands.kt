@@ -184,6 +184,24 @@ class DefineCommand : AbstractCommand("define", listOf(), desc="Links the defini
             false)
 }
 
+class QuestionCommand : AbstractCommand("why", listOf("is", "how", "are", "can", "who"), desc="Ask the glorious 8ball!", help = "Ask the 8ball a question, and it will reply"){
+    override fun handleCommand(input: String, user: User): BMessage? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    companion object {
+        val whys = listOf(
+            "For reasons", "I don't know", "They're weird"
+        )
+        val areIs = listOf(
+                "Probably", "No", "Absolutely", "Clearly",
+                "Nope", "Definitively", "Definitively not"
+        )
+
+
+    }
+}
+
 class Appul : AbstractCommand("appul", listOf("apple"), "Apples."){
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)) return null;

@@ -1,6 +1,5 @@
 package io.github.lunarwatcher.chatbot.utils;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
@@ -8,15 +7,12 @@ import io.github.lunarwatcher.chatbot.bot.commands.RankInfo;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat;
-import me.philippheuer.twitch4j.TwitchClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.RequestBuffer;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

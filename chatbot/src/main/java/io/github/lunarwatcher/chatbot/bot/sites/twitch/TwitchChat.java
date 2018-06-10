@@ -324,10 +324,10 @@ public class TwitchChat implements Chat {
 
     }
 
-    @EventSubscriber
-    public void onFollow(FollowEvent event) {
-        sendMessage(event,"Thanks for following " + event.getUser().getDisplayName() + " ^w^");
-    }
+    // @EventSubscriber
+    //public void onFollow(FollowEvent event) {
+    //    sendMessage(event,"Thanks for following " + event.getUser().getDisplayName() + " ^w^");
+    //}
 
     public boolean getTruncated(){
         return truncated;

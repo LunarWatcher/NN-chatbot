@@ -26,3 +26,4 @@ memory.json
 chatbot/.gradle/
 logs.txt
 client.log
+*.jar
