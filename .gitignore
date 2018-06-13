@@ -4,6 +4,7 @@ vocab.txt
 raw_data/
 dataset/
 botStorage/
+*.log
 *.npy
 *.npz
 .idea/libraries/

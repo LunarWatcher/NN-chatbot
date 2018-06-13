@@ -23,7 +23,7 @@ val mapped = mutableListOf(
 )
 
 val mappedRegex = mutableListOf(
-        "\\B<a href=\"(.*?)\" (rel=\".*?\")?>(.*?)</a>\\B".toRegex() to "[$3]($1)",
+        "<a href=\"(.*?)\"( rel=\".*?\")?>(.*?)</a>".toRegex() to "[$3]($1)",
         "^\\n+(.*?)\$".toRegex() to "$1"
 )
 

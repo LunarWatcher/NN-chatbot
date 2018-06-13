@@ -9,6 +9,7 @@ import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter.Companion.splitCommand
 import io.github.lunarwatcher.chatbot.utils.Utils
+import kotlinx.coroutines.experimental.Deferred
 import java.text.MessageFormat
 import java.util.*
 
@@ -261,7 +262,7 @@ class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : Abstrac
         val name = `in`["content"] ?: return BMessage("I need to know what to forget", true);
 
         if(center.isBuiltIn(name, user.chat)){
-            return BMessage("You can't make me forget something that's hard-coded :>", true);
+            return BMessage("You can't make me forget something that's hard-coded. :>", true);
         }
 
         if(!commands.doesCommandExist(name)){
