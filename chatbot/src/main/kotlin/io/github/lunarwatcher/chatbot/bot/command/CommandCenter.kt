@@ -11,6 +11,7 @@ import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
 import kotlin.reflect.KClass
@@ -22,16 +23,18 @@ enum class CommandGroup{
 
 
 class CommandCenter private constructor(botProps: Properties, val db: Database) {
+    private var logger = LoggerFactory.getLogger(this::class.java)
     private var commandSets = mutableMapOf<List<CommandGroup>, List<Command>>()
     private var commands: MutableList<Command>
 
     var listeners = mutableListOf<Listener>()
-    private lateinit var statusListener: StatusListener
-    lateinit var crash: CrashLogs
-    lateinit var welcomeListener: WelcomeListener
-    lateinit var mentionListener: MentionListener
+    private var statusListener: StatusListener
+    var crash: CrashLogs
+    var welcomeListener: WelcomeListener
+    var mentionListener: MentionListener
 
     init {
+        logger.info("Alive!");
         tc = TaughtCommands(db)
 
         TRIGGER = botProps.getProperty("bot.trigger")
@@ -87,6 +90,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(DogCommand())
         addCommand(DefineCommand())
         addCommand(RegisterWelcome())
+        addCommand(TestCommand());
         statusListener = StatusListener(db)
         welcomeListener = WelcomeListener(this)
 
@@ -127,6 +131,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
     @Throws(IOException::class)
     fun parseMessage(message: String?, user: User, nsfw: Boolean): List<BMessage>? {
+        logger.info("Message @ " + user.chat.name + " : \"$message\" - ${user.userName}")
         @Suppress("NAME_SHADOWING")
         var message: String = message ?: return null
         message = message.replace("&#8238;", "")

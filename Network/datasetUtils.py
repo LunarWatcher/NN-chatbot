@@ -7,7 +7,7 @@ import nltk
 import numpy as np
 from random import sample
 
-EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_'  # space is included in the whitelistt
+EN_WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz \'\"+.,!?*-^_'
 EN_BLACKLIST = '$`()/<=>@[\\]{|}~'
 
 limit = {
@@ -18,20 +18,7 @@ limit = {
 }
 
 UNK = 'unk'
-VOCAB_SIZE = 45000  # 37652 # Last number is a reference for other models
-
-# vocab size explanation: with token splitting at tokens like .,;:-"' etc
-# the vocab size drastically decreased from an unknown size > 60000 to 37k.
-# Currently, the entire system relies on the cornell dataset, which is why
-# the current dev efforts go to custom datasets with cornell as a backing one
-# (the initial dataset, until data is collected). Obviously, custom dataset
-# from the beginning will be supported eventually, but progress is slow when
-# life comes in the way
-
-'''
-    1. Read from 'movie-lines.txt'
-    2. Create a dictionary with ( key = line_id, value = text )
-'''
+VOCAB_SIZE = 37652
 
 
 def getId2line():
@@ -44,12 +31,6 @@ def getId2line():
     return id2line
 
 
-'''
-    1. Read from 'movie_conversations.txt'
-    2. Create a list of [list of line_id's]
-'''
-
-
 def getConversations():
     conv_lines = open('raw_data/movie_conversations.txt', encoding='utf-8', errors='ignore').read().split('\n')
     convs = []
@@ -58,13 +39,6 @@ def getConversations():
         convs.append(_line.split(','))
 
     return convs
-
-
-'''
-    1. Get each conversation
-    2. Get each line from conversation
-    3. Save each conversation to file
-'''
 
 
 def extractConversations(convs, id2line, path=''):
@@ -76,13 +50,6 @@ def extractConversations(convs, id2line, path=''):
             f_conv.write('\n')
         f_conv.close()
         idx += 1
-
-
-'''
-    Get lists of all conversations as Questions and Answers
-    1. [questions]
-    2. [answers]
-'''
 
 
 def gatherDataset(convs, id2line):
@@ -97,8 +64,6 @@ def gatherDataset(convs, id2line):
             else:
                 answers.append(id2line[conv[i]])
 
-
-
     return questions, answers
 
 
@@ -108,12 +73,6 @@ def filterLine(line, whitelist=EN_WHITELIST):
     reformatted = re.sub(r'( - - )', r' -- ', reformatted)
     reformatted = " ".join(reformatted.split())
     return ''.join([ch for ch in reformatted.strip() if ch in whitelist])
-
-
-'''
- filter too long and too short sequences
-    return tuple( filtered_ta, filtered_en )
-'''
 
 
 def filterData(qseq, aseq):

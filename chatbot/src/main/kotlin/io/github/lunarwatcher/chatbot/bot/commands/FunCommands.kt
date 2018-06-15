@@ -64,7 +64,6 @@ class LMGTFY : AbstractCommand("lmgtfy", listOf("searchfor", "google"), "Sends a
             return BMessage("You have to supply a query", true);
 
         if(input.contains("--ddg") || input.contains("--duckduckgo")){
-            query = query.replace("--ddg", "").replace("--duckduckgo", "").trim()
             if(query.isEmpty())
                 return BMessage("You have to supply a query", true);
 

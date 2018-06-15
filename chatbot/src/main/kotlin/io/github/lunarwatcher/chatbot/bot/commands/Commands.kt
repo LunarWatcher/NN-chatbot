@@ -29,7 +29,7 @@ import java.util.regex.Pattern
 const val DATE_PATTERN = "E, d MMMM HH:mm:ss.SSSS Y z ('GMT' ZZ)"
 
 val formatter = SimpleDateFormat(DATE_PATTERN, Locale.ENGLISH)
-const val FLAG_REGEX = "( --?[a-zA-Z]+)( \"[a-zA-Z ]+\")?"
+const val FLAG_REGEX = """(?i)((?:\s|^)--[a-z\d]+)(\s*".+?(?:[^\\]"))?""";
 var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
 const val NO_DEFINED_RANK = -1
 interface Command{
@@ -69,6 +69,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
                                override var commandGroup: CommandGroup = CommandGroup.COMMON) : Command{
 
     init {
+        @Suppress("LeakingThis")
         if (rankRequirement != NO_DEFINED_RANK) {
             if (rankRequirement < 0 || rankRequirement > 10)
                 throw IllegalArgumentException("The rank requirement must be between 0")
@@ -101,7 +102,8 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
     }
     fun splitCommand(input: String) : Map<String, String>{
         val iMap = parseArguments(input);
-        val initialSplit = input.split(FLAG_REGEX.toRegex())[0];
+
+        val initialSplit = input.split(FLAG_REGEX.toRegex()).joinToString(" ").trim();
         val name = initialSplit.split(" ")[0];
 
         if(name == input){
@@ -418,7 +420,7 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
 
         if(content != null && (content.trim().toLowerCase().contains("139") || content.trim().toLowerCase().contains("java"))){
             return BMessage("Morning", true)
-        }else if(raw["-get"] != null)
+        }else if(raw["--get"] != null)
             return BMessage("Available timezones: " + DateTimeZone.getAvailableIDs(), false)
         else if(content != null && (content.trim().toLowerCase().contains("internet")))
             return BMessage("Morning UIT (Universal Internet Time)", true);
@@ -694,6 +696,10 @@ class RegisterWelcome : AbstractCommand("registerWelcome", listOf("set-welcome-m
         return BMessage("Successfully registered welcome message.", true)
     }
 
+}
+
+class TestCommand : AbstractCommand("test", listOf("items"), desc = "Returns the contents of splitCommand", help = "Play around with the bot"){
+    override fun handleCommand(input: String, user: User): BMessage? = BMessage("Received arguments: " + splitCommand(input), false)
 }
 
 fun <T> List<T>.randomItem() : T{

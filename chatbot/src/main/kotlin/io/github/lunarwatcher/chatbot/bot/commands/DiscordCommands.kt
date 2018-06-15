@@ -34,9 +34,9 @@ class NSFWState : AbstractCommand("nsfwtoggle", listOf(),
         if(guild == -1L)
             return null;
 
-        if(arg["-get"] != null)
+        if(arg["--get"] != null)
             return BMessage("NSFW mode is " + (if(chat.getNsfw(guild)) "enabled" else "disabled"), false);
-        else if(arg["-server"] != null){
+        else if(arg["--server"] != null){
             val newState = try{
                 //Extremely basic check to assert it's possible to cast the argument to a boolean value
                 arg["content"]?.toBoolean() ?: !chat.getNsfw(guild)

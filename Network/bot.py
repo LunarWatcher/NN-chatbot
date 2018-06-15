@@ -19,12 +19,12 @@ class Bot():
     embedDim = 512
     # This is true by default to make it possible to run on 2 gig VRAM systems.
     embeddingCpu = True
+
     def __init__(self, training):
         self.training = training
         self.initialized = False
         print("Using CPU for embedding? " + str(self.embeddingCpu))
         print("Change the variable in the Bot class to use either the GPU exclusively")
-
 
     def createInference(self):
         self.encodeSequences2 = tf.placeholder(dtype=tf.int64, shape=[1, None], name="encodeSequences")
