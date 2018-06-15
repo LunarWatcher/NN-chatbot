@@ -2,6 +2,10 @@
 
 This is a chatbot both designed for neural network interraction in addition to the default command-based system. Note that it's still a work in progress, so there are bound to be bugs.
 
+# Documentation notice
+
+The documentation is currently beign written, and some of it is completely outdated. The readme is up to date (more or less), but it still needs editing (the same as the rest of the documentation). See [#47](https://github.com/LunarWatcher/NN-chatbot/issues/47)
+
 # Install
 
 ## Dependencies
