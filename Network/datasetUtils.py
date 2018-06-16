@@ -18,7 +18,7 @@ limit = {
 }
 
 UNK = 'unk'
-VOCAB_SIZE = 37652
+VOCAB_SIZE = 45000
 
 
 def getId2line():
