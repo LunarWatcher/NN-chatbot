@@ -42,4 +42,3 @@ open class EMessageFormat(val inputString: String){
     }
 }
 
-class
