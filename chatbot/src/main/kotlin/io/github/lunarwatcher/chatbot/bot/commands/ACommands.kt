@@ -18,8 +18,7 @@ class AddHome : AbstractCommand("home", listOf(),
             user.chat as SEChat
         }else
             return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
-        if(!matchesCommand(input))
-            return null;
+        ;
         if(!Utils.isAdmin(user.userID, site.config)){
             return BMessage("I'm afraid I can't let you do that, User", true);
         }
@@ -54,8 +53,7 @@ class RemoveHome : AbstractCommand("remhome", listOf(),
             user.chat as SEChat
         }else
             return BMessage("Invalid instance of Chat. Blame ${Configurations.CREATOR}. Debug info: Found ${user.chat::class.java}", true)
-        if(!matchesCommand(input))
-            return null;
+        ;
         if(!Utils.isAdmin(user.userID, site.config)){
             return BMessage("I'm afraid I can't let you do that, User", true);
         }
@@ -101,11 +99,8 @@ class UpdateRank : AbstractCommand("setRank", listOf("demote", "promote"), "Chan
 
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
-        if(!matchesCommand(input)){
-            //final command match assertion check
-            return null;
-        }
-        val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to change the rank of, and to what", true)
+        val command = splitCommand(input);
+        val content = command["content"] ?: return BMessage("You have to tell me who to change the rank of, and to what", true)
         val split = content.split(" ")
         if(split.size != 2)
             return BMessage("Requires 2 arguments. found ${split.size}. (Pro tip: usernames are written without spaces)", true);
@@ -129,13 +124,29 @@ class UpdateRank : AbstractCommand("setRank", listOf("demote", "promote"), "Chan
 
             val cuRank = Utils.getRank(user.userID, site.config)
 
+            if(cuRank == newRank){
+                return BMessage("The user already has the rank $newRank", true)
+            }
+
+            if(uid == user.userID){
+                if(newRank < currentRank){
+                    if(command["--confirm"] != null){
+                        site.config.addRank(uid, newRank, user.userName)
+                        return BMessage("Successfully lowered your rank from $cuRank to $newRank", true)
+                    }else{
+                        return BMessage("Warning: You're attempting to lower your own rank. If you do, an admin has to promote you if you want your previous rank. Add --confirm to the end of the message to confirm this action.", true)
+                    }
+                }else{
+                    return BMessage("Can't increase your own rank. Nice try though.", true)
+                }
+            }
             if ((newRank == 0 || currentRank == 0) && cuRank < 8) {
                 return BMessage("You can't ban or unban users with your current rank", true);
             }
             if (currentRank >= cuRank && !Utils.isHardcodedAdmin(user.userID, site))
                 return BMessage("You can't change the rank of users with the same or higher rank as yourself", true);
 
-            if (newRank > cuRank && cuRank != 10)
+            if (newRank >= cuRank && cuRank != 10)
                 return BMessage("You can't promote other users to the same or higher rank as yourself", true)
 
 
@@ -154,8 +165,6 @@ class UpdateRank : AbstractCommand("setRank", listOf("demote", "promote"), "Chan
 class BanUser : AbstractCommand("ban", listOf(), "Bans a user from using the bot. Only usable by hardcoded bot admins"){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
-        if(!matchesCommand(input))
-            return null;
 
         val content = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to ban", true)
         val split = content.split(" ")
@@ -246,8 +255,7 @@ class Unban : AbstractCommand("unban", listOf(), "Unbans a banned user. Only usa
 class SaveCommand : AbstractCommand("save", listOf(), "Saves the database"){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
-        if(!matchesCommand(input))
-            return null;
+        ;
         if(Utils.getRank(user.userID, site.config) < 8)
             return BMessage("I'm afraid I can't let you do that, User", true);
 
@@ -260,8 +268,7 @@ class SaveCommand : AbstractCommand("save", listOf(), "Saves the database"){
 
 class WhoMade : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user ID of the user who created a command"){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null;
+        ;
         try {
             val arg = splitCommand(input);
 
@@ -301,14 +308,9 @@ class WhoMade : AbstractCommand("whoMade", listOf("creatorof"), "Gets the user I
     }
 }
 
-class DebugRanks : AbstractCommand("rankdebug", listOf(), "Debugs ranks"){
+class DebugRanks : AbstractCommand("rankdebug", listOf(), "Debugs ranks", rankRequirement = 1){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
-        if(!matchesCommand(input))
-            return null;
-
-        if(Utils.getRank(user.userID, site.config) < 8)
-            return BMessage("You can't do that", true);
 
         val reply = ReplyBuilder(site.name == "discord")
         reply.fixedInput().append("Username - user ID - rank").nl();
@@ -324,8 +326,7 @@ class DebugRanks : AbstractCommand("rankdebug", listOf(), "Debugs ranks"){
 class KillBot : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep", "die"), "Shuts down the bot. Rank 10 only", rankRequirement = 10){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
-        if(!matchesCommand(input))
-            return null
+
         if(Utils.getRank(user.userID, site.config) < 10)
             return BMessage("I'm afraid I can't let you do that, User.", true)
         if(input.contains("--confirm")){

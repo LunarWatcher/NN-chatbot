@@ -194,9 +194,9 @@ public class DiscordChat implements Chat{
                                     sub = remaining;
                                 }
                                 String subbed = r.content.substring(i, i + sub);
-                                if(!subbed.startsWith("```") &&fixedFont)
+                                if(!subbed.startsWith("```") && fixedFont)
                                     subbed = "```" + subbed;
-                                if(fixedFont)
+                                if(!subbed.endsWith("```") && fixedFont)
                                     subbed += "```";
                                 items.add(subbed);
                                 i += sub;

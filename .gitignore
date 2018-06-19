@@ -28,3 +28,5 @@ chatbot/.gradle/
 logs.txt
 client.log
 *.jar
+
+.idea/dictionaries/

@@ -79,8 +79,7 @@ class Kill : AbstractCommand("kill", listOf("assassinate"), "They must be dispos
 
     override fun handleCommand(input: String, user: User): BMessage? {
         val chat = user.chat
-        if(!matchesCommand(input))
-            return null;
+        ;
         val split = splitCommand(input);
 
         if (split.size < 2 || !split.keys.contains("content")){
@@ -104,8 +103,7 @@ class Kill : AbstractCommand("kill", listOf("assassinate"), "They must be dispos
 
 class Lick : AbstractCommand("lick", listOf(), "Licks someone. Or something"){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null;
+        ;
         val split = splitCommand(input);
         if (split.size < 2 || !split.keys.contains("content")){
             return BMessage("You have to tell me who to lick", true);

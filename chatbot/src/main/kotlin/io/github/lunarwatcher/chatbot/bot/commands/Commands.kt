@@ -191,7 +191,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
         "Lists all the commands the bot has",
         "Use `" + CommandCenter.TRIGGER + "help` to list all the commands and `" + CommandCenter.TRIGGER + "help [command name]` to get more info about a specifc command\n" +
                 "Call `${CommandCenter.TRIGGER}help trucated` for a small version of the help command, or `${CommandCenter.TRIGGER}help full` for the full version. " +
-                "Note that not passing full or trucated leads to it defaulting to the site specific settings"){
+                "Note that not passing full or trucated leads to it defaulting to the site specific settings", rankRequirement = 1){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)){
@@ -363,11 +363,8 @@ fun getMaxLen(list: MutableList<String>) : Int{
     return longest;
 }
 
-class ShrugCommand : AbstractCommand("shrug", listOf("dunno", "what"), "Shrugs", "Use `" + TRIGGER + "shrug` to use the command"){
+class ShrugCommand : AbstractCommand("shrug", listOf("dunno", "what"), "Shrugs", "Use `" + TRIGGER + "shrug` to use the command", rankRequirement = 1){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input)){
-            return null;
-        }
         return BMessage(if (user.chat.site.name.equalsAny("metastackexchange", "stackexchange", "stackoverflow"))
             "¯\\\\_(ツ)_/¯"
         else "¯\\_(ツ)_/¯"
@@ -375,15 +372,10 @@ class ShrugCommand : AbstractCommand("shrug", listOf("dunno", "what"), "Shrugs",
     }
 }
 
-class AboutCommand : AbstractCommand("about", listOf("whoareyou"), "Let me tell you a little about myself...", "Use `" + TRIGGER + "about` to show the info"){
+class AboutCommand : AbstractCommand("about", listOf("whoareyou"), "Let me tell you a little about myself...", "Use `" + TRIGGER + "about` to show the info", rankRequirement = 1){
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input)){
-            return null;
-        }
-
         val reply = ReplyBuilder();
-
         reply.append("Hiya! I'm Alisha, a chatbot designed by [${Configurations.CREATOR}](${Configurations.CREATOR_GITHUB}). ")
                 .append("I'm open-source and the code is available on [Github](${Configurations.GITHUB}). Running version ${Configurations.REVISION}")
 
@@ -393,16 +385,12 @@ class AboutCommand : AbstractCommand("about", listOf("whoareyou"), "Let me tell 
 
 class BasicPrintCommand(val print: String, name: String, aliases: List<String>, desc: String) : AbstractCommand(name, aliases, desc){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null;
         return BMessage(print, false)
     }
 }
 
 class Alive : AbstractCommand("alive", listOf(), "Used to check if the bot is working"){
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null;
 
         return BMessage("I'm pretty sure I am.", true);
     }
@@ -437,11 +425,9 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
     }
 }
 
-class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network"){
+class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network", rankRequirement = 1){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site: Chat = user.chat
-        if(Utils.getRank(user.userID, site.config) < 3)
-            return BMessage("You need rank 3 or higher to use this command.", true)
 
         try {
             val httpClient = HttpClients.createDefault()
@@ -463,8 +449,7 @@ class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the sta
 class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much command."){
     val doges = mutableListOf("such", "very", "much", "so", "many")
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null
+
         val raw = input.split(" ", limit=2)
         val converted = if (raw.size < 2) defaultMsg else raw[1]
 
@@ -494,8 +479,7 @@ class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
     val random = Random()
 
     override fun handleCommand(input: String, user: User): BMessage? {
-        if(!matchesCommand(input))
-            return null
+
         val who = splitCommand(input)["content"] ?: return BMessage("You have to tell me who to wake up!", true)
         return BMessage(Constants.wakeMessages[random.nextInt(Constants.wakeMessages.size)].format(who), true)
     }
@@ -504,8 +488,6 @@ class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
 class WhoIs : AbstractCommand("whois", listOf("identify")){
     override fun handleCommand(input: String, user: User): BMessage? {
         val site: Chat = user.chat
-        if(!matchesCommand(input))
-            return null;
         val who = splitCommand(input)["content"]?.trim() ?: return BMessage("You have to tell me who to identify", true)
         if(who.isEmpty()) return BMessage("You have to tell me who to identify", true)
 
@@ -604,7 +586,7 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
 
 }
 
-class GitHubCommand : AbstractCommand("github", listOf("borked"), desc="Sends the link to GitHub in chat (also available through the about command). " +
+class GitHubCommand : AbstractCommand("github", listOf("source", "code", "sourceCode"), desc="Sends the link to GitHub in chat (also available through the about command). " +
         "Raise any concerns there."){
     override fun handleCommand(input: String, user: User): BMessage? = BMessage("Here you go: ${Configurations.GITHUB}", true)
 }

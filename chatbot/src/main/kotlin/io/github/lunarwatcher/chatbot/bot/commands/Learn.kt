@@ -164,7 +164,8 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
                 "Symbols:\n" +
                 "* %s - requires input for the command to be used. Alternatively {number}, where \"number\" is replaced with the ID of the supplied item. It should increment from 0 (the number corresponds with the item in the supplied arguments)\n" +
                 "* \\un - adds the username for whoever uses the command\n" +
-                "* \\uid - adds the user ID for whoever uses the command" ){
+                "* \\ping - pings the user running the command" +
+                "* \\uid - adds the user ID for whoever uses the command", rankRequirement = 1){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         val input = input;
@@ -261,7 +262,7 @@ class Learn(val commands: TaughtCommands, val center: CommandCenter) : AbstractC
     }
 }
 
-class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("unlearn", listOf("forget"), "Forgets a taught command"){
+class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("unlearn", listOf("forget"), "Forgets a taught command", rankRequirement = 1){
 
     override fun handleCommand(input: String, user: User): BMessage? {
         if(!matchesCommand(input)) return null;
