@@ -39,7 +39,10 @@ public class Bot {
         CommandCenter.Companion.initialize(botProps, db);
         WelcomeMessages.Companion.initialize(db);
         timer = new Timer();
-        timer.scheduleAtFixedRate(new SaveTask(this), 0, 10 * 60 * 1000);//
+        timer.scheduleAtFixedRate(
+                new SaveTask(this),
+                10 * 60 * 1000,
+                10 * 60 * 1000);//
 
     }
 

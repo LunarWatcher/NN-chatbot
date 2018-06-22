@@ -7,11 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class Constants {
-    /**
-     * Whether or not the program should start the flask server if it's offline.
-     */
-    public static final boolean START_FLASK_IF_OFFLINE = false;
-    public static final boolean AUTO_BOOT = true;
     public static boolean LEAVE_ROOM_ON_UNHOME;
     public static final String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
     public static final String IDENTIFIER_USERNAME = "name";
@@ -21,7 +16,6 @@ public final class Constants {
     public static final String DEFAULT_DATABASE = "memory.json";
     public static final String NO_HELP = "No help was supplied for this command";
     public static final String NO_DESCRIPTION = "No description was supplied for this command";
-    public static final long SAVE_INTERVAL = 30000;
     public static final int RELOCATION_VOTES = 3;
     public static final String LEARNED_COMMANDS = "learned";
     public static final boolean DEFAULT_NSFW = true;
@@ -30,7 +24,6 @@ public final class Constants {
     public static final boolean AUTO_SAVE_WHEN_PUT = true;
     public static final String BANNED_REPLY = "Go away.";
     public static final int FLASK_PORT = 8213;
-    public static final int MAX_RETRIES_ON_RESTART = 10;
     public static final String INVALID_COMMAND = "Maybe you should consider looking up the manual.";
     public static final Message stopMessage = new Message("", 0, 0, "", 0);
     public static final BMessage bStopMessage = new BMessage("", false);

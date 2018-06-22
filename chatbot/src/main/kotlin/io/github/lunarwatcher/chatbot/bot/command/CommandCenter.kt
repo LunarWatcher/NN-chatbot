@@ -125,8 +125,6 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(SERooms(), CommandGroup.STACKEXCHANGE)
 
         //////////////////////////////////////////////
-
-
     }
 
     @Throws(IOException::class)

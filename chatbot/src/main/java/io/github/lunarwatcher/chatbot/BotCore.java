@@ -168,15 +168,4 @@ public class BotCore {
         }
         return false;
     }
-
-    public static void dropPrep(){
-        System.out.println("###########################");
-        System.out.println("Available commands:");
-        System.out.println("quiet - toggles quiet boot");
-        System.out.println("-s <url> - boot only in specific sites");
-        System.out.println("start | -b - starts the bot");
-        System.out.println("db - sets a custom database");
-        System.out.println("    -reset - resets the database to the default one");
-        System.out.println("###########################");
-    }
 }
