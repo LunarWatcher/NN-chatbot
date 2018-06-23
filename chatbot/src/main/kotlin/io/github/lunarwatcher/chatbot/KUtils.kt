@@ -27,6 +27,11 @@ val mappedRegex = mutableListOf(
         "^\\n+(.*?)\$".toRegex() to "$1"
 )
 
+fun String.prep() = this.trim().remove(" ")
+
+fun String.remove(what: String) = this.replace(what, "")
+fun String.remove(what: Regex) = this.replace(what, "")
+
 fun cleanInput(input: String) : String {
     var cleaned = input
     cleaned = Parser.unescapeEntities(cleaned, true)

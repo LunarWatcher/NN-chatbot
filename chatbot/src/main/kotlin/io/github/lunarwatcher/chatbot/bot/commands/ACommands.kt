@@ -8,6 +8,7 @@ import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
+import org.slf4j.LoggerFactory
 import sun.security.krb5.Config
 import java.io.IOException
 
@@ -324,15 +325,47 @@ class DebugRanks : AbstractCommand("rankdebug", listOf(), "Debugs ranks", rankRe
 }
 
 class KillBot : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep", "die"), "Shuts down the bot. Rank 10 only", rankRequirement = 10){
+    val logger = LoggerFactory.getLogger(this::class.java)
+
     override fun handleCommand(input: String, user: User): BMessage? {
         val site = user.chat
 
         if(Utils.getRank(user.userID, site.config) < 10)
             return BMessage("I'm afraid I can't let you do that, User.", true)
-        if(input.contains("--confirm")){
-            System.exit(1)
+        val content = splitCommand(input);
+        var location: String? = content["--location"]
+        var timehash: String? = content["--timehash"]
+
+        var confirmed = input.contains("--confirm") && content["--confirm"] != null
+        println(content)
+        println(location)
+        if(!confirmed){
+            return BMessage("You sure 'bout that? Run the command with --confirm to shut me down", true)
         }
-        return BMessage("You sure 'bout that? Run the command with --confirm to shut me down", true)
+        if(location != null && timehash != null){
+            if(location == Configurations.INSTANCE_LOCATION && timehash == BotCore.LOCATION){
+                System.exit(0);
+            }else{
+                "Shutdown ignored: a different instance instance and timestamp was requested".info(logger)
+                return null;
+            }
+        }else if(location != null){
+            if(location == Configurations.INSTANCE_LOCATION){
+                System.exit(0);
+            }else{
+                "Shutdown ignored; a different instance was requested".info(logger);
+                return null;
+            }
+        }else if(timehash != null){
+            if(location == BotCore.LOCATION){
+                System.exit(0);
+            }else{
+                "Shutdown ignored: a different timestamp was requested (this: ${BotCore.LOCATION}, found $location)".info(logger)
+            }
+        }else{
+            System.exit(0);
+        }
+        return null;
     }
 }
 

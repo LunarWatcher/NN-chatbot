@@ -147,14 +147,12 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         val matcher = ARGUMENT_PATTERN.matcher(input);
         while(matcher.find()){
             val groups = matcher.groupCount()
+            val g1 = matcher.group(1)
             if(groups == 2){
-                val g1 = matcher.group(1)
                 val g2 = matcher.group(2);
-
-                retval[g1.substring(1, g1.length)] = g2?.substring(1, g2.length) ?: "true"
+                retval[g1.substring(1, g1.length).prep()] = g2?.substring(1, g2.length)?.trim() ?: "true"
             }else if(groups == 1){
-                val g1 = matcher.group(1)
-                retval[g1.substring(1, g1.length)] = "true"
+                retval[g1.substring(1, g1.length).prep()] = "true"
             }
         }
 

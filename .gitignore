@@ -22,6 +22,7 @@ chatbot/creds.properties
 chatbot/out
 chatbot/memory.json
 creds.properties
+bot.properties
 memory.json
 .gradle/
 chatbot/.gradle/

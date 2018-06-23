@@ -21,19 +21,22 @@ stackexchange.user.id=8910
 discord.user.name=Alisha#1234
 # The Discord token. (get one from https://discordapp.com/developers/applications/me)
 discord.user.email=token here
+# Leave the password value alone; it exists because the system runs on a static implementation, but it's not used
+# since Discord uses tokens (only applies to bots) instead of the traditional email and password.
 discord.user.password=none
 # The bot ID
 discord.user.id=1234
 
 # Twitch
 # Write your accounts username here:
-twitch.user.name=ShadowOfZoe
+twitch.user.name=MyCreativeBotUsernameHere
 # Twitch app ID (get one from https://glass.twitch.tv/console/apps/create)
 twitch.user.email=Client ID
-# Put your password here:
+# Add the password:
 twitch.user.password=Secret
-# The user ID doesn't matter on twitch; usernames are unique
+# The user ID doesn't matter on twitch; usernames are unique. Leave the value alone.
 twitch.user.id=none
 # The OAuth key (get one at https://twitchapps.com/tmi/). Must be logged in as the user who is posting the chat messages
 twitch.oauth.credential=none
-# Other sites in the same pattern here
+
+# Add any other sites' password config here
