@@ -17,6 +17,7 @@ import io.github.lunarwatcher.chatbot.utils.Utils
 import io.github.lunarwatcher.chatbot.utils.Utils.random
 import jodd.jerry.Jerry
 import org.apache.commons.lang3.StringUtils
+import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
 import org.joda.time.DateTimeZone
 import org.joda.time.Instant
@@ -424,21 +425,27 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
 }
 
 class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network", rankRequirement = 1){
+    var alive = false
+    val httpClient: CloseableHttpClient = HttpClients.createDefault()
+    val http: Http = Http(httpClient)
+
     override fun handleCommand(input: String, user: User): BMessage? {
         val site: Chat = user.chat
 
         try {
-            val httpClient = HttpClients.createDefault()
-            val http = Http(httpClient)
+
             val response = http.post("http://${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT + "/predict", "message", "hello")
             http.close()
             httpClient.close()
             if (response.body.toLowerCase().contains("sorry, i boot")){
+                alive = true
                 return BMessage("The network is booting", true);
             }
+            alive = true;
             return BMessage("The neural network has started. Hi!", true)
 
         }catch(e: Exception){
+            alive = false;
             return BMessage("The server is offline.", true)
         }
     }
@@ -584,7 +591,7 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
 
 }
 
-class GitHubCommand : AbstractCommand("github", listOf("source", "code", "sourceCode"), desc="Sends the link to GitHub in chat (also available through the about command). " +
+class GitHubCommand : AbstractCommand("github", listOf("source", "code", "sourceCode", "gh"), desc="Sends the link to GitHub in chat (also available through the about command). " +
         "Raise any concerns there."){
     override fun handleCommand(input: String, user: User): BMessage? = BMessage("Here you go: ${Configurations.GITHUB}", true)
 }

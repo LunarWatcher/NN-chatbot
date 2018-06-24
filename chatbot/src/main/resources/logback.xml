@@ -1,5 +1,7 @@
 <configuration scan = "true">
-    <logger name="io.github.lunarwatcher.chatbot" level="WARN"/>
+    <logger name="io.github.lunarwatcher.chatbot" level="DEBUG"/>
+    <logger name="sx.blah.discord.Discord4J" level="WARN"/>
+
     <appender name="CONSOLE" class = "ch.qos.logback.core.ConsoleAppender">
         <encoder><pattern>%d{HH:mm:ss:SSS} [%thread] %highlight([%-5level]) %logger{36} - %msg%n</pattern></encoder>
     </appender>
@@ -14,7 +16,7 @@
             <MaxFileSize>10MB</MaxFileSize>
         </triggeringPolicy>
     </appender>
-    <root level="warn">
+    <root level="info">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>

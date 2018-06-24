@@ -69,7 +69,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(BasicPrintCommand("┬─┬ ノ( ゜-゜ノ)", "unflip", ArrayList(), "The tables have turned..."))
         addCommand(TimeCommand())
         addCommand(KillBot())
-        addCommand(NetStat())
+        val netStat = NetStat()
+        addCommand(netStat)
         addCommand(location)
         crash = CrashLogs()
         addCommand(crash)
@@ -106,7 +107,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         /**
          * Pun not intended:
          */
-        mentionListener = MentionListener()
+        mentionListener = MentionListener(netStat)
         listeners.add(KnockKnock(mentionListener))
         listeners.add(Train(5))
         listeners.add(mentionListener)

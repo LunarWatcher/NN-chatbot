@@ -4,6 +4,7 @@ import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.bot.chat.BMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
+import io.github.lunarwatcher.chatbot.bot.commands.NetStat
 import io.github.lunarwatcher.chatbot.bot.commands.User
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
@@ -15,9 +16,10 @@ import java.io.IOException
 import java.net.SocketException
 
 @Suppress("NAME_SHADOWING")
-class MentionListener : AbstractListener("ping", "Reacts to pings") {
+class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts to pings") {
     var ignoreNext = false;
     val http: Http
+    var lastCheck: Long = 0
 
     init{
         val httpClient = HttpClients.createDefault()
@@ -38,18 +40,19 @@ class MentionListener : AbstractListener("ping", "Reacts to pings") {
         }
 
         val split = splitCommand(input)
-        if(split.keys.contains("content")){
+        if(split.keys.contains("content") && (netStat.alive || System.currentTimeMillis() - lastCheck > 10 * 1000)){
+            lastCheck = System.currentTimeMillis()
             var message = split["content"] ?: ""
             message = message.clean()
             try{
                 val response = http.post("http://${Configurations.NEURAL_NET_IP ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", message)
                 val reply: String = response.body.substring(1, response.body.length - 2)
+                netStat.alive = true;
                 return BMessage(reply, true)
             }catch (e: IOException){
-
+                netStat.alive = false
             }catch(e: SocketException){
-                //A VPN or something else is preventing you from connecting to localhost. Nothing much to do about it
-
+                netStat.alive = false;
             }
 
             val res = site.commands.parseMessage(CommandCenter.TRIGGER + message, user, user.nsfwSite)

@@ -14,14 +14,14 @@ import kotlin.Pair;
 import lombok.Getter;
 import lombok.val;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEditEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
-import sx.blah.discord.handle.obj.StatusType;
+import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.DiscordException;
 
 import java.io.IOException;
@@ -50,14 +50,12 @@ public class DiscordChat implements Chat{
         this.db = db;
         this.botProps = botProps;
         logIn();
+
         commands = CommandCenter.INSTANCE;
-
         channels = new ArrayList<>();
-
         config = new BotConfig(this);
 
         load();
-
         Utils.loadHardcodedAdmins(this);
 
     }
@@ -100,13 +98,14 @@ public class DiscordChat implements Chat{
     public void logIn() throws IOException {
         client = new ClientBuilder()
                 .withToken(site.getConfig().getEmail())
-                .setMaxReconnectAttempts(20)
+                .setMaxReconnectAttempts(30)
+                .set5xxRetryCount(30)
                 .build();
         client.getDispatcher().registerListener(this);
         client.login();
-        client.changePresence(StatusType.ONLINE);
-        clientID = client.getApplicationClientID();
+        client.changePresence(StatusType.ONLINE, ActivityType.PLAYING, CommandCenter.TRIGGER + "help");
 
+        clientID = client.getApplicationClientID();
     }
 
     @SuppressWarnings("unused")

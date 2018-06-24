@@ -3,6 +3,7 @@ package io.github.lunarwatcher.chatbot.utils;
 import org.apache.http.Consts;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,6 +16,7 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Http implements Closeable {
-
+    public static final int TIMEOUT = 5000;
     private final CloseableHttpClient client;
 
     public Http(CloseableHttpClient client) {
@@ -32,7 +34,11 @@ public class Http implements Closeable {
 
     public Response get(String uri) throws IOException {
         HttpGet request = new HttpGet(uri);
-
+        RequestConfig.Builder requestConfig = RequestConfig.custom();
+        requestConfig.setConnectionRequestTimeout(TIMEOUT);
+        requestConfig.setSocketTimeout(TIMEOUT);
+        requestConfig.setConnectTimeout(TIMEOUT);
+        request.setConfig(requestConfig.build());
         return send(request);
     }
 
@@ -50,6 +56,11 @@ public class Http implements Closeable {
             }
             request.setEntity(new UrlEncodedFormEntity(params, Consts.UTF_8));
         }
+        RequestConfig.Builder requestConfig = RequestConfig.custom();
+        requestConfig.setConnectionRequestTimeout(TIMEOUT);
+        requestConfig.setSocketTimeout(TIMEOUT);
+        requestConfig.setConnectTimeout(TIMEOUT);
+        request.setConfig(requestConfig.build());
 
         return send(request);
     }
@@ -78,6 +89,12 @@ public class Http implements Closeable {
             request.setEntity(new UrlEncodedFormEntity(params, Consts.UTF_8));
         }
 
+        RequestConfig.Builder requestConfig = RequestConfig.custom();
+        requestConfig.setConnectionRequestTimeout(TIMEOUT);
+        requestConfig.setSocketTimeout(TIMEOUT);
+        requestConfig.setConnectTimeout(TIMEOUT);
+        request.setConfig(requestConfig.build());
+
         return send(request);
     }
 
@@ -89,9 +106,7 @@ public class Http implements Closeable {
             if (sleep > 0) {
                 try {
                     Thread.sleep(sleep);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                } catch (InterruptedException ignored) {}
             }
 
             int statusCode;
@@ -113,7 +128,7 @@ public class Http implements Closeable {
 
         }
 
-        throw new IOException("Request could not be sent after " + attempts + " attempts [request-method=" + request.getMethod() + "; request-URI=" + request.getURI() + "].");
+        throw new IOException(MessageFormat.format("Request could not be sent after {0} attempts [request-method = {1}; request-URI = {2}].", attempts, request.getMethod(), request.getURI()));
     }
 
     private static final Pattern response409Regex = Pattern.compile("\\d+");

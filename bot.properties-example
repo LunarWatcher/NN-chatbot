@@ -39,7 +39,7 @@ about.creatorGithub=https://github.com/LunarWatcher
 # and pull requests to the main repo
 about.github=https://github.com/LunarWatcher/NN-chatbot
 # The current version.
-about.revision = 1.5.6
+about.revision = 1.5.7
 
 # The trigger the bot uses
 bot.trigger=//

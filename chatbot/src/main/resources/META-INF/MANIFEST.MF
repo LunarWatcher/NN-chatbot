@@ -1,3 +1,3 @@
-Manifest-Version: 1.5.4
+Manifest-Version: 1.5.7
 Main-Class: io.github.lunarwatcher.chatbot.BotCore
 
