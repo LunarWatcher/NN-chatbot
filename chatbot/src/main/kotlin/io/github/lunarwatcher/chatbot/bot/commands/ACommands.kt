@@ -333,31 +333,30 @@ class KillBot : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep
         if(Utils.getRank(user.userID, site.config) < 10)
             return BMessage("I'm afraid I can't let you do that, User.", true)
         val content = splitCommand(input);
-        var location: String? = content["--location"]
-        var timehash: String? = content["--timehash"]
+        val location: String? = content["--location"]
+        val timehash: String? = content["--timehash"]
 
-        var confirmed = input.contains("--confirm") && content["--confirm"] != null
-        println(content)
-        println(location)
+        val confirmed = input.contains("--confirm") && content["--confirm"] != null
+
         if(!confirmed){
             return BMessage("You sure 'bout that? Run the command with --confirm to shut me down", true)
         }
         if(location != null && timehash != null){
-            if(location == Configurations.INSTANCE_LOCATION && timehash == BotCore.LOCATION){
+            if(location.contains(Configurations.INSTANCE_LOCATION) && timehash.contains(BotCore.LOCATION)){
                 System.exit(0);
             }else{
                 "Shutdown ignored: a different instance instance and timestamp was requested".info(logger)
                 return null;
             }
         }else if(location != null){
-            if(location == Configurations.INSTANCE_LOCATION){
+            if(location.contains(Configurations.INSTANCE_LOCATION)){
                 System.exit(0);
             }else{
                 "Shutdown ignored; a different instance was requested".info(logger);
                 return null;
             }
         }else if(timehash != null){
-            if(location == BotCore.LOCATION){
+            if(timehash.contains(BotCore.LOCATION)){
                 System.exit(0);
             }else{
                 "Shutdown ignored: a different timestamp was requested (this: ${BotCore.LOCATION}, found $location)".info(logger)
@@ -365,7 +364,7 @@ class KillBot : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep
         }else{
             System.exit(0);
         }
-        return null;
+        return CommandCenter.NO_MESSAGE;
     }
 }
 

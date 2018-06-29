@@ -334,6 +334,10 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
 
             val reply = ReplyBuilder(user.chat.name == "discord");
 
+            if(nsfw && !user.nsfwSite){
+                return BMessage("The command is not available here", true)
+            }
+
             reply.fixedInput().append(d).append("`$TRIGGER")
                     .append(name)
                     .append(if(nsfw) "` (NSFW)" else "`")

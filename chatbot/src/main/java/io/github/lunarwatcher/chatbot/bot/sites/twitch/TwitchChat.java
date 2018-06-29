@@ -196,6 +196,9 @@ public class TwitchChat implements Chat {
                 for(BMessage msg : messages){
                     if(msg == Constants.bStopMessage)
                         return;
+                    if(msg == CommandCenter.Companion.getNO_MESSAGE()){
+                        continue;
+                    }
                     if(msg.replyIfPossible){
                         replyTo(event, msg.content);
                     }else{

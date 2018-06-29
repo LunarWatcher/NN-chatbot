@@ -30,19 +30,6 @@ import java.util.regex.Pattern;
 
 import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
 
-/**
- * The Stack Exchange network is a massive blob of communities, and there are at least three known chat domains:
- * * chat.stackoverflow.com
- * * chat.meta.stackexchange.com
- * * chat.stackexchange.com
- *
- * The last one is mostly universal for all the sites, while the others are specific for each site. MSE and SO has
- * more or less the same core architecture, but the login on regular SE is different from SO and MSE. The general
- * system in chat is the same, but because there are differences, this is made abstract to allow for customization
- * for a specific site.
- *
- * Editors note: Hackish Solutions
- */
 public class SEChat implements Chat {
     private static final boolean truncated = false;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
@@ -110,7 +97,6 @@ public class SEChat implements Chat {
             config.addHomeRoom(x);
         }
 
-
         Utils.loadHardcodedAdmins(this);
 
         for(long room : config.getHomes()){
@@ -144,7 +130,6 @@ public class SEChat implements Chat {
 
         thread = new Thread(() -> {
             try {
-
                 while (true) {
 
                     try {
@@ -422,6 +407,9 @@ public class SEChat implements Chat {
             for (BMessage bm : replies) {
                 if(bm == Constants.bStopMessage)
                     return;
+                if(bm == CommandCenter.Companion.getNO_MESSAGE()){
+                    continue;
+                }
 
                 if(bm.content == null)
                     continue;

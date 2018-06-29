@@ -10,6 +10,7 @@ import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
 import io.github.lunarwatcher.chatbot.clean
+import io.github.lunarwatcher.chatbot.safeGet
 import io.github.lunarwatcher.chatbot.utils.Http
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
@@ -28,8 +29,6 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
 
     override fun handleInput(input: String, user: User): BMessage? {
         val site = user.chat
-        if(input.startsWith(CommandCenter.TRIGGER))
-            return null;
 
         if(!isMentioned(input, site)){
             return null;
@@ -39,25 +38,30 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
             return null;
         }
 
-        val split = splitCommand(input)
-        if(split.keys.contains("content") && (netStat.alive || System.currentTimeMillis() - lastCheck > 10 * 1000)){
-            lastCheck = System.currentTimeMillis()
-            var message = split["content"] ?: ""
-            message = message.clean()
-            try{
-                val response = http.post("http://${Configurations.NEURAL_NET_IP ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", message)
-                val reply: String = response.body.substring(1, response.body.length - 2)
-                netStat.alive = true;
-                return BMessage(reply, true)
-            }catch (e: IOException){
-                netStat.alive = false
-            }catch(e: SocketException){
-                netStat.alive = false;
-            }
 
-            val res = site.commands.parseMessage(CommandCenter.TRIGGER + message, user, user.nsfwSite)
-            if(res != null && res.isNotEmpty())
-                return res[0]
+        if(isMentionedStart(input, site)){
+
+            if(input.split(" ", limit = 2).safeGet(1) != null) {
+                val message = input.split(" ", limit = 2)[1]
+                if((netStat.alive || System.currentTimeMillis() - lastCheck > 10 * 1000)) {
+                    lastCheck = System.currentTimeMillis()
+                    try {
+                        val response = http.post("http://${Configurations.NEURAL_NET_IP
+                                ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", input)
+                        val reply: String = response.body.substring(1, response.body.length - 2)
+                        netStat.alive = true;
+                        return BMessage(reply, true)
+                    } catch (e: IOException) {
+                        netStat.alive = false
+                    } catch (e: SocketException) {
+                        netStat.alive = false;
+                    }
+                }
+
+                val res = site.commands.parseMessage(CommandCenter.TRIGGER + message, user, user.nsfwSite)
+                if (res != null && res.isNotEmpty())
+                    return res[0]
+            }
         }
 
         return BMessage("How can I `${if(user.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true)

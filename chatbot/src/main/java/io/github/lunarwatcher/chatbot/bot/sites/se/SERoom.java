@@ -10,6 +10,8 @@ import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
 import java.io.Closeable;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SERoom implements Closeable {
+    private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
     private int id;
     private SEChat parent;
     @Getter
@@ -50,15 +53,15 @@ public class SERoom implements Closeable {
 
         if(!connect.getBody().contains("<textarea id=\"input\">")){
             connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
-            System.out.println(connect.getBody());
 
-            if(connect.getStatusCode() == 404){
+            if(connect.getStatusCode() == 404 || connect.getBody().contains("This room is frozen; new messages cannot be added.")){
                 parent.leaveRoom(id);
-                throw new RoomNotFoundException("SERoom not found!");
+                throw new RoomNotFoundException("SERoom not found! Room " + id + " @ " + parent.getName());
             }
 
             if(!connect.getBody().contains("<textarea id=\"input\">")){
                 throw new NoAccessException("No write access in the room!");
+
             }
 
         }
@@ -295,6 +298,7 @@ public class SERoom implements Closeable {
     }
     int tries = 0;
     public void sendMessage(String message) throws IOException{
+
         Response response = parent.getHttp().post(parent.getUrl() + "/chats/" + id + "/messages/new",
                 "text", message,
                 "fkey", fkey

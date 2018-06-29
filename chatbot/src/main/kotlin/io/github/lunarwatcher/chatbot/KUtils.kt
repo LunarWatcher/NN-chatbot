@@ -50,6 +50,9 @@ fun <T, O> map(list: List<T>, function: () -> O) : List<O>{
     return list.map { function() }
 }
 
+/**
+ * Extension function for [cleanInput].
+ */
 fun String.clean() = cleanInput(this)
 
 fun String.createInvocable(engine: ScriptEngine) : Invocable {

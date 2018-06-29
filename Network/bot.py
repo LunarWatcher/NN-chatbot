@@ -426,7 +426,7 @@ if __name__ == '__main__':
                 response = bot.predict(str(request.form.get("message")))
                 return jsonify(response)
 
-            app.run(port=8213)
+            app.run(host="0.0.0.0", port=8213)
 
         else:
             bot.startChat(mode)

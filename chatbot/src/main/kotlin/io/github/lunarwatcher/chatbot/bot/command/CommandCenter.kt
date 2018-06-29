@@ -133,52 +133,17 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         logger.info("Message @ " + user.chat.name + " : \"$message\" - ${user.userName}")
         @Suppress("NAME_SHADOWING")
         var message: String = message ?: return null
-        message = message.replace("&#8238;", "")
-        message = message.replace("\u202E", "")
-        message = message.trim()
-        //message = message.replace(" +".toRegex(), " ")
-        message = cleanInput(message)
+        message = fix(message)
 
 
-        val om = message
+
         val replies = mutableListOf<BMessage>()
         try {
             if (isCommand(message)) {
-                message = message.substring(TRIGGER.length)
-
-                //Get rid of white space to avoid problems down the line
-                message = message.trim()
-
-                val name = message.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-
-                val c = get(name, user.chat)
-                if (c != null) {
-                    val x = c.handleCommand(message, user)
-                    if (x != null) {
-                        //There are still some commands that could return null here
-                        replies.add(x)
-                    }
-                }
-
-                val lc = tc.get(name)
-                if (lc != null) {
-                    //If the command is NSFW but the site doesn't allow it, don't handle the command
-                    if (lc.nsfw && !nsfw){}
-                    else {
-
-                        val x = lc.handleCommand(message, user)
-                        if (x != null)
-                            replies.add(x)
-                    }
-                }
+                replies.addAll(handleCommands(message, user, nsfw));
             }
 
-            for (l in listeners) {
-                val x = l.handleInput(om, user)
-                if (x != null) {
-                    replies.add(x)
-                }
-            }
+            replies.addAll(handleListeners(message, user, nsfw));
 
             mentionListener.done()
 
@@ -190,6 +155,49 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         }
 
         return replies
+    }
+
+    fun handleCommands(message: String, user: User, nsfw: Boolean) : List<BMessage> {
+        val replies = mutableListOf<BMessage>()
+        var message = message.substring(TRIGGER.length)
+
+        //Get rid of white space to avoid problems down the line
+        message = message.trim()
+
+        val name = message.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+
+        val c = get(name, user.chat)
+        if (c != null) {
+            val x = c.handleCommand(message, user)
+            if (x != null) {
+                //There are still some commands that could return null here
+                replies.add(x)
+            }
+        }
+
+        val lc = tc.get(name)
+        if (lc != null) {
+            //If the command is NSFW but the site doesn't allow it, don't handle the command
+            if (lc.nsfw && !nsfw){}
+            else {
+
+                val x = lc.handleCommand(message, user)
+                if (x != null)
+                    replies.add(x)
+            }
+        }
+        return replies;
+    }
+
+    fun handleListeners(message: String, user: User, nsfw: Boolean) : List<BMessage>{
+        val replies = mutableListOf<BMessage>()
+        for (l in listeners) {
+            val x = l.handleInput(message, user)
+            if (x != null) {
+                replies.add(x)
+            }
+        }
+        return replies;
     }
 
     fun isBuiltIn(cmdName: String?, chat: Chat): Boolean {
@@ -236,7 +244,20 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         return buffer
     }
 
+    fun fix(input: String) : String =
+            input.replace("&#8238;", "")
+                    .replace("\u202E", "")
+                    .trim()
+                    .clean()
+
+
     companion object {
+        /**
+         * Ignored when sending messages. Useful to avoid output.
+         */
+        val NO_MESSAGE = BMessage("", false)
+
+
         lateinit var INSTANCE: CommandCenter
 
         fun initialize(botProps: Properties, db: Database){

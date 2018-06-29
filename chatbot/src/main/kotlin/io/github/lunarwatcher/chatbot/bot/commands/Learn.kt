@@ -279,6 +279,9 @@ class UnLearn(val commands: TaughtCommands, val center: CommandCenter) : Abstrac
             return BMessage("I can't forget what I never knew", true);
         }
 
+        if(commands.get(name)!!.nsfw && !user.nsfwSite)
+            return BMessage("Can't forget a command that's not available to this site", true)
+
         commands.removeCommand(name);
         center.refreshBuckets()
 

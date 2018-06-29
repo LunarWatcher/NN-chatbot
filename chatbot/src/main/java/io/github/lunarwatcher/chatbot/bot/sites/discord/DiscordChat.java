@@ -170,6 +170,9 @@ public class DiscordChat implements Chat{
                     for (BMessage r : replies) {
                         if(r == Constants.bStopMessage)
                             return;
+                        if(r == CommandCenter.Companion.getNO_MESSAGE()){
+                            continue;
+                        }
                         if(r.replyIfPossible){
                             r.content = "<@" + event.getAuthor().getLongID() + "> " + r.content;
                         }
