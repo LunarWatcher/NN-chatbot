@@ -73,7 +73,7 @@ dependencies {
     // The Discord API
     implementation "com.github.austinv11:Discord4J:2.10.1"
     // Lombok for lazy coding
-    provided 'org.projectlombok:lombok:1.16.18'
+    compileOnly 'org.projectlombok:lombok:1.16.18'
     //JSON
     //compile 'org.json:json:20171018'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.9.4'
