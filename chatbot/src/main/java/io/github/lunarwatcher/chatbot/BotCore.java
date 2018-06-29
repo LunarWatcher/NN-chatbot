@@ -39,20 +39,9 @@ public class BotCore {
      */
     public static String GLOBAL_USERNAME;
     public static String LOCATION = "Undefined";
-    public BotCore() {
-
-    }
     public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
-    public static void main(String[] args) throws IOException  /*Too lazy to create a try-catch*/{
-        //Used when running from the jar without the command line. Just enables easy shutdown.
-        JFrame frame = new JFrame("Window");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setSize(new Dimension(300, 300));
-        frame.setResizable(false);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-
+    public static void main(String[] args) throws IOException {
         LOCATION = Long.toHexString(System.currentTimeMillis());
 
         Properties botProps = new Properties();
@@ -79,20 +68,25 @@ public class BotCore {
 
                 for(Map.Entry<Object, Object> siteDet : credentials.entrySet()){
                     String identifier = ((String) siteDet.getKey()).replace(name + ".user.", "");
-                    if(identifier.equals(IDENTIFIER_EMAIL)){
-                        email = (String) siteDet.getValue();
-                    }else if(identifier.equals(IDENTIFIER_ID)){
-                        try {
-                            userID = Long.parseLong(((String) siteDet.getValue()));
-                        }catch(NumberFormatException e){
-                            if(name.toLowerCase().equals("twitch")){
-                                userID = -1;
+                    switch (identifier) {
+                        case IDENTIFIER_EMAIL:
+                            email = (String) siteDet.getValue();
+                            break;
+                        case IDENTIFIER_ID:
+                            try {
+                                userID = Long.parseLong(((String) siteDet.getValue()));
+                            } catch (NumberFormatException e) {
+                                if (name.toLowerCase().equals("twitch")) {
+                                    userID = -1;
+                                }
                             }
-                        }
-                    }else if(identifier.equals(IDENTIFIER_PASSWORD)){
-                        password = (String) siteDet.getValue();
-                    }else if(identifier.equals(IDENTIFIER_USERNAME)){
-                        username = (String) siteDet.getValue();
+                            break;
+                        case IDENTIFIER_PASSWORD:
+                            password = (String) siteDet.getValue();
+                            break;
+                        case IDENTIFIER_USERNAME:
+                            username = (String) siteDet.getValue();
+                            break;
                     }
                 }
 
