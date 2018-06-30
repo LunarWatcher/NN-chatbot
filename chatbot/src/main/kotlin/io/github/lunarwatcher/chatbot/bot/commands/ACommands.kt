@@ -9,7 +9,6 @@ import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.utils.Utils
 import org.slf4j.LoggerFactory
-import sun.security.krb5.Config
 import java.io.IOException
 
 class AddHome : AbstractCommand("home", listOf(),
