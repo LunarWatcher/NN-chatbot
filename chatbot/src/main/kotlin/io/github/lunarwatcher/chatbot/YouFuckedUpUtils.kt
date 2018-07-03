@@ -2,11 +2,9 @@ package io.github.lunarwatcher.chatbot
 
 import io.github.lunarwatcher.chatbot.LogStorage.logs
 import io.github.lunarwatcher.chatbot.bot.ReplyBuilder
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.chat.Message
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
 import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
-import io.github.lunarwatcher.chatbot.bot.commands.User
-import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.utils.Utils
 import org.apache.commons.lang3.StringUtils
 
 object LogStorage{
@@ -32,9 +30,9 @@ class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for scr
 
     }
 
-    override fun handleCommand(input: String, user: User): BMessage? {
-        if (!canUserRun(user)){
-            return BMessage("You need rank 5 or higher to view crash logs.", true);
+    override fun handleCommand(message: Message): ReplyMessage? {
+        if (!canUserRun(message.user, message.chat)){
+            return ReplyMessage("You need rank 5 or higher to view crash logs.", true);
         }
         if (logs.size != 0){
             val reply = ReplyBuilder()
@@ -45,10 +43,10 @@ class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for scr
                 }
             }
             logs.clear()
-            return BMessage(reply.toString(), false)
+            return ReplyMessage(reply.toString(), false)
 
         }
-        return BMessage("No logs. All good! :D", true)
+        return ReplyMessage("No logs. All good! :D", true)
     }
 }
 

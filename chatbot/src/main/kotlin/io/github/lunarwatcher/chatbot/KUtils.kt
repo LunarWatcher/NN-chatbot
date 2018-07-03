@@ -2,29 +2,40 @@
 
 package io.github.lunarwatcher.chatbot
 
+import io.github.lunarwatcher.chatbot.utils.Utils
 import org.jsoup.parser.Parser
 import java.io.Reader
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.function.Predicate
+import java.util.regex.Pattern
 import javax.script.Invocable
 import javax.script.ScriptEngine
 
+const val DATE_PATTERN = "E, d MMMM HH:mm:ss.SSSS Y z ('GMT' ZZ)"
+
+val formatter = SimpleDateFormat(DATE_PATTERN, Locale.ENGLISH)
+const val FLAG_REGEX = """(?i)((?:\s|^)--[a-z\d]+)(\s*".+?(?:[^\\]"))?""";
+var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
+const val NO_DEFINED_RANK = -1
+
 val mapped = mutableListOf(
-        "\\\"" to "\"",//This has to come after the previous one; otherwise it breaks
-        "<i>" to "*",
-        "</i>" to "*",
-        "<b>" to "**",
-        "</b>" to "**",
-        "<code>" to "`",
-        "</code>" to "`",
-        "<strike>" to "---",
-        "</strike>" to "---",
-        "<br>" to "\n"
+        "\\\"" to "\"",
+        // Breaking unicode chars
+        "\u202E" to "",
+        "\u200b" to "",
+        "\u200c" to "",
+        "\u200a" to ""
 )
 
 val mappedRegex = mutableListOf(
         "<a href=\"(.*?)\"( rel=\".*?\")?>(.*?)</a>".toRegex() to "[$3]($1)",
-        "^\\n+(.*?)\$".toRegex() to "$1"
+        "^\\n+(.*?)\$".toRegex() to "$1",
+        "</?strike>".toRegex() to "---",
+        "</?code>".toRegex() to "`",
+        "</?b>".toRegex() to "**",
+        "</?i>".toRegex() to "*",
+        "<br(?:\\s*/)?>".toRegex() to "\n"
 )
 
 fun String.prep() = this.trim().remove(" ")
@@ -88,3 +99,26 @@ fun <T> List<T>.safeGet(index: Int) : T? {
 fun <T> T.equalsAny(vararg others: T) : Boolean = others.firstOrNull { it == this } != null
 fun <A, B> zip(one: Collection<A>, two: Collection<B>) : Map<A, B>
         = one.zip(two).toMap()
+
+fun <K, V> Map<K, V>.getMaxLen() : Int{
+    var current = 0
+    for (k in this){
+        if(k.toString().length > current)
+            current = k.toString().length
+
+    }
+    return current
+}
+
+fun getMaxLen(list: MutableList<String>) : Int{
+    val longest = list
+            .map { it.length }
+            .max()
+            ?: 0;
+
+    return longest;
+}
+
+fun <T> List<T>.randomItem() : T{
+    return get(Utils.random.nextInt(this.size))
+}

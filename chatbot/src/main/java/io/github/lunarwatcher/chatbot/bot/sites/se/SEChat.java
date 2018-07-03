@@ -3,25 +3,30 @@ package io.github.lunarwatcher.chatbot.bot.sites.se;
 
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.Site;
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
+import io.github.lunarwatcher.chatbot.SiteConfig;
+import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
-import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.events.ScheduledEvent;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
+import io.github.lunarwatcher.chatbot.bot.sites.Host;
+import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Http;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.Getter;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.glassfish.tyrus.client.ClientManager;
+import org.glassfish.tyrus.client.ClientProperties;
+import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
 
 import javax.websocket.WebSocketContainer;
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,16 +38,11 @@ import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
 public class SEChat implements Chat {
     private static final boolean truncated = false;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
-    public static boolean NSFW = false;
-    @Getter
-    Site site;
 
     private String fKey;
-    @Getter
-    CloseableHttpClient httpClient;
-    @Getter
-    WebSocketContainer webSocket;
-    Http http;
+    public static CloseableHttpClient httpClient;
+    public static WebSocketContainer webSocket;
+    public static Http http;
 
     public BlockingQueue<Message> newMessages = new LinkedBlockingQueue<>();
     public List<SERoom.StarMessage> starredMessages = new ArrayList<>();
@@ -63,13 +63,17 @@ public class SEChat implements Chat {
     public List<Long> hardcodedAdmins = new ArrayList<>();
     public Properties botProps;
     private Thread thread;
-    Timer timer = new Timer();
+    private Timer timer = new Timer();
+    private Host host;
+    private SiteConfig credentialManager;
 
-    public SEChat(Site site, CloseableHttpClient httpClient, WebSocketContainer webSocket, Properties botProps, Database database) throws IOException {
-        this.site = site;
+    public SEChat(Properties botProps, Database database, Host host, SiteConfig credentialManager) throws IOException {
         this.db = database;
-        this.httpClient = httpClient;
-        this.webSocket = webSocket;
+        this.host = host;
+        this.credentialManager = credentialManager;
+
+        initConnections();
+
         this.botProps = botProps;
 
         config = new BotConfig(this);
@@ -78,7 +82,7 @@ public class SEChat implements Chat {
         for(Map.Entry<Object, Object> s : botProps.entrySet()){
             String key = (String) s.getKey();
 
-            if(key.equals("bot.homes." + site.getName())){
+            if(key.equals("bot.homes." + host.getName())){
                 String[] rooms = ((String) s.getValue()).split(",");
 
                 for(String room : rooms){
@@ -101,7 +105,7 @@ public class SEChat implements Chat {
 
         for(long room : config.getHomes()){
             join((int) room);
-            System.out.println("Trying to join " + room + "@" + site.getName());
+            System.out.println("Trying to join " + room + "@" + host.getName());
         }
         //Ignore unchecked cast warning
         //noinspection unchecked
@@ -115,7 +119,7 @@ public class SEChat implements Chat {
                 //No manually added home rooms
                 if (hardcodedRooms.size() == 0) {
                     //No hard-coded rooms
-                    hardcodedRooms.add((site.getName().equals("metastackexchange") ? 721 : 1));
+                    hardcodedRooms.add((host.getName().equals("metastackexchange") ? 721 : 1));
 
                 }
             }
@@ -123,7 +127,7 @@ public class SEChat implements Chat {
         data = null;
 
         commands = CommandCenter.Companion.getINSTANCE();
-        http = new Http(httpClient);
+
 
         logIn();
         joining.clear();
@@ -134,7 +138,6 @@ public class SEChat implements Chat {
 
                     try {
                         Message m = newMessages.take();//This blocks the thread when it's empty, preventing continous looping.
-
                         if(m == stopMessage)
                             break;
                         handleMessage(m);//To keep this thread clean, use a separate method for message handling
@@ -167,18 +170,19 @@ public class SEChat implements Chat {
     }
 
     public void logIn() throws IOException {
-        if(site == null)
-            return;
-        String targetUrl = (site.getName().equals("stackexchange") ? SEEvents.getSELogin(site.getUrl()) : SEEvents.getLogin(site.getUrl()));
 
-        if (site.getName().equals("stackexchange")) {
+        String targetUrl = (host.getName().equals("stackexchange")
+                ? SEEvents.getSELogin(Objects.requireNonNull(host.getMainSiteHost()))
+                : SEEvents.getLogin(Objects.requireNonNull(host.getMainSiteHost())));
+
+        if (getName().equals("stackexchange")) {
             Response se = http.post(targetUrl, "from", "https://stackexchange.com/users/login#log-in");
             targetUrl = se.getBody();
         }
 
         String fKey = Utils.parseHtml(http.get(targetUrl).getBody());
 
-        Response response = null;
+        Response response;
 
         if(fKey == null){
             System.out.println("No fKey found!");
@@ -186,15 +190,16 @@ public class SEChat implements Chat {
         }
         this.fKey = fKey;
 
-        if(site.getName().equals("stackexchange")){
+        if(getName().equals("stackexchange")){
+            //TODO handle the new system
             targetUrl = "https://openid.stackexchange.com/affiliate/form/login/submit";
-            response = http.post(targetUrl, "email", site.getConfig().getEmail(), "password", site.getConfig().getPassword(), "fkey", fKey, "affId", "11");
+            response = http.post(targetUrl, "email", credentialManager.getEmail(), "password", credentialManager.getPassword(), "fkey", fKey, "affId", "11");
             String TUREG = "(var target = .*?;)";
             Pattern pattern = Pattern.compile(TUREG);
             Matcher m = pattern.matcher(response.getBody());
             response = http.get(m.find() ? m.group(0).replace("var target = ", "").replace("'", "").replace(";", "") : null);
         }else{
-           response = http.post(targetUrl, "email", site.getConfig().getEmail(), "password", site.getConfig().getPassword(), "fkey", fKey);
+           response = http.post(targetUrl, "email", credentialManager.getEmail(), "password", credentialManager.getPassword(), "fkey", fKey);
         }
 
 
@@ -222,11 +227,11 @@ public class SEChat implements Chat {
     }
 
     public String getUrl(){
-        return site.getUrl();
+        return host.getChatHost();
     }
 
     public String getName(){
-        return site.getName();
+        return host.getName();
     }
 
 
@@ -242,38 +247,38 @@ public class SEChat implements Chat {
         return rooms;
     }
 
-    public BMessage joinRoom(int rid){
+    public ReplyMessage joinRoom(int rid){
         try {
             for (SERoom room : rooms) {
                 if (room.getId() == rid) {
-                    return new BMessage("I'm already there...", true);
+                    return new ReplyMessage("I'm already there...", true);
                 }
             }
             try {
-                Response response = http.get(site.getUrl() + "/rooms/" + rid);
+                Response response = http.get(host.getChatHost() + "/rooms/" + rid);
                 if (response.getStatusCode() == 404)
                     throw new RoomNotFoundException("");
             }catch(RoomNotFoundException e){
                 throw e;//re-throw for the outer catch statement
             }catch(Exception e){
                 commands.getCrash().crash(e);
-                return new BMessage("An exception occured when trying to check the validity of the room", true);
+                return new ReplyMessage("An exception occured when trying to check the validity of the room", true);
             }
             SERoom room = new SERoom(rid, this);
             addRoom(room);
 
-            return new BMessage(Utils.getRandomJoinMessage(), true);
+            return new ReplyMessage(Utils.getRandomJoinMessage(), true);
 
         }catch(IOException e){
-            return new BMessage("An IOException occured when attempting to join", true);
+            return new ReplyMessage("An IOException occured when attempting to join", true);
         }catch(RoomNotFoundException e){
-            return new BMessage("That's not a real room or I can't write there", true);
+            return new ReplyMessage("That's not a real room or I can't write there", true);
         }catch(Exception e){
             commands.getCrash().crash(e);
             e.printStackTrace();
         }
 
-        return new BMessage("Something bad happened when joining the room", true);
+        return new ReplyMessage("Something bad happened when joining the room", true);
     }
 
     public boolean leaveRoom(int rid){
@@ -365,6 +370,11 @@ public class SEChat implements Chat {
         return Long.toString(uid);
     }
 
+    @Override
+    public List<Long> getUidForUsernameInRoom(String username, long server) {
+        return Collections.singletonList(0L);
+    }
+
     public CommandCenter getCommands(){
         return commands;
     }
@@ -377,61 +387,12 @@ public class SEChat implements Chat {
         return fKey;
     }
 
-    public void stop(){
-        newMessages.add(stopMessage);
+    public Host getHost(){
+        return host;
     }
 
-    public void handleMessage(Message m) throws IOException {
-
-        commands.hookupToRanks(m.userid, m.username, this);
-
-        if (m.userid == site.getConfig().getUserID())
-            return;
-        if (Utils.isBanned(m.userid, config)) {
-            if (CommandCenter.Companion.isCommand(m.content)) {
-                if (notifiedBanned.contains(m.userid)) {
-                    notifiedBanned.add(m.userid);
-                    SERoom s = getRoom(m.roomID);
-                    System.out.println(m.username + " : " + m.content);
-                    if (s != null) {
-                        s.reply(Constants.BANNED_REPLY, m.messageID);
-                    }
-                }
-            }
-            return;
-        }
-
-        User user = new User(this, m.userid, m.username, m.roomID, false);
-        List<BMessage> replies = commands.parseMessage(m.content, user, false);
-        if (replies != null && getRoom(m.roomID) != null) {
-            for (BMessage bm : replies) {
-                if(bm == Constants.bStopMessage)
-                    return;
-                if(bm == CommandCenter.Companion.getNO_MESSAGE()){
-                    continue;
-                }
-
-                if(bm.content == null)
-                    continue;
-                if (bm.content.length() >= 500 && !bm.content.contains("\n")) {
-                    bm.content += "\n.";
-                }
-                if (bm.replyIfPossible) {
-                    getRoom(m.roomID).reply(bm.content, m.messageID);
-                } else {
-                    getRoom(m.roomID).sendMessage(bm.content);
-                }
-            }
-        } else {
-            if (CommandCenter.Companion.isCommand(m.content)) {
-                SERoom r = getRoom(m.roomID);
-                if (r != null) {
-                    r.reply(Constants.INVALID_COMMAND + " (//help)", m.messageID);
-                } else {
-                    System.err.println("Room is null!");
-                }
-            }
-        }
+    public void stop(){
+        newMessages.add(stopMessage);
     }
 
     @Override
@@ -456,8 +417,84 @@ public class SEChat implements Chat {
         return groups;
     }
 
-    public List<SEUser> getPresentUsers(int roomId){
-        return new ArrayList<>();
+    public SiteConfig getCredentialManager(){
+        return credentialManager;
     }
 
+    @Override
+    public List<User> getUsersInServer(long server) {
+        //TODO
+        return null;
+    }
+
+    public WebSocketContainer getWebSocket(){
+        return webSocket;
+    }
+
+    private void initConnections(){
+        if(httpClient == null)
+            httpClient = HttpClients.createDefault();
+        if(webSocket == null) {
+            ClientManager wsClient = ClientManager.createClient(JdkClientContainer.class.getName());
+            wsClient.setDefaultMaxSessionIdleTimeout(0);
+            wsClient.getProperties().put(ClientProperties.RETRY_AFTER_SERVICE_UNAVAILABLE, true);
+            webSocket = wsClient;
+        }
+
+        if(http == null)
+            http = new Http(httpClient);
+    }
+
+    public void handleMessage(Message message) throws IOException {
+
+        commands.hookupToRanks(message.getUser().getUserID(),this);
+
+        if (message.getUser().getUserID() == credentialManager.getUserID())
+            return;
+        if (Utils.isBanned(message.getUser().getUserID(), config)) {
+            if (CommandCenter.Companion.isCommand(message.getContent())) {
+                if (notifiedBanned.contains((int) message.getUser().getUserID())) {
+                    notifiedBanned.add((int) message.getUser().getUserID());
+                    SERoom s = getRoom((int)message.getRoomID());
+                    System.out.println(message.getUser().getUserName() + " : " + message.getContent());
+                    if (s != null) {
+                        s.reply(Constants.BANNED_REPLY, message.getMessageID());
+                    }
+                }
+            }
+            return;
+        }
+
+        List<ReplyMessage> replies = commands.parseMessage(message);
+
+        if (replies != null && getRoom((int)message.getRoomID()) != null) {
+            for (ReplyMessage replyMessage : replies) {
+                if(replyMessage == Constants.bStopMessage)
+                    return;
+                if(replyMessage == CommandCenter.Companion.getNO_MESSAGE()){
+                    continue;
+                }
+
+                if(replyMessage.getContent() == null)
+                    continue;
+                if (replyMessage.getContent().length() >= 500 && !replyMessage.getContent().contains("\n")) {
+                    replyMessage.postfixString("\n.");
+                }
+                if (replyMessage.getReplyIfPossible()) {
+                    getRoom(message.getIntRoomId()).reply(replyMessage.getContent(), message.getMessageID());
+                } else {
+                    getRoom(message.getIntRoomId()).sendMessage(replyMessage.getContent());
+                }
+            }
+        } else {
+            if (CommandCenter.Companion.isCommand(message.getContent())) {
+                SERoom r = getRoom(message.getIntRoomId());
+                if (r != null) {
+                    r.reply(Constants.INVALID_COMMAND + " (//help)", message.getMessageID());
+                } else {
+                    System.err.println("Room is null!");
+                }
+            }
+        }
+    }
 }

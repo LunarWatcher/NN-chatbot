@@ -2,13 +2,15 @@ package io.github.lunarwatcher.chatbot.bot.sites.twitch;
 
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.Site;
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
+import io.github.lunarwatcher.chatbot.SiteConfig;
+import io.github.lunarwatcher.chatbot.User;
+import io.github.lunarwatcher.chatbot.bot.chat.Message;
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
-import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
+import io.github.lunarwatcher.chatbot.bot.sites.Host;
+import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
 import lombok.val;
@@ -17,7 +19,6 @@ import me.philippheuer.twitch4j.TwitchClientBuilder;
 import me.philippheuer.twitch4j.endpoints.ChannelEndpoint;
 import me.philippheuer.twitch4j.events.EventSubscriber;
 import me.philippheuer.twitch4j.events.event.AbstractChannelEvent;
-import me.philippheuer.twitch4j.events.event.channel.FollowEvent;
 import me.philippheuer.twitch4j.events.event.irc.ChannelMessageEvent;
 import me.philippheuer.twitch4j.message.commands.CommandPermission;
 import me.philippheuer.twitch4j.model.Channel;
@@ -30,12 +31,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TwitchChat implements Chat {
+    private static final Host host = Host.TWITCH;
+
     private static final boolean truncated = true;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.TWITCH, CommandGroup.NSFW);
 
     private TwitchClient client;
     CommandCenter commandCenter;
-    private Site site;
     private Properties botProps;
     private BotConfig config;
     private Database db;
@@ -43,11 +45,13 @@ public class TwitchChat implements Chat {
     List<Long> notifiedBanned = new ArrayList<>();
     public List<Channel> mappedChannels = new ArrayList<>();
     private String username;
+    private SiteConfig credentialManager;
 
-    public TwitchChat(Site site, Properties botProps, Database db) throws IOException{
-        this.site = site;
+    public TwitchChat(Properties botProps, Database db, SiteConfig credentialManager) throws IOException{
         this.botProps = botProps;
         this.db = db;
+        this.credentialManager = credentialManager;
+
         commandCenter = CommandCenter.INSTANCE;
 
         config = new BotConfig(this);
@@ -63,14 +67,14 @@ public class TwitchChat implements Chat {
         credentials.load(creds);
         creds.close();
 
-        client = TwitchClientBuilder.init().withClientId(site.getConfig().getEmail())
-                .withClientSecret(site.getConfig().getPassword())
+        client = TwitchClientBuilder.init().withClientId(credentialManager.getEmail())
+                .withClientSecret(credentialManager.getPassword())
                 .withCredential(credentials.getProperty("twitch.oauth.credential"))
                 .withListener(this)
                 .withConfigurationDirectory(null)
                 .withAutoSaveConfiguration(false)
                 .connect();
-        username = site.getConfig().getUsername();
+        username = credentialManager.getUsername();
 
     }
 
@@ -104,17 +108,12 @@ public class TwitchChat implements Chat {
 
     @Override
     public String getName() {
-        return site.getName();
+        return host.getName();
     }
 
     @Override
     public List<Long> getHardcodedAdmins() {
         return hardcodedAdmins;
-    }
-
-    @Override
-    public Site getSite() {
-        return site;
     }
 
     @Override
@@ -138,6 +137,11 @@ public class TwitchChat implements Chat {
     }
 
     @Override
+    public List<Long> getUidForUsernameInRoom(String username, long server) {
+        return Arrays.asList(client.getUserEndpoint().getUserIdByUserName(username).orElse(0L));
+    }
+
+    @Override
     public void leaveServer(long serverId) {/*Useless stub atm*/}
 
     public Long getUID(String username){
@@ -154,7 +158,7 @@ public class TwitchChat implements Chat {
             return;
         }
         try {
-            getCommands().hookupToRanks(event.getUser().getId(), event.getUser().getDisplayName(), this);
+            getCommands().hookupToRanks(event.getUser().getId(), this);
 
             String message = event.getMessage();
             if(message.startsWith("!!") && !CommandCenter.Companion.getTRIGGER().equals("!!"))
@@ -187,22 +191,21 @@ public class TwitchChat implements Chat {
                     sendMessage(event, "The command trigger is \"" + CommandCenter.Companion.getTRIGGER() + "\"");
                 }
             }
-
-            List<BMessage> messages = commandCenter.parseMessage(message, new User(this, event.getUser().getId(),
-                    event.getUser().getDisplayName(), getIdForChannel(event.getChannel()), true,
-                    new Pair<>("permission", computePermission(event.getPermissions()))), true);
+            Message messageWrapper = new Message(message, 0, event.getChannel().getId(), new User(event.getUser().getId(),
+                    event.getUser().getDisplayName(), new Pair<>("permission", computePermission(event.getPermissions()))), true, this, host);
+            List<ReplyMessage> messages = commandCenter.parseMessage(messageWrapper);
 
             if(messages != null && messages.size() != 0){
-                for(BMessage msg : messages){
+                for(ReplyMessage msg : messages){
                     if(msg == Constants.bStopMessage)
                         return;
                     if(msg == CommandCenter.Companion.getNO_MESSAGE()){
                         continue;
                     }
-                    if(msg.replyIfPossible){
-                        replyTo(event, msg.content);
+                    if(msg.getReplyIfPossible()){
+                        replyTo(event, msg.getContent());
                     }else{
-                        sendMessage(event, msg.content);
+                        sendMessage(event, msg.getContent());
                     }
                 }
             }else{
@@ -337,5 +340,22 @@ public class TwitchChat implements Chat {
     }
     public List<CommandGroup> getCommandGroup(){
         return groups;
+    }
+    public SiteConfig getCredentialManager(){
+        return credentialManager;
+    }
+
+    @Override
+    public List<User> getUsersInServer(long server) {
+        List<Long> userIds = client.getChannelEndpoint(server)
+                .getFollowers(Optional.of(500L), Optional.of("asc"))
+                .stream().map((follow) -> follow.getUser().getId())
+                .collect(Collectors.toList());
+        return userIds.stream().map((uid)-> new User(uid, getUsername(uid))).collect(Collectors.toList());
+    }
+
+    @Override
+    public Host getHost() {
+        return null;
     }
 }

@@ -1,6 +1,6 @@
 package io.github.lunarwatcher.chatbot;
 
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 
 import java.util.HashMap;
@@ -25,8 +25,8 @@ public final class Constants {
     public static final String BANNED_REPLY = "Go away.";
     public static final int FLASK_PORT = 8213;
     public static final String INVALID_COMMAND = "Maybe you should consider looking up the manual.";
-    public static final Message stopMessage = new Message("", 0, 0, "", 0);
-    public static final BMessage bStopMessage = new BMessage("", false);
+    public static final Message stopMessage = new Message("", 0, 0, new User(0, ""), false, null, null);
+    public static final ReplyMessage bStopMessage = new ReplyMessage("", false);
 
     public static final String[] joinMessages = {
             "Joined",

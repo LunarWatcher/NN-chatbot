@@ -1,11 +1,11 @@
 package io.github.lunarwatcher.chatbot.bot.sites;
 
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.Site;
-import io.github.lunarwatcher.chatbot.bot.chat.Message;
+import io.github.lunarwatcher.chatbot.SiteConfig;
+import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
+import io.github.lunarwatcher.chatbot.data.BotConfig;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,7 +19,6 @@ public interface Chat {
     BotConfig getConfig();
     String getName();
     List<Long> getHardcodedAdmins();
-    Site getSite();
     Properties getBotProps();
     Database getDatabase();
     CommandCenter getCommands();
@@ -32,7 +31,12 @@ public interface Chat {
      * @return The username, or a stringified form of the UID if not found.
      */
     String getUsername(long uid);
+    List<Long> getUidForUsernameInRoom(String username, long server);
     void leaveServer(long serverId);
     boolean getTruncated();
     List<CommandGroup> getCommandGroup();
+    SiteConfig getCredentialManager();
+    List<User> getUsersInServer(long server);
+    Host getHost();
+
 }

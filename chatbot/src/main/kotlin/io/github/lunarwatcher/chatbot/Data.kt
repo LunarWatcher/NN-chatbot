@@ -1,16 +1,15 @@
 package io.github.lunarwatcher.chatbot
 
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
+import io.github.lunarwatcher.chatbot.bot.sites.Chat
+import io.github.lunarwatcher.chatbot.bot.sites.Host
 
 /**
- * Site specific config
+ * Info about a user.
  */
-data class Site(var name: String, val url: String, val config: SiteConfig){
-
-    fun `is`(name: String) : Boolean {
-        return this.name == name;
-    }
-}
+class User(val userID: Long, val userName: String,
+           vararg val args: Pair<String, String> = arrayOf())
+class RankInfo(val uid: Long, val rank: Int)
 
 /**
  * The account details for the site

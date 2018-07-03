@@ -2,20 +2,19 @@ package io.github.lunarwatcher.chatbot.bot.sites.discord;
 
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.Site;
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage;
+import io.github.lunarwatcher.chatbot.SiteConfig;
+import io.github.lunarwatcher.chatbot.User;
+import io.github.lunarwatcher.chatbot.bot.chat.Message;
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
-import io.github.lunarwatcher.chatbot.bot.commands.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
+import io.github.lunarwatcher.chatbot.bot.sites.Host;
+import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
 import lombok.Getter;
-import lombok.val;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -26,13 +25,15 @@ import sx.blah.discord.util.DiscordException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.github.lunarwatcher.chatbot.Constants.DEFAULT_NSFW;
 
 public class DiscordChat implements Chat{
+    public static final Host host = Host.DISCORD;
+
     private static final boolean truncated = true;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.DISCORD, CommandGroup.NSFW);
-    Site site;
     CommandCenter commands;
     IDiscordClient client;
     Properties botProps;
@@ -44,11 +45,13 @@ public class DiscordChat implements Chat{
     List<Long> notifiedBanned = new ArrayList<>();
     Map<Long, Boolean> nsfw = new HashMap<>();
     public String clientID;
+    private SiteConfig credentialManager;
 
-    public DiscordChat(Site site, Properties botProps, Database db) throws IOException {
-        this.site = site;
+    public DiscordChat(Properties botProps, Database db, SiteConfig credentialManager) throws IOException {
         this.db = db;
         this.botProps = botProps;
+        this.credentialManager = credentialManager;
+
         logIn();
 
         commands = CommandCenter.INSTANCE;
@@ -57,6 +60,7 @@ public class DiscordChat implements Chat{
 
         load();
         Utils.loadHardcodedAdmins(this);
+
 
     }
 
@@ -97,7 +101,7 @@ public class DiscordChat implements Chat{
     @Override
     public void logIn() throws IOException {
         client = new ClientBuilder()
-                .withToken(site.getConfig().getEmail())
+                .withToken(credentialManager.getEmail())
                 .setMaxReconnectAttempts(30)
                 .set5xxRetryCount(30)
                 .build();
@@ -119,7 +123,7 @@ public class DiscordChat implements Chat{
     public void onMessageReceived(MessageReceivedEvent event){
         try {
 
-            commands.hookupToRanks(event.getAuthor().getLongID(), event.getAuthor().getName(), this);
+            commands.hookupToRanks(event.getAuthor().getLongID(), this);
 
             String msg = event.getMessage().getContent();
 
@@ -156,32 +160,35 @@ public class DiscordChat implements Chat{
                     channels.add(event.getChannel());
                 }
 
-                User user = new User(this, event.getAuthor().getLongID(), event.getAuthor().getName(),
-                        event.getChannel().getLongID(), event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()),
+                User user = new User(event.getAuthor().getLongID(), event.getAuthor().getName(),
                         new Pair<>("guildID", Long.toString(event.getGuild().getLongID())));
+                Message message = new Message(event.getMessage().getContent(), event.getMessageID(),
+                        event.getChannel().getLongID(), user,
+                        event.getChannel().isNSFW() || getNsfw(event.getGuild().getLongID()),
+                        this, host);
 
-                List<BMessage> replies = commands.parseMessage(msg, user, getNsfw(event.getGuild().getLongID()));
+                List<ReplyMessage> replies = commands.parseMessage(message);
 
                 if (replies == null) {
                     if (CommandCenter.Companion.isCommand(msg)) {
                         event.getChannel().sendMessage(Constants.INVALID_COMMAND + " (//help)");
                     }
                 } else {
-                    for (BMessage r : replies) {
+                    for (ReplyMessage r : replies) {
                         if(r == Constants.bStopMessage)
                             return;
                         if(r == CommandCenter.Companion.getNO_MESSAGE()){
                             continue;
                         }
-                        if(r.replyIfPossible){
-                            r.content = "<@" + event.getAuthor().getLongID() + "> " + r.content;
+                        if(r.getReplyIfPossible()){
+                            r.setReplyFormat("<@" + event.getAuthor().getLongID() + ">");
                         }
                         List<String> items = new ArrayList<>();
-                        if (r.content.length() > 2000) {
-                            boolean fixedFont = r.content.startsWith("```");
+                        if (r.getContent().length() > 2000) {
+                            boolean fixedFont = r.getContent().startsWith("```");
 
                             int i = 0;
-                            int total = r.content.length();
+                            int total = r.getContent().length();
                             while (i < total) {
 
                                 int remaining = total - i;
@@ -190,12 +197,12 @@ public class DiscordChat implements Chat{
                                     sub = 2000;
                                     if(fixedFont)
                                         sub -= 3;
-                                    if(!r.content.substring(i, i + sub).startsWith("```") && fixedFont)
+                                    if(!r.getContent().substring(i, i + sub).startsWith("```") && fixedFont)
                                         sub -= 3;
                                 } else {
                                     sub = remaining;
                                 }
-                                String subbed = r.content.substring(i, i + sub);
+                                String subbed = r.getContent().substring(i, i + sub);
                                 if(!subbed.startsWith("```") && fixedFont)
                                     subbed = "```" + subbed;
                                 if(!subbed.endsWith("```") && fixedFont)
@@ -213,7 +220,7 @@ public class DiscordChat implements Chat{
                             }
 
                         } else {
-                            event.getChannel().sendMessage(r.content);
+                            event.getChannel().sendMessage(r.getContent());
                         }
                     }
                 }
@@ -233,7 +240,7 @@ public class DiscordChat implements Chat{
     }
 
     public String getName(){
-        return site.getName();
+        return host.getName();
     }
 
     public String getUsername(long uid){
@@ -245,15 +252,18 @@ public class DiscordChat implements Chat{
         return Long.toString(uid);
     }
 
+    @Override
+    public List<Long> getUidForUsernameInRoom(String username, long server) {
+        List<IUser> users = client.getUsersByName(username);
+        return users.stream().map(IIDLinkedObject::getLongID).collect(Collectors.toList());
+    }
+
     public List<Long> getHardcodedAdmins(){
         return hardcodedAdmins;
     }
 
     public Properties getBotProps(){
         return botProps;
-    }
-    public Site getSite(){
-        return site;
     }
 
     public Database getDatabase(){
@@ -306,6 +316,21 @@ public class DiscordChat implements Chat{
         IChannel channel = client.getChannelByID(id);
         System.out.println(channel);
         return channel;
+    }
+
+    public SiteConfig getCredentialManager(){
+        return credentialManager;
+    }
+
+    @Override
+    public List<User> getUsersInServer(long server) {
+        List<IUser> discordUsers = client.getChannelByID(server).getUsersHere();
+        return discordUsers.stream().map((iUser -> new User(iUser.getLongID(), iUser.getName()))).collect(Collectors.toList());
+    }
+
+    @Override
+    public Host getHost() {
+        return host;
     }
 
 }

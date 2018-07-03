@@ -21,8 +21,8 @@ public class SEEvents {
      * @param chatUrl
      * @return
      */
-    public static String getSELogin(String chatUrl){
-        return (chatUrl.replace("chat.", "")) + "/users/signin";
+    public static String getSELogin(String url){
+        return (url.replace("chat.", "")) + "/users/signin";
     }
 
     public static String getEdit(String chatUrl, long messageID){

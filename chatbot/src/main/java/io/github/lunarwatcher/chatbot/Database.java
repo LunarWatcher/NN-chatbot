@@ -239,4 +239,12 @@ public class Database {
         cache = new HashMap<>();
     }
 
+    public boolean isEmpty(){
+        return cache.isEmpty();
+    }
+
+    public int getItems(){
+        return cache.size();
+    }
+
 }

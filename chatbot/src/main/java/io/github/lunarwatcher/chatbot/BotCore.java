@@ -58,11 +58,10 @@ public class BotCore {
         InputStream creds = new FileInputStream(new File("creds.properties"));
         credentials.load(creds);
         creds.close();
-        List<Site> availableSites = new ArrayList<>();
+        Map<String, SiteConfig> sites = new HashMap<>();
         for(Map.Entry<Object, Object> entry : botProps.entrySet()){
             if(((String) entry.getKey()).startsWith("bot.site")){
                 String name = ((String)entry.getKey()).replace("bot.site.", "");
-                String url = (String) entry.getValue();
                 String username = null, password = null, email = null;
                 long userID = 0;
 
@@ -95,7 +94,7 @@ public class BotCore {
                 }else {
                     System.out.println("Valid config for site " + name);
                     SiteConfig siteConfig = new SiteConfig(username.replace(" ", ""), password, email, userID, true);//TODO replace last argument with loaded data
-                    availableSites.add(new Site(name, url, siteConfig));
+                    sites.put(name, siteConfig);
                 }
             }
         }
@@ -107,7 +106,7 @@ public class BotCore {
         boolean quiet = false;
         boolean specificSite = false;
 
-        List<Site> sites = new ArrayList<>();
+
         String input;
         String database = DEFAULT_DATABASE;
 
@@ -116,11 +115,7 @@ public class BotCore {
             Constants.LEAVE_ROOM_ON_UNHOME = Boolean.parseBoolean(LROUH);
 
         if(sites.size() == 0)
-            sites = availableSites;
-
-        for(Site s : sites){
-            System.out.println(s.getUrl());
-        }
+            throw new IllegalArgumentException("No sites!");
         Path db = Paths.get(database);
         Database jsonDB = new Database(db);
         // jsonDB.commit();

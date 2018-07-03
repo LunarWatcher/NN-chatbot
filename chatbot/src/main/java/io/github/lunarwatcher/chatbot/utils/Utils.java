@@ -2,11 +2,11 @@ package io.github.lunarwatcher.chatbot.utils;
 
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
-import io.github.lunarwatcher.chatbot.bot.commands.BotConfig;
-import io.github.lunarwatcher.chatbot.bot.commands.RankInfo;
+import io.github.lunarwatcher.chatbot.RankInfo;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat;
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat;
+import io.github.lunarwatcher.chatbot.data.BotConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.handle.obj.IChannel;
@@ -42,7 +42,7 @@ public final class Utils {
      * @return
      */
     public static boolean invertBoolean(boolean input){
-        return input ? false : true;
+        return !input;
     }
 
     /**
@@ -102,7 +102,6 @@ public final class Utils {
             Map<String, Object> m = new HashMap<>();
             m.put("uid", entry.getValue().getUid());
             m.put("rank", entry.getValue().getRank());
-            m.put("username", entry.getValue().getUsername());
             cRanks.add(m);
         }
         db.put(Constants.RANKS(site), cRanks);
@@ -134,13 +133,10 @@ public final class Utils {
                             userID = Long.parseLong(value.toString());
                         else if (key.equals("rank"))
                             rank = Integer.parseInt(value.toString());
-                        else if (key.equals("username"))
-                            username = (String) value;
-                        else System.err.println("Something went to hell with the key " + key);
 
                     }
 
-                    ranked.put(userID, new RankInfo(userID, rank, username));
+                    ranked.put(userID, new RankInfo(userID, rank));
                 }
             }else ranked = null;
             cf.set(homes, ranked);
@@ -230,9 +226,9 @@ public final class Utils {
         for(Map.Entry<Object, Object> s : c.getBotProps().entrySet()){
             String key = (String) s.getKey();
 
-            if(key.equals("bot."+ c.getSite().getName() + ".admin")){
+            if(key.equals("bot."+ c.getName() + ".admin")){
                 String[] admins = ((String) s.getValue()).split(",");
-                if(c.getSite().getName().equals("twitch")){
+                if(c.getName().equals("twitch")){
                     if(c instanceof TwitchChat) {
                         for (String admin : admins) {
                             c.getHardcodedAdmins().add(((TwitchChat) c).getUID(admin));
@@ -256,7 +252,7 @@ public final class Utils {
         for(Long i : c.getHardcodedAdmins()){
             //assume the hard-coded admins can essentially be considered owners. Be careful with
             //adding users as admins in bot.properties as this will grant level 10 access to the bot
-            c.getConfig().addRank(i, 10, null);
+            c.getConfig().addRank(i, 10);
         }
     }
 
@@ -274,7 +270,7 @@ public final class Utils {
     }
 
     public static int getRank(long user, BotConfig config){
-        if(user == config.getSite().getSite().getConfig().getUserID())
+        if(user == config.getSite().getCredentialManager().getUserID())
             return 10;
 
         if(config.getRanks().get(user) != null){

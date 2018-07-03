@@ -1,20 +1,33 @@
 package io.github.lunarwatcher.chatbot.bot.command
 
 
-import io.github.lunarwatcher.chatbot.*
+import io.github.lunarwatcher.chatbot.Constants
 import io.github.lunarwatcher.chatbot.Constants.RELOCATION_VOTES
+import io.github.lunarwatcher.chatbot.CrashLogs
+import io.github.lunarwatcher.chatbot.Database
 import io.github.lunarwatcher.chatbot.bot.Bot
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage
-import io.github.lunarwatcher.chatbot.bot.commands.*
+import io.github.lunarwatcher.chatbot.bot.chat.Message
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
+import io.github.lunarwatcher.chatbot.bot.commands.ICommand
+import io.github.lunarwatcher.chatbot.bot.commands.`fun`.*
+import io.github.lunarwatcher.chatbot.bot.commands.admin.*
+import io.github.lunarwatcher.chatbot.bot.commands.basic.*
+import io.github.lunarwatcher.chatbot.bot.commands.discord.DiscordSummon
+import io.github.lunarwatcher.chatbot.bot.commands.discord.NSFWState
+import io.github.lunarwatcher.chatbot.bot.commands.learn.LearnCommand
+import io.github.lunarwatcher.chatbot.bot.commands.learn.TaughtCommands
+import io.github.lunarwatcher.chatbot.bot.commands.learn.UnlearnCommand
+import io.github.lunarwatcher.chatbot.bot.commands.meta.*
+import io.github.lunarwatcher.chatbot.bot.commands.stackexchange.JoinCommand
+import io.github.lunarwatcher.chatbot.bot.commands.stackexchange.LeaveCommand
+import io.github.lunarwatcher.chatbot.bot.commands.stackexchange.SERooms
+import io.github.lunarwatcher.chatbot.bot.commands.twitch.JoinTwitch
+import io.github.lunarwatcher.chatbot.bot.commands.twitch.LeaveTwitch
 import io.github.lunarwatcher.chatbot.bot.listener.*
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.bot.sites.discord.DiscordChat
-import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
-import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.*
-import kotlin.reflect.KClass
 
 enum class CommandGroup{
     COMMON, STACKEXCHANGE, DISCORD, TWITCH, NSFW;
@@ -24,8 +37,8 @@ enum class CommandGroup{
 
 class CommandCenter private constructor(botProps: Properties, val db: Database) {
     private var logger = LoggerFactory.getLogger(this::class.java)
-    private var commandSets = mutableMapOf<List<CommandGroup>, List<Command>>()
-    private var commands: MutableList<Command>
+    private var commandSets = mutableMapOf<List<CommandGroup>, List<ICommand>>()
+    private var commands: MutableList<ICommand>
 
     var listeners = mutableListOf<Listener>()
     private var statusListener: StatusListener
@@ -46,29 +59,28 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(HelpCommand())
         addCommand(ShrugCommand())
         addCommand(AboutCommand())
-        addCommand(Learn(tc, this))
-        addCommand(UnLearn(tc, this))
-        addCommand(UpdateRank())
-        addCommand(CheckCommand())
-        addCommand(BanUser())
-        addCommand(Unban())
+        addCommand(LearnCommand(tc, this))
+        addCommand(UnlearnCommand(tc, this))
+        addCommand(GetRankCommand())
+        addCommand(BanCommand())
+        addCommand(UnbanCommand())
         addCommand(SaveCommand())
         addCommand(alive)
         addCommand(WhoMade())
         addCommand(ChangeCommandStatus(this))
         addCommand(RandomNumber())
         addCommand(LMGTFY())
-        addCommand(UpdateRank())
+        addCommand(SetRankCommand())
         addCommand(DebugRanks())
         addCommand(Kill())
-        addCommand(Lick())
-        addCommand(Give())
-        addCommand(Ping())
-        addCommand(Appul())
-        addCommand(BasicPrintCommand("(╯°□°）╯︵ ┻━┻", "tableflip", ArrayList(), "The tables have turned..."))
-        addCommand(BasicPrintCommand("┬─┬ ノ( ゜-゜ノ)", "unflip", ArrayList(), "The tables have turned..."))
+        addCommand(LickCommand())
+        addCommand(GiveCommand())
+        addCommand(PingCommand())
+        addCommand(BasicPrintCommand("I LUV APPHULS!", true, "apples", listOf("apphuls"), "Apples!"))
+        addCommand(BasicPrintCommand("(╯°□°）╯︵ ┻━┻", false, "tableflip", listOf(), "The tables have turned..."))
+        addCommand(BasicPrintCommand("┬─┬ ノ( ゜-゜ノ)", false,"unflip", listOf(), "The tables have turned..."))
         addCommand(TimeCommand())
-        addCommand(KillBot())
+        addCommand(ShutdownCommand())
         val netStat = NetStat()
         addCommand(netStat)
         addCommand(location)
@@ -76,7 +88,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(crash)
         addCommand(DogeCommand())
         addCommand(RepeatCommand())
-        addCommand(Blame())
+        addCommand(BlameCommand())
         addCommand(WakeCommand())
         addCommand(WhoIs())
         addCommand(BlacklistRoom())
@@ -104,12 +116,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         listeners.add(welcomeListener)
 
         listeners.add(statusListener)
-        /**
-         * Pun not intended:
-         */
         mentionListener = MentionListener(netStat)
         listeners.add(KnockKnock(mentionListener))
-        listeners.add(Train(5))
         listeners.add(mentionListener)
 
         addCommand(JoinTwitch())
@@ -119,8 +127,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(DiscordSummon(), CommandGroup.DISCORD)
 
         //////////////////////////////////////////////
-        addCommand(Summon(RELOCATION_VOTES), CommandGroup.STACKEXCHANGE)
-        addCommand(UnSummon(RELOCATION_VOTES), CommandGroup.STACKEXCHANGE)
+        addCommand(JoinCommand(RELOCATION_VOTES), CommandGroup.STACKEXCHANGE)
+        addCommand(LeaveCommand(RELOCATION_VOTES), CommandGroup.STACKEXCHANGE)
         addCommand(AddHome(), CommandGroup.STACKEXCHANGE)
         addCommand(RemoveHome(), CommandGroup.STACKEXCHANGE)
         addCommand(SERooms(), CommandGroup.STACKEXCHANGE)
@@ -129,21 +137,16 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     }
 
     @Throws(IOException::class)
-    fun parseMessage(message: String?, user: User, nsfw: Boolean): List<BMessage>? {
-        logger.info("Message @ " + user.chat.name + " : \"$message\" - ${user.userName}")
-        @Suppress("NAME_SHADOWING")
-        var message: String = message ?: return null
-        message = fix(message)
+    fun parseMessage(message: Message): List<ReplyMessage>? {
+        logger.info("Message @ " + message.chat.name + " : \"${message.content}\" - ${message.user.userName}")
 
-
-
-        val replies = mutableListOf<BMessage>()
+        val replies = mutableListOf<ReplyMessage>()
         try {
-            if (isCommand(message)) {
-                replies.addAll(handleCommands(message, user, nsfw));
+            if (isCommand(message.content)) {
+                replies.addAll(handleCommands(message));
             }
 
-            replies.addAll(handleListeners(message, user, nsfw));
+            replies.addAll(handleListeners(message));
 
             mentionListener.done()
 
@@ -151,24 +154,21 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
                 return null
         } catch (e: Exception) {
             crash.crash(e)
-            replies.add(BMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true))
+            replies.add(ReplyMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true))
         }
 
         return replies
     }
 
-    fun handleCommands(message: String, user: User, nsfw: Boolean) : List<BMessage> {
-        val replies = mutableListOf<BMessage>()
-        var message = message.substring(TRIGGER.length)
+    fun handleCommands(message: Message) : List<ReplyMessage> {
+        val replies = mutableListOf<ReplyMessage>()
+        message.substring(TRIGGER.length)
 
-        //Get rid of white space to avoid problems down the line
-        message = message.trim()
+        val name = message.content.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
 
-        val name = message.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-
-        val c = get(name, user.chat)
+        val c = get(name, message.chat)
         if (c != null) {
-            val x = c.handleCommand(message, user)
+            val x = c.handleCommand(message)
             if (x != null) {
                 //There are still some commands that could return null here
                 replies.add(x)
@@ -178,10 +178,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         val lc = tc.get(name)
         if (lc != null) {
             //If the command is NSFW but the site doesn't allow it, don't handle the command
-            if (lc.nsfw && !nsfw){}
+            if (lc.nsfw && !message.nsfwSite){}
             else {
 
-                val x = lc.handleCommand(message, user)
+                val x = lc.handleCommand(message)
                 if (x != null)
                     replies.add(x)
             }
@@ -189,10 +189,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         return replies;
     }
 
-    fun handleListeners(message: String, user: User, nsfw: Boolean) : List<BMessage>{
-        val replies = mutableListOf<BMessage>()
+    fun handleListeners(message: Message) : List<ReplyMessage>{
+        val replies = mutableListOf<ReplyMessage>()
         for (l in listeners) {
-            val x = l.handleInput(message, user)
+            val x = l.handleInput(message)
             if (x != null) {
                 replies.add(x)
             }
@@ -209,31 +209,27 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         welcomeListener.save()
     }
 
-    fun addCommand(c: Command, group: CommandGroup = CommandGroup.COMMON) {
+    fun addCommand(c: ICommand, group: CommandGroup = CommandGroup.COMMON) {
         if(group != CommandGroup.COMMON)
             c.commandGroup = group
         commands.add(c)
     }
 
-    operator fun get(key: String, chat: Chat): Command? = getCommands(chat).firstOrNull{
+    operator fun get(key: String, chat: Chat): ICommand? = getCommands(chat).firstOrNull{
             it.matchesCommand(key)
     }
 
 
-    fun hookupToRanks(user: Long, username: String, site: Chat) {
+    fun hookupToRanks(user: Long,site: Chat) {
         if (site.config.getRank(user) == null) {
             //This code exists in an attempt to map every. Single. User. who uses the bot or even talk around it
             //This will build up a fairly big database, but that's why there is (going to be) a purge method
             //for the database
-            site.config.addRank(user, Constants.DEFAULT_RANK, username)
-        } else {
-            if (site.config.getRank(user)!!.username == null || site.config.getRank(user)!!.username != username) {
-                site.config.addRank(user, site.config.getRank(user)!!.rank, username)
-            }
+            site.config.addRank(user, Constants.DEFAULT_RANK)
         }
     }
 
-    fun getCommands(site: Chat) : List<Command>{
+    fun getCommands(site: Chat) : List<ICommand>{
 
         if(commandSets[site.commandGroup] != null)
             return commandSets[site.commandGroup]!!
@@ -244,18 +240,12 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         return buffer
     }
 
-    fun fix(input: String) : String =
-            input.replace("&#8238;", "")
-                    .replace("\u202E", "")
-                    .trim()
-                    .clean()
-
 
     companion object {
         /**
          * Ignored when sending messages. Useful to avoid output.
          */
-        val NO_MESSAGE = BMessage("", false)
+        val NO_MESSAGE = ReplyMessage("", false)
 
 
         lateinit var INSTANCE: CommandCenter

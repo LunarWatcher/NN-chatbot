@@ -2,14 +2,12 @@ package io.github.lunarwatcher.chatbot.bot.listener
 
 import io.github.lunarwatcher.chatbot.Configurations
 import io.github.lunarwatcher.chatbot.Constants
-import io.github.lunarwatcher.chatbot.bot.chat.BMessage
+import io.github.lunarwatcher.chatbot.bot.chat.Message
+import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
-import io.github.lunarwatcher.chatbot.bot.commands.NetStat
-import io.github.lunarwatcher.chatbot.bot.commands.User
+import io.github.lunarwatcher.chatbot.bot.commands.basic.NetStat
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
-import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
-import io.github.lunarwatcher.chatbot.clean
 import io.github.lunarwatcher.chatbot.safeGet
 import io.github.lunarwatcher.chatbot.utils.Http
 import org.apache.http.impl.client.HttpClients
@@ -27,10 +25,10 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
         http = Http(httpClient)
     }
 
-    override fun handleInput(input: String, user: User): BMessage? {
-        val site = user.chat
+    override fun handleInput(message: Message): ReplyMessage? {
+        val site = message.chat
 
-        if(!isMentioned(input, site)){
+        if(!isMentioned(message.content, site)){
             return null;
         }
         if(ignoreNext){
@@ -38,19 +36,19 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
             return null;
         }
 
-
-        if(isMentionedStart(input, site)){
-
-            if(input.split(" ", limit = 2).safeGet(1) != null) {
-                val message = input.split(" ", limit = 2)[1]
+        if(isMentionedFull(message.content, site)){
+            //Improve performance on ping-only matches
+        }else if(isMentionedStart(message.content, site)){
+            val split = message.content.split(" ", limit = 2).safeGet(1)
+            if(split != null) {
                 if((netStat.alive || System.currentTimeMillis() - lastCheck > 10 * 1000)) {
                     lastCheck = System.currentTimeMillis()
                     try {
                         val response = http.post("http://${Configurations.NEURAL_NET_IP
-                                ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", input)
+                                ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", split)
                         val reply: String = response.body.substring(1, response.body.length - 2)
                         netStat.alive = true;
-                        return BMessage(reply, true)
+                        return ReplyMessage(reply, true)
                     } catch (e: IOException) {
                         netStat.alive = false
                     } catch (e: SocketException) {
@@ -58,13 +56,13 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
                     }
                 }
 
-                val res = site.commands.parseMessage(CommandCenter.TRIGGER + message, user, user.nsfwSite)
+                val res = site.commands.handleCommands(message.prefixTriggerAndRemovePing())
                 if (res != null && res.isNotEmpty())
                     return res[0]
             }
         }
 
-        return BMessage("How can I `${if(user.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true)
+        return ReplyMessage("How can I `${if (message.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true)
 
     }
 
@@ -76,40 +74,53 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
      */
     fun isMentioned(input: String, site: Chat) : Boolean{
         return when(site.name){
-            "discord" -> input.toLowerCase().startsWith("<@" + site.site.config.userID + ">".toLowerCase())
-                    || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
+            "discord" -> input.toLowerCase().startsWith("<@" + site.credentialManager.userID + ">".toLowerCase())
+                    || input.toLowerCase().startsWith("<@!" + site.credentialManager.userID + ">".toLowerCase());
             "stackexchange" -> containsUsername(input, site);
             "stackoverflow" -> containsUsername(input, site);
             /**
              * Asserts a full match on MSE; experimental to see which is better on sites where the length of the username isn't fixed
              */
-            "metastackexchange" -> input.toLowerCase().contains("@${site.site.config.username.toLowerCase()}\\W".toRegex())
+            "metastackexchange" -> input.toLowerCase().contains("@${site.credentialManager.username.toLowerCase()}\\W".toRegex())
             "twitch" -> containsUsername(input, site)
             else ->{
                 println("WARNING: mention on unregistered site. Defaulting to \"@username\"");
-                input.contains("@" + site.site.config.username)
+                input.contains("@" + site.credentialManager.username)
             };
         }
     }
 
     fun isMentionedStart(input: String, site: Chat) : Boolean{
         return when(site.name){
-            "discord" -> input.toLowerCase().startsWith("<@" + site.site.config.userID + ">".toLowerCase())
-                    || input.toLowerCase().startsWith("<@!" + site.site.config.userID + ">".toLowerCase());
+            "discord" -> input.toLowerCase().startsWith("<@" + site.credentialManager.userID + ">".toLowerCase())
+                    || input.toLowerCase().startsWith("<@!" + site.credentialManager.userID + ">".toLowerCase());
             "stackexchange" -> containsUsername("^" + input.split(" ")[0], site);//^ asserts start of the string in regex.
             "stackoverflow" -> containsUsername("^" + input.split(" ")[0], site);//^ asserts start of the string in regex.
             "metastackexchange" -> containsUsername("^" + input.split(" ")[0], site);//^ asserts start of the string in regex.
             "twitch" -> containsUsername("^" + input.split(" ")[0], site)
             else ->{
                 println("WARNING: mention on unregistered site. Defaulting to \"@username\"");
-                input.contains("@" + site.site.config.username)
+                input.contains("@" + site.credentialManager.username)
             };
         }
     }
 
+    fun isMentionedFull(input: String, site: Chat) : Boolean{
+        return when(site.name){
+            "discord" -> input.toLowerCase() == "<@" + site.credentialManager.userID + ">".toLowerCase()
+                    || input.toLowerCase() == "<@!" + site.credentialManager.userID + ">".toLowerCase();
+            "stackexchange", "stackoverflow",
+            "metastackexchange", "twitch" ->
+                input.toLowerCase() == site.credentialManager.username.toLowerCase();
+            else ->{
+                println("WARNING: mention on unregistered site. Defaulting to \"@username\"");
+                input.toLowerCase() == "@" + site.credentialManager.username.toLowerCase()
+            };
+        }
+    }
 
-    private fun containsUsername(input: String, site: Chat) : Boolean = (site.site.config.username.length downTo 3).any {
-        input.toLowerCase().contains("${("@" + site.site.config.username.substring(0, it).toLowerCase())}\\b".toRegex())
+    private fun containsUsername(input: String, site: Chat) : Boolean = (site.credentialManager.username.length downTo 3).any {
+        input.toLowerCase().contains("${("@" + site.credentialManager.username.substring(0, it).toLowerCase())}\\b".toRegex())
     };
 
     fun ignoreNext() {

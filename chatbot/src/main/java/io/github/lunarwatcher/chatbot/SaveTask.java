@@ -12,6 +12,8 @@ public class SaveTask extends TimerTask {
     }
 
     public void run(){
+        if(bot.getDatabase().isEmpty())
+            return;
         System.out.println("Scheduled saving...");
         bot.save();
         System.out.println("Saved!");

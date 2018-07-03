@@ -2,10 +2,12 @@ package io.github.lunarwatcher.chatbot.bot.sites.se;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.exceptions.NoAccessException;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
+import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import lombok.AllArgsConstructor;
@@ -25,8 +27,7 @@ public class SERoom implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
     private int id;
     private SEChat parent;
-    @Getter
-    Session session;
+    private Session session;
 
     private String fkey;
     private Long lastMessage;
@@ -34,6 +35,8 @@ public class SERoom implements Closeable {
     private boolean intended = false;
     private int kickCount = 0;
     private boolean breakRejoin = false;
+    private int tries = 0;
+
     public SERoom(int id, SEChat parent) throws Exception {
         this.id = id;
         this.parent = parent;
@@ -42,7 +45,7 @@ public class SERoom implements Closeable {
     }
 
     public void createSession() throws Exception{
-        Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
+        Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getHost().getChatHost(), id));
         if(connect.getStatusCode() != 302 && connect.getStatusCode() != 200){
             System.out.println(connect.getBody());
         }
@@ -52,7 +55,7 @@ public class SERoom implements Closeable {
         }
 
         if(!connect.getBody().contains("<textarea id=\"input\">")){
-            connect = parent.getHttp().get(SEEvents.getRoom(parent.getSite().getUrl(), id));
+            connect = parent.getHttp().get(SEEvents.getRoom(parent.getHost().getChatHost(), id));
 
             if(connect.getStatusCode() == 404 || connect.getBody().contains("This room is frozen; new messages cannot be added.")){
                 parent.leaveRoom(id);
@@ -72,7 +75,7 @@ public class SERoom implements Closeable {
                 .configurator(new ClientEndpointConfig.Configurator() {
                     @Override
                     public void beforeRequest(Map<String, List<String>> headers) {
-                        headers.put("Origin", Arrays.asList(parent.getSite().getUrl()));
+                        headers.put("Origin", Arrays.asList(parent.getHost().getChatHost()));
                     }
                 }).build();
 
@@ -95,7 +98,7 @@ public class SERoom implements Closeable {
             }
             @Override
             public void onError(Session session, Throwable error){
-                System.out.println("Error (src: " + id + " @" + parent.site.getName() + ": Error. " + error.getMessage());
+                System.out.println("Error (src: " + id + " @ " + parent.getName() + ": Error. " + error.getMessage());
                 intended = false;
             }
 
@@ -149,7 +152,7 @@ public class SERoom implements Closeable {
     }
 
     public String getWSURL() throws IOException{
-        Response response = parent.http.post(parent.getSite().getUrl() + "/ws-auth",
+        Response response = SEChat.http.post(parent.getHost().getChatHost() + "/ws-auth",
                 "roomid", id,
                 "fkey", fkey
         );
@@ -203,9 +206,9 @@ public class SERoom implements Closeable {
                     int userid = event.get("user_id").asInt();
                     String username = event.get("user_name").toString();
 
-
                     username = removeQuotation(username);
-                    Message message = new Message(content, messageID, id, username, userid);
+                    User user = new User(userid, username);
+                    Message message = new Message(content, messageID, id, user, false, parent, parent.getHost());
 
                     parent.newMessages.add(message);
                 } else if (eventCode == 3 || eventCode == 4) {
@@ -234,7 +237,7 @@ public class SERoom implements Closeable {
 
                 }else if(eventCode == 15){
                     try {
-                        if (event.get("target_user_id").intValue() != parent.site.getConfig().getUserID())
+                        if (event.get("target_user_id").intValue() != parent.getCredentialManager().getUserID())
                             return;
                     }catch(NullPointerException e){
                         //No target user; meaning the state of the room was changed.
@@ -296,8 +299,8 @@ public class SERoom implements Closeable {
     public String removeQuotation(String input){
         return input.substring(1, input.length() - 1);
     }
-    int tries = 0;
-    public void sendMessage(String message) throws IOException{
+
+    public long sendMessage(String message) throws IOException{
 
         Response response = parent.getHttp().post(parent.getUrl() + "/chats/" + id + "/messages/new",
                 "text", message,
@@ -305,22 +308,13 @@ public class SERoom implements Closeable {
         );
 
         if (response.getStatusCode() == 404) {
-				/*
-				 * We already checked to make sure the room exists. So, if a 404
-				 * response is returned when trying to send a message, it likely
-				 * means that the bot's permission to post messages has been
-				 * revoked.
-				 *
-				 * If a 404 response is returned from this request, the response
-				 * body reads:
-				 * "The room does not exist, or you do not have permission"
-				 */
             System.err.println("Room not found, or you can't access it: " + id);
+            return -1;
         }else if (response.getStatusCode() == 409){
             tries++;
-            if (tries > 4){
+            if (tries > 5){
                 //To avoid StackOverflowExceptions and repeated attempts on failed messages
-                return;
+                return -1;
             }
 
             new java.util.Timer().schedule(new java.util.TimerTask() {
@@ -338,6 +332,8 @@ public class SERoom implements Closeable {
         }else{
             tries = 0;
         }
+
+        return response.getBodyAsJson().get("id").longValue();
     }
 
     public void reply(String message, long targetMessage) throws IOException{
@@ -347,7 +343,7 @@ public class SERoom implements Closeable {
     @Override
     public void close() throws IOException {
         intended = true;
-        parent.getHttp().post(SEEvents.leaveRoom(parent.getSite().getUrl(), id),
+        parent.getHttp().post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id),
                 "fkey", fkey);
         session.close();
     }
@@ -388,5 +384,9 @@ public class SERoom implements Closeable {
 
     public boolean getIntended(){
         return intended;
+    }
+
+    public Session getSession(){
+        return session;
     }
 }
