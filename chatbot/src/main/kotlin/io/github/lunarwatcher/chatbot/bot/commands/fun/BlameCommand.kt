@@ -18,8 +18,8 @@ class BlameCommand : AbstractCommand("blame", listOf(), help="Someone must be bl
         if(blamable.isEmpty())
             return ReplyMessage("I don't know!!", true)
         return if(problem == null)
-            ReplyMessage("It is ${blamable[random.nextInt(blamable.size)]}'s fault!", true);
-        else ReplyMessage("blames ${blamable[random.nextInt(blamable.size)]} for $problem", true)
+            ReplyMessage("It is ${blamable[random.nextInt(blamable.size)].userName}'s fault!", true);
+        else ReplyMessage("blames ${blamable[random.nextInt(blamable.size)].userName} for $problem", true)
 
     }
 }

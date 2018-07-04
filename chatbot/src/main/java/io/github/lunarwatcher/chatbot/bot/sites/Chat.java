@@ -6,6 +6,7 @@ import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,6 +37,7 @@ public interface Chat {
     boolean getTruncated();
     List<CommandGroup> getCommandGroup();
     SiteConfig getCredentialManager();
+    @NotNull
     List<User> getUsersInServer(long server);
     Host getHost();
 

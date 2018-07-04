@@ -18,7 +18,6 @@ import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Http;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
-import lombok.Getter;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.glassfish.tyrus.client.ClientManager;
@@ -55,7 +54,6 @@ public class SEChat implements Chat {
 
     CommandCenter commands;
     List<Integer> joining = new ArrayList<>();
-    @Getter
     private Database db;
     private BotConfig config;
 
@@ -497,4 +495,5 @@ public class SEChat implements Chat {
             }
         }
     }
+
 }

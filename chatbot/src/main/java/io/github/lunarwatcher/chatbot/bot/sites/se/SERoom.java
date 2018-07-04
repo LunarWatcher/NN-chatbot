@@ -10,8 +10,7 @@ import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.utils.Response;
 import io.github.lunarwatcher.chatbot.utils.Utils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +163,9 @@ public class SERoom implements Closeable {
             e.printStackTrace();
         }
 
-        return url + "?l=" + System.currentTimeMillis();
+        String time = parent.getHttp().post(parent.getHost().getChatHost() + "/chats/" + id + "/events").getBodyAsJson().get("time").toString();
+
+        return url + "?l=" + time;
     }
 
     public void receiveMessage(String input){
@@ -348,19 +349,30 @@ public class SERoom implements Closeable {
         session.close();
     }
 
-    @AllArgsConstructor
     public class UserAction{
         public int eventID, userID;
         public String username;
         public int room;
+
+        public UserAction(int eventID, int userID, String username, int room){
+            this.eventID = eventID;
+            this.userID = userID;
+            this.username = username;
+            this.room = room;
+        }
+
     }
 
-    @AllArgsConstructor
     public class StarMessage{
         public long messageID;
         public int room;
         public int stars;
 
+        public StarMessage(long messageID, int room, int stars){
+            this.messageID = messageID;
+            this.room = room;
+            this.stars = stars;
+        }
     }
     public int getId(){
         return id;

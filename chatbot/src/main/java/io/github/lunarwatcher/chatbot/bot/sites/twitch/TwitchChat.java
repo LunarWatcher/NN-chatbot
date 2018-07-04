@@ -13,7 +13,6 @@ import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
-import lombok.val;
 import me.philippheuer.twitch4j.TwitchClient;
 import me.philippheuer.twitch4j.TwitchClientBuilder;
 import me.philippheuer.twitch4j.endpoints.ChannelEndpoint;
@@ -267,7 +266,7 @@ public class TwitchChat implements Chat {
             return false;
         }
 
-        val id = client.getUserEndpoint().getUserIdByUserName(uName);
+        Optional<Long> id = client.getUserEndpoint().getUserIdByUserName(uName);
         if(!id.isPresent())
             return false;
         ChannelEndpoint endPoint = client.getChannelEndpoint(id.get());
@@ -280,7 +279,7 @@ public class TwitchChat implements Chat {
         if(!isInChannel(uName))
             return false;
 
-        val id = client.getUserEndpoint().getUserIdByUserName(uName);
+        Optional<Long> id = client.getUserEndpoint().getUserIdByUserName(uName);
         if(!id.isPresent())
             return false;
         ChannelEndpoint endpoint = client.getChannelEndpoint(id.get());

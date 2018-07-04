@@ -13,7 +13,6 @@ import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
-import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -37,7 +36,6 @@ public class DiscordChat implements Chat{
     CommandCenter commands;
     IDiscordClient client;
     Properties botProps;
-    @Getter
     private Database db;
     private List<IChannel> channels;
     private BotConfig config;
