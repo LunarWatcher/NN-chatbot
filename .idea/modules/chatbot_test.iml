@@ -25,7 +25,7 @@
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_10">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
     <output-test url="file://$MODULE_DIR$/../../chatbot/out/test/classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../chatbot/src/test">
@@ -57,8 +57,8 @@
     <orderEntry type="library" name="Gradle: org.isomorphism:token-bucket:1.7" level="project" />
     <orderEntry type="library" name="Gradle: com.google.guava:guava:23.5-jre" level="project" />
     <orderEntry type="library" name="Gradle: joda-time:joda-time:2.9.9" level="project" />
-    <orderEntry type="library" name="Gradle: org.jodd:jodd-all:4.3.0" level="project" />
     <orderEntry type="library" name="Gradle: org.jsoup:jsoup:1.11.3" level="project" />
+    <orderEntry type="library" name="Gradle: com.google.code.gson:gson:2.8.5" level="project" />
     <orderEntry type="library" name="Gradle: com.googlecode.soundlibs:mp3spi:1.9.5.4" level="project" />
     <orderEntry type="library" name="Gradle: com.googlecode.soundlibs:jlayer:1.0.1.4" level="project" />
     <orderEntry type="library" name="Gradle: junit:junit:4.12" level="project" />

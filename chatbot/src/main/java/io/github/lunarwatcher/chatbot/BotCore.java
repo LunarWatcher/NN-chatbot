@@ -41,7 +41,7 @@ public class BotCore {
     public static String LOCATION = "Undefined";
     public static final Instant STARTED_AT = Instant.now();
     public static Bot bot;
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         LOCATION = Long.toHexString(System.currentTimeMillis());
 
         Properties botProps = new Properties();

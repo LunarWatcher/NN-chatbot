@@ -9,7 +9,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.basic.NetStat
 import io.github.lunarwatcher.chatbot.bot.sites.Chat
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat
 import io.github.lunarwatcher.chatbot.safeGet
-import io.github.lunarwatcher.chatbot.utils.Http
+import io.github.lunarwatcher.chatbot.utils.HttpHelper
 import org.apache.http.impl.client.HttpClients
 import java.io.IOException
 import java.net.SocketException
@@ -17,12 +17,11 @@ import java.net.SocketException
 @Suppress("NAME_SHADOWING")
 class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts to pings") {
     var ignoreNext = false;
-    val http: Http
     var lastCheck: Long = 0
+    private var cookies = mutableMapOf<String, String>()
 
     init{
-        val httpClient = HttpClients.createDefault()
-        http = Http(httpClient)
+
     }
 
     override fun handleInput(message: Message): ReplyMessage? {
@@ -44,9 +43,9 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
                 if((netStat.alive || System.currentTimeMillis() - lastCheck > 10 * 1000)) {
                     lastCheck = System.currentTimeMillis()
                     try {
-                        val response = http.post("http://${Configurations.NEURAL_NET_IP
-                                ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", "message", split)
-                        val reply: String = response.body.substring(1, response.body.length - 2)
+                        val response = HttpHelper.post("http://${Configurations.NEURAL_NET_IP
+                                ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", cookies, "message", split)
+                        val reply: String = response.body().substring(1, response.body().length - 2)
                         netStat.alive = true;
                         return ReplyMessage(reply, true)
                     } catch (e: IOException) {
@@ -57,7 +56,7 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
                 }
 
                 val res = site.commands.handleCommands(message.prefixTriggerAndRemovePing())
-                if (res != null && res.isNotEmpty())
+                if (res.isNotEmpty())
                     return res[0]
             }
         }

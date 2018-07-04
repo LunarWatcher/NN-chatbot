@@ -37,7 +37,7 @@ public class Bot {
 
     }
 
-    public void initialize() throws IOException {
+    public void initialize() throws Exception {
         for(Map.Entry<String, SiteConfig> entry : sites.entrySet()){
             String site = entry.getKey();
             SiteConfig credentialManager = entry.getValue();

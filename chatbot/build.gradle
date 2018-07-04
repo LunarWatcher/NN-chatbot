@@ -83,8 +83,9 @@ dependencies {
     implementation group: 'org.glassfish.tyrus.bundles', name: 'tyrus-standalone-client-jdk', version: '1.13.1'
     implementation 'com.google.guava:guava:23.5-jre'
     implementation 'joda-time:joda-time:2.9.9'
-    implementation 'org.jodd:jodd-all:4.3.0'
     implementation 'org.jsoup:jsoup:1.11.3'
+    
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
 compileKotlin {

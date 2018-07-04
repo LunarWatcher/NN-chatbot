@@ -1,7 +1,5 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
-import sun.text.normalizer.ReplaceableUCharacterIterator;
-
 public class SEUser {
     public int userID;
     public String userName;

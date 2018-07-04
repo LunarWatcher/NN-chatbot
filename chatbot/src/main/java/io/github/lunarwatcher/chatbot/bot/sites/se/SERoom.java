@@ -1,5 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lunarwatcher.chatbot.User;
@@ -7,23 +8,31 @@ import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.exceptions.NoAccessException;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
-import io.github.lunarwatcher.chatbot.bot.sites.Host;
-import io.github.lunarwatcher.chatbot.utils.Response;
+import io.github.lunarwatcher.chatbot.utils.HttpHelper;
+import io.github.lunarwatcher.chatbot.utils.JsonUtils;
 import io.github.lunarwatcher.chatbot.utils.Utils;
-
+import org.jsoup.Connection;
+import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ratpack.handling.internal.DefaultContext;
 
 import javax.websocket.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class SERoom implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
+    private static final int MAX_TIMEOUT = 30000;
+    private ScheduledExecutorService taskExecutor = Executors.newSingleThreadScheduledExecutor();
+
     private int id;
     private SEChat parent;
     private Session session;
@@ -35,141 +44,113 @@ public class SERoom implements Closeable {
     private int kickCount = 0;
     private boolean breakRejoin = false;
     private int tries = 0;
+    private List<Long> latestMessages = new ArrayList<>();
 
     public SERoom(int id, SEChat parent) throws Exception {
+        System.out.println("Room created: " + id + " at " + parent.getName());
         this.id = id;
         this.parent = parent;
 
         createSession();
+        stayAlive();
     }
 
     public void createSession() throws Exception{
-        Response connect = parent.getHttp().get(SEEvents.getRoom(parent.getHost().getChatHost(), id));
-        if(connect.getStatusCode() != 302 && connect.getStatusCode() != 200){
-            System.out.println(connect.getBody());
-        }
-        if(connect.getStatusCode() == 404){
+        Connection.Response connect = HttpHelper.get(SEEvents.getRoom(parent.getHost().getChatHost(), id),
+                parent.getCookies());
+        int statusCode = connect.statusCode();
+
+        if(statusCode == 404){
             parent.leaveRoom(id);
             throw new RoomNotFoundException("SERoom not found!");
         }
 
-        if(!connect.getBody().contains("<textarea id=\"input\">")){
-            connect = parent.getHttp().get(SEEvents.getRoom(parent.getHost().getChatHost(), id));
-
-            if(connect.getStatusCode() == 404 || connect.getBody().contains("This room is frozen; new messages cannot be added.")){
-                parent.leaveRoom(id);
-                throw new RoomNotFoundException("SERoom not found! Room " + id + " @ " + parent.getName());
-            }
-
-            if(!connect.getBody().contains("<textarea id=\"input\">")){
-                throw new NoAccessException("No write access in the room!");
-
-            }
-
-        }
-        fkey = Utils.parseHtml(connect.getBody());
-
-
+        fkey = connect.parse().select(SEChat.FKEY_SELECTOR).first().val();
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .configurator(new ClientEndpointConfig.Configurator() {
                     @Override
                     public void beforeRequest(Map<String, List<String>> headers) {
-                        headers.put("Origin", Arrays.asList(parent.getHost().getChatHost()));
+                        headers.put("Origin", Collections.singletonList(parent.getHost().getChatHost()));
                     }
                 }).build();
+
 
 
         session = parent.getWebSocket().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig config) {
-                disconnected = false;
-                intended = false;
-
                 session.addMessageHandler(String.class, SERoom.this::receiveMessage);
-
-            }
-            public void onClose(Session session, CloseReason closeReason) {
-                System.out.println("Connection closed: " + closeReason);
-                disconnected = true;
-                if(!intended)
-                    respawn();
-
             }
             @Override
             public void onError(Session session, Throwable error){
                 System.out.println("Error (src: " + id + " @ " + parent.getName() + ": Error. " + error.getMessage());
-                intended = false;
+
             }
 
         }, config, new URI(getWSURL()));
     }
 
-    private int attempts = 0;
-    public void respawn(){
-        System.out.println("Attempting to respawn");
-        try{
-            Thread.sleep(100);
-            createSession();
-            System.out.println("Success!!!");
-        }catch(NoAccessException | IOException e){
-            persistentRespawn();
-        } catch (Exception e){
-            e.printStackTrace();
-            //Other problem that isn't just disconnecting. The room doesn't exist, etc. Don't reconnect.
-            //Remove from the list of rooms in the parent
-            parent.getRooms().removeIf(it -> it.id == id);
-        }
-    }
-
-    private void persistentRespawn(){
-        attempts++;
-        while(true) {
-            try {
-                Thread.sleep((long)(10000f * (attempts <= 0 ? 1 : attempts >= 6 ? 6 : attempts == 1 ? 0.5f : attempts)));//The ternary ihere is to avoid problems with thread access
-            } catch (InterruptedException ignore) {
+    public void stayAlive(){
+        taskExecutor.scheduleAtFixedRate(() -> {
+            if (System.currentTimeMillis() - lastMessage > MAX_TIMEOUT) {
+                try {
+                    close();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) { }
+                try {
+                    createSession();
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
-
-            if(breakRejoin)
-                break;
-            try {
-                respawnUnsafe();
-            }catch(NoAccessException e){
-                continue;
-            }catch(RoomNotFoundException e){
-                System.out.println("Room not found. Stopping.");
-                break;
-            } catch(Exception ex){
-                continue;
-            }
-            break;
-        }
-        attempts = 0;
-    }
-
-    public void respawnUnsafe() throws Exception{
-        createSession();
+        }, MAX_TIMEOUT, MAX_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     public String getWSURL() throws IOException{
-        Response response = SEChat.http.post(parent.getHost().getChatHost() + "/ws-auth",
-                "roomid", id,
+        Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/ws-auth", true, parent.getCookies(),
+                "roomid", Integer.toString(id),
                 "fkey", fkey
         );
 
         String url = null;
         try {
-            url = response.getBodyAsJson().get("url").asText();
+            url = new ObjectMapper().readTree(response.body()).get("url").asText();
         }catch(Exception e){
             e.printStackTrace();
         }
 
-        String time = parent.getHttp().post(parent.getHost().getChatHost() + "/chats/" + id + "/events").getBodyAsJson().get("time").toString();
+        if(url == null)
+            throw new NullPointerException();
 
+
+        /**
+         * This should be a better approach than System.currentTimeMillis. If it's in any way behind, connection
+         * fails.
+         */
+        String time = JsonUtils.convertToJson(HttpHelper.post(parent.getHost()
+                .getChatHost() + "/chats/" + id  + "/events", true, parent.getCookies(), "fkey", fkey)).get("time").toString();
         return url + "?l=" + time;
     }
 
     public void receiveMessage(String input){
+        lastMessage = System.currentTimeMillis();
         try {
+            JsonNode node = JsonUtils.convertToJson(input);
+
+            Iterator<Map.Entry<String, JsonNode>> values = node.fields();
+            List<Map.Entry<String, JsonNode>> listedValues = new ArrayList<>();
+            values.forEachRemaining(listedValues::add);
+
+            listedValues.stream().filter(n -> n.getKey().equals("r" + id))
+                    .filter(Objects::nonNull)
+                    .filter(n -> n.getKey().equals("e"))
+                    .filter(Objects::nonNull).forEach(event -> {
+                System.out.println(event.getKey() + " -> " + event.getValue());
+            });
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode actualObj = mapper.readTree(input).get("r" + id);
@@ -182,13 +163,6 @@ public class SERoom implements Closeable {
                 return;
 
             for(JsonNode event : actualObj) {
-                try{
-                    long time = event.get("time_stamp").asLong();
-                    if(time > lastMessage)
-                        lastMessage = time;
-                }catch(Exception ignored){
-
-                }
                 JsonNode et = event.get("event_type");
                 if (et == null)
                     continue;
@@ -301,17 +275,18 @@ public class SERoom implements Closeable {
         return input.substring(1, input.length() - 1);
     }
 
+    //TODO refactor
     public long sendMessage(String message) throws IOException{
 
-        Response response = parent.getHttp().post(parent.getUrl() + "/chats/" + id + "/messages/new",
+        Connection.Response response = HttpHelper.post(parent.getUrl() + "/chats/" + id + "/messages/new", parent.getCookies(),
                 "text", message,
                 "fkey", fkey
         );
 
-        if (response.getStatusCode() == 404) {
+        if (response.statusCode() == 404) {
             System.err.println("Room not found, or you can't access it: " + id);
             return -1;
-        }else if (response.getStatusCode() == 409){
+        }else if (response.statusCode() == 409){
             tries++;
             if (tries > 5){
                 //To avoid StackOverflowExceptions and repeated attempts on failed messages
@@ -334,7 +309,13 @@ public class SERoom implements Closeable {
             tries = 0;
         }
 
-        return response.getBodyAsJson().get("id").longValue();
+        long id = JsonUtils.convertToJson(response)
+                .get("id").longValue();
+        while(latestMessages.size() >= 20)
+            latestMessages.remove(0);
+        latestMessages.add(id);
+
+        return id;
     }
 
     public void reply(String message, long targetMessage) throws IOException{
@@ -344,9 +325,20 @@ public class SERoom implements Closeable {
     @Override
     public void close() throws IOException {
         intended = true;
-        parent.getHttp().post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id),
+        HttpHelper.post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id), parent.getCookies(),
                 "fkey", fkey);
         session.close();
+    }
+
+    public boolean deleteMessage(long message){
+        try {
+            Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/messages/" + message + "/delete", parent.getCookies());
+            return response.body().equals("ok");
+        }catch(IOException e){
+            e.printStackTrace();
+            return false;
+        }
+
     }
 
     public class UserAction{

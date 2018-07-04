@@ -7,6 +7,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException
 import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 import io.github.lunarwatcher.chatbot.data.CentralBlacklistStorage
+import io.github.lunarwatcher.chatbot.utils.HttpHelper
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
@@ -34,10 +35,10 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
 
             try {
 
-                val response = chat.http.get("${chat.host.chatHost}/rooms/$iRoom")
-                if (response.statusCode == 404)
+                val response = HttpHelper.get("${chat.host.chatHost}/rooms/$iRoom", chat.cookies)
+                if (response.statusCode() == 404)
                     throw RoomNotFoundException("Room not found")
-                if (!response.body.contains("<textarea id=\"input\">")) {
+                if (!response.body().contains("<textarea id=\"input\">")) {
                     throw RoomNotFoundException("No write access in the room")
                 }
             } catch (e: RoomNotFoundException) {
