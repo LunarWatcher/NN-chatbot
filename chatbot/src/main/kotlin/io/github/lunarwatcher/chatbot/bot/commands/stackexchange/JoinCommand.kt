@@ -70,11 +70,9 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
             }
 
             return if(users!!.size >= votes){
-                val message= chat.joinRoom(iRoom);
+                val reply= chat.joinRoom(iRoom);
                 vts.remove(iRoom);
-
-                message
-
+                reply
             }else{
                 ReplyMessage((votes - users.size).toString() + " more " + (if (votes - users.size == 1) "vote" else "votes") + " required", true);
             }

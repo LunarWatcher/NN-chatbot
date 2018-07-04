@@ -143,6 +143,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         val replies = mutableListOf<ReplyMessage>()
         try {
             if (isCommand(message.content)) {
+                println("Command")
                 replies.addAll(handleCommands(message));
             }
 
@@ -172,6 +173,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
             if (x != null) {
                 //There are still some commands that could return null here
                 replies.add(x)
+                return replies;
             }
         }
 
@@ -182,8 +184,11 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
             else {
 
                 val x = lc.handleCommand(message)
-                if (x != null)
+                if (x != null) {
                     replies.add(x)
+                    return replies;
+                }
+
             }
         }
         return replies;

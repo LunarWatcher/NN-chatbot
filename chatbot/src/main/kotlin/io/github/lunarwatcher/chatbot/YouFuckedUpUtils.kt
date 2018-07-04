@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils
 object LogStorage{
     val logs = mutableListOf<String>()
 
-    fun crash(e: Exception){
+    fun crash(e: Throwable){
         val base = e.toString()
         val reason = e.localizedMessage
         var result = "$base: $reason\n"
@@ -25,7 +25,7 @@ object LogStorage{
 
 class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for screwups", rankRequirement = 5){
 
-    fun crash(e: Exception){
+    fun crash(e: Throwable){
         LogStorage.crash(e)
 
     }

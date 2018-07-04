@@ -1,36 +1,42 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
-import io.github.lunarwatcher.chatbot.bot.exceptions.NoAccessException;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.utils.HttpHelper;
 import io.github.lunarwatcher.chatbot.utils.JsonUtils;
-import io.github.lunarwatcher.chatbot.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
-import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ratpack.handling.internal.DefaultContext;
 
-import javax.websocket.*;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 public class SERoom implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
+    private static final Pattern pattern409 = Pattern.compile("again in (\\d+) seconds");
+
+    public static final int MAX_RETRIES = 5;
     private static final int MAX_TIMEOUT = 30000;
+
+    private List<User> pingableUsers = new ArrayList<>();
+    private Map<String, String> cookies;
+
     private ScheduledExecutorService taskExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private int id;
@@ -46,18 +52,21 @@ public class SERoom implements Closeable {
     private int tries = 0;
     private List<Long> latestMessages = new ArrayList<>();
 
-    public SERoom(int id, SEChat parent) throws Exception {
+    public SERoom(int id, SEChat parent, Map<String, String> cookies) throws Exception {
         System.out.println("Room created: " + id + " at " + parent.getName());
         this.id = id;
         this.parent = parent;
+        this.cookies = cookies;
 
         createSession();
         stayAlive();
+
+        refreshPingableUsers();
     }
 
     public void createSession() throws Exception{
         Connection.Response connect = HttpHelper.get(SEEvents.getRoom(parent.getHost().getChatHost(), id),
-                parent.getCookies());
+                cookies);
         int statusCode = connect.statusCode();
 
         if(statusCode == 404){
@@ -65,7 +74,8 @@ public class SERoom implements Closeable {
             throw new RoomNotFoundException("SERoom not found!");
         }
 
-        fkey = connect.parse().select(SEChat.FKEY_SELECTOR).first().val();
+        fkey = connect.parse().select(SEChat.FKEY_SELECTOR).val();
+
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .configurator(new ClientEndpointConfig.Configurator() {
                     @Override
@@ -73,8 +83,6 @@ public class SERoom implements Closeable {
                         headers.put("Origin", Collections.singletonList(parent.getHost().getChatHost()));
                     }
                 }).build();
-
-
 
         session = parent.getWebSocket().connectToServer(new Endpoint() {
             @Override
@@ -111,7 +119,7 @@ public class SERoom implements Closeable {
     }
 
     public String getWSURL() throws IOException{
-        Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/ws-auth", true, parent.getCookies(),
+        Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/ws-auth", true, cookies,
                 "roomid", Integer.toString(id),
                 "fkey", fkey
         );
@@ -132,7 +140,7 @@ public class SERoom implements Closeable {
          * fails.
          */
         String time = JsonUtils.convertToJson(HttpHelper.post(parent.getHost()
-                .getChatHost() + "/chats/" + id  + "/events", true, parent.getCookies(), "fkey", fkey)).get("time").toString();
+                .getChatHost() + "/chats/" + id  + "/events", true, cookies, "fkey", fkey)).get("time").toString();
         return url + "?l=" + time;
     }
 
@@ -275,64 +283,37 @@ public class SERoom implements Closeable {
         return input.substring(1, input.length() - 1);
     }
 
-    //TODO refactor
-    public long sendMessage(String message) throws IOException{
+    public CompletionStage<Long> sendMessage(@NotNull String message) {
+        return CompletableFuture.supplyAsync(() -> {
+            System.out.println("Sending message: \"" + message + "\"");
+            return postForUid(MAX_RETRIES, message);
 
-        Connection.Response response = HttpHelper.post(parent.getUrl() + "/chats/" + id + "/messages/new", parent.getCookies(),
-                "text", message,
-                "fkey", fkey
-        );
-
-        if (response.statusCode() == 404) {
-            System.err.println("Room not found, or you can't access it: " + id);
-            return -1;
-        }else if (response.statusCode() == 409){
-            tries++;
-            if (tries > 5){
-                //To avoid StackOverflowExceptions and repeated attempts on failed messages
-                return -1;
+        }, taskExecutor).whenComplete((res, throwable) -> {
+            if (res != null){
+                newMessage(res);
             }
-
-            new java.util.Timer().schedule(new java.util.TimerTask() {
-                        @Override
-                        public void run() {
-                            try {
-                                sendMessage(message);
-                            }catch(IOException e){
-                                parent.commands.getCrash().crash(e);
-                            }
-                        }
-                    },
-                    tries * 1000 * (tries - 1 <= 0 ? 1 : tries - 1));
-
-        }else{
-            tries = 0;
-        }
-
-        long id = JsonUtils.convertToJson(response)
-                .get("id").longValue();
-        while(latestMessages.size() >= 20)
-            latestMessages.remove(0);
-        latestMessages.add(id);
-
-        return id;
+            if (throwable != null){
+                parent.commands.getCrash().crash(throwable);
+                throwable.printStackTrace();
+            }
+        });
     }
 
-    public void reply(String message, long targetMessage) throws IOException{
-        sendMessage(":" + targetMessage + " " + message);
+    public CompletionStage<Long> reply(@NotNull String message, long targetMessage) {
+        return sendMessage(":" + targetMessage + " " + message);
     }
 
     @Override
     public void close() throws IOException {
         intended = true;
-        HttpHelper.post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id), parent.getCookies(),
+        HttpHelper.post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id), cookies,
                 "fkey", fkey);
         session.close();
     }
 
     public boolean deleteMessage(long message){
         try {
-            Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/messages/" + message + "/delete", parent.getCookies());
+            Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/messages/" + message + "/delete", cookies);
             return response.body().equals("ok");
         }catch(IOException e){
             e.printStackTrace();
@@ -341,31 +322,6 @@ public class SERoom implements Closeable {
 
     }
 
-    public class UserAction{
-        public int eventID, userID;
-        public String username;
-        public int room;
-
-        public UserAction(int eventID, int userID, String username, int room){
-            this.eventID = eventID;
-            this.userID = userID;
-            this.username = username;
-            this.room = room;
-        }
-
-    }
-
-    public class StarMessage{
-        public long messageID;
-        public int room;
-        public int stars;
-
-        public StarMessage(long messageID, int room, int stars){
-            this.messageID = messageID;
-            this.room = room;
-            this.stars = stars;
-        }
-    }
     public int getId(){
         return id;
     }
@@ -393,4 +349,128 @@ public class SERoom implements Closeable {
     public Session getSession(){
         return session;
     }
+
+    public long getOldestMessageInStack(){
+        if(latestMessages.size() == 0)
+            return -1;
+        return latestMessages.get(0);
+    }
+
+    public long getNewestMessageInStack(){
+        if(latestMessages.size() == 0)
+            return -1;
+        return latestMessages.get(latestMessages.size() - 1);
+    }
+
+    public long getMessageInStackAtIndex(int index){
+        if(index < 0 || index > 20 || index >= latestMessages.size())
+            return -1;
+        return latestMessages.get(index);
+    }
+
+    public void newMessage(long messageId){
+        while(latestMessages.size() >= 20)
+            latestMessages.remove(0);
+        latestMessages.add(messageId);
+    }
+
+    public long postForUid(int retries, @NotNull String message){
+
+        Connection.Response response;
+
+        try {
+            response = HttpHelper.post(parent.getHost().getChatHost() + "/chats/" + id + "/messages/new", true, cookies,
+                    "text", message,
+                    "fkey", fkey
+            );
+            System.err.println(response.body());
+        }catch(IOException e){
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        if(response.statusCode() == 200){
+            try{
+                return JsonUtils.convertToJson(response.body()).get("id").asLong();
+            }catch(IOException e){
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+
+        Matcher matcher = pattern409.matcher(response.body());
+        if(retries > 0 && matcher.find()){
+            long delay = Long.parseLong(matcher.group(1));
+            try{
+                Thread.sleep(delay * 1000);
+            }catch(InterruptedException ignored){
+
+            }
+            return postForUid(retries - 1, message);
+        }else{
+            throw new RuntimeException("Failed to send message");
+        }
+
+    }
+
+    public List<User> getPingableUsers() {
+        if(!this.pingableUsers.isEmpty()){
+            return this.pingableUsers;
+        }
+
+        return refreshPingableUsers();
+    }
+
+    private List<User> refreshPingableUsers(){
+        try {
+            List<User> users = new ArrayList<>();
+
+            String json = HttpHelper.get(parent.getHost().getChatHost() + "/rooms/pingable/" + id, cookies).body();
+
+            JsonNode node = JsonUtils.convertToJson(json);
+            //Raw format:
+            // [ ..., [165415,"Zoe",1530731454,1530698908], ...]
+
+            //Split into the child arrays
+            Iterator<JsonNode> it = node.elements();
+            it.forEachRemaining(n ->{
+                Iterator<JsonNode> fields = n.elements();
+                long userId = fields.next().asLong();
+                String username = fields.next().asText();
+                //noinspection unchecked
+                users.add(new User(userId, username));
+            });
+            this.pingableUsers = users;
+            return users;
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public class UserAction{
+        public int eventID, userID;
+        public String username;
+        public int room;
+
+        public UserAction(int eventID, int userID, String username, int room){
+            this.eventID = eventID;
+            this.userID = userID;
+            this.username = username;
+            this.room = room;
+        }
+
+    }
+
+    public class StarMessage{
+        public long messageID;
+        public int room;
+        public int stars;
+
+        public StarMessage(long messageID, int room, int stars){
+            this.messageID = messageID;
+            this.room = room;
+            this.stars = stars;
+        }
+    }
+
 }

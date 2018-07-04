@@ -1,5 +1,8 @@
 package io.github.lunarwatcher.chatbot.bot.chat;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 /**
  * Class to handle the URL's for different events in the Stack Exchange network chats. Returns the URl for different
  * events.
@@ -7,22 +10,20 @@ package io.github.lunarwatcher.chatbot.bot.chat;
 public class SEEvents {
     private SEEvents(){}
 
-    /**
-     * SO and MSE
-     * @param chatURL
-     * @return
-     */
-    public static String getLogin(String chatURL){
-        return (chatURL.replace("chat.", "")) + "/users/login";
+    public static String getLogin(String mainsiteUrl){
+        try {
+            return mainsiteUrl + "/users/login?returnurl=" + URLEncoder.encode(mainsiteUrl + "/", "UTF-8");
+        }catch(UnsupportedEncodingException e){
+            throw new RuntimeException(e);
+        }
     }
 
-    /**
-     * SE
-     * @param chatUrl
-     * @return
-     */
     public static String getSELogin(String url){
-        return (url.replace("chat.", "")) + "/users/signin";
+        try{
+            return url + "/users/signin?returnurl=" + URLEncoder.encode(url + "/", "UTF-8");
+        }catch(UnsupportedEncodingException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public static String getEdit(String chatUrl, long messageID){

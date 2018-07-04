@@ -84,8 +84,7 @@ dependencies {
     implementation 'com.google.guava:guava:23.5-jre'
     implementation 'joda-time:joda-time:2.9.9'
     implementation 'org.jsoup:jsoup:1.11.3'
-    
-    implementation 'com.google.code.gson:gson:2.8.5'
+
 }
 
 compileKotlin {

@@ -21,6 +21,7 @@ import me.philippheuer.twitch4j.events.event.AbstractChannelEvent;
 import me.philippheuer.twitch4j.events.event.irc.ChannelMessageEvent;
 import me.philippheuer.twitch4j.message.commands.CommandPermission;
 import me.philippheuer.twitch4j.model.Channel;
+import me.philippheuer.twitch4j.model.tmi.Chatter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -132,7 +133,7 @@ public class TwitchChat implements Chat {
 
     @Override
     public String getUsername(long uid) {
-        return null;
+        return client.getChannelEndpoint(uid).getChannel().getName();
     }
 
     @Override
@@ -346,11 +347,14 @@ public class TwitchChat implements Chat {
 
     @Override
     public List<User> getUsersInServer(long server) {
-        List<Long> userIds = client.getChannelEndpoint(server)
-                .getFollowers(Optional.of(500L), Optional.of("asc"))
-                .stream().map((follow) -> follow.getUser().getId())
-                .collect(Collectors.toList());
-        return userIds.stream().map((uid)-> new User(uid, getUsername(uid))).collect(Collectors.toList());
+        Chatter chatters = client.getTMIEndpoint().getChatters(client.getChannelEndpoint(server).getChannel().getName());
+        List<String> usernames = new ArrayList<>();
+        usernames.addAll(chatters.getViewers());
+        usernames.addAll(chatters.getAdmins());
+        usernames.addAll(chatters.getModerators());
+
+
+        return usernames.stream().map((username)-> new User(client.getChannelEndpoint(username).getChannel().getId(), username)).collect(Collectors.toList());
     }
 
     @Override

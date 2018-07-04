@@ -13,6 +13,7 @@ import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
@@ -320,6 +321,7 @@ public class DiscordChat implements Chat{
         return credentialManager;
     }
 
+    @NotNull
     @Override
     public List<User> getUsersInServer(long server) {
         List<IUser> discordUsers = client.getChannelByID(server).getUsersHere();

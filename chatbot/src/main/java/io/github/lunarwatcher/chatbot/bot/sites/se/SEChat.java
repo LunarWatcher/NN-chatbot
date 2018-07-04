@@ -37,7 +37,7 @@ import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
 public class SEChat implements Chat {
     private static final boolean truncated = false;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
-    private static Map<String, String> cookies = new HashMap<>();
+    private Map<String, String> cookies = new HashMap<>();
     private static final Pattern OPEN_ID_PATTERN = Pattern.compile("(https://openid.stackexchange.com/user/.*?)\"");
     public static final String FKEY_SELECTOR = "input[name='fkey']";
     private String fkey;
@@ -71,6 +71,8 @@ public class SEChat implements Chat {
 
         initConnections();
         logIn();
+
+        startThread();
 
         commands = CommandCenter.Companion.getINSTANCE();
 
@@ -120,42 +122,6 @@ public class SEChat implements Chat {
             }
         }
         data = null;
-
-        thread = new Thread(() -> {
-            try {
-                while (true) {
-
-                    try {
-                        Message m = newMessages.take();//This blocks the thread when it's empty, preventing continous looping.
-                        if(m == stopMessage)
-                            break;
-                        handleMessage(m);//To keep this thread clean, use a separate method for message handling
-
-                        if (roomsToleave.size() != 0) {
-                            for (int r = roomsToleave.size() - 1; r >= 0; r--) {
-                                if (r == 0 && roomsToleave.size() == 0)
-                                    break;
-                                for (int i = rooms.size() - 1; i >= 0; i--) {
-                                    if (rooms.get(i).getId() == roomsToleave.get(r)) {
-                                        int rtl = roomsToleave.get(r);
-                                        roomsToleave.remove(r);
-                                        rooms.get(i).close();
-                                        rooms.remove(i);
-                                        System.out.println("Left room " + rtl);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        commands.getCrash().crash(e);
-                    }
-                }
-            }catch(Exception e){
-                commands.getCrash().crash(e);
-            }
-        });
-        thread.start();
     }
 
     public void logIn() throws IOException {
@@ -202,6 +168,10 @@ public class SEChat implements Chat {
             throw new IllegalAccessError();
         }
 
+        Connection.Response checkResponse = HttpHelper.get(host.getMainSiteHost() + "/users/current", cookies);
+        if (checkResponse.parse().getElementsByClass("js-inbox-button").first() == null) {
+            throw new IllegalStateException("Unable to login to Stack Exchange.");
+        }
     }
 
     public String getUrl(){
@@ -317,6 +287,43 @@ public class SEChat implements Chat {
         return botProps;
     }
 
+    public void startThread(){
+        thread = new Thread(() -> {
+            try {
+                while (true) {
+
+                    try {
+                        Message m = newMessages.take();//This blocks the thread when it's empty, preventing continous looping.
+                        if(m == stopMessage)
+                            break;
+                        handleMessage(m);//To keep this thread clean, use a separate method for message handling
+
+                        if (roomsToleave.size() != 0) {
+                            for (int r = roomsToleave.size() - 1; r >= 0; r--) {
+                                if (r == 0 && roomsToleave.size() == 0)
+                                    break;
+                                for (int i = rooms.size() - 1; i >= 0; i--) {
+                                    if (rooms.get(i).getId() == roomsToleave.get(r)) {
+                                        int rtl = roomsToleave.get(r);
+                                        roomsToleave.remove(r);
+                                        rooms.get(i).close();
+                                        rooms.remove(i);
+                                        System.out.println("Left room " + rtl);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        commands.getCrash().crash(e);
+                    }
+                }
+            }catch(Exception e){
+                commands.getCrash().crash(e);
+            }
+        });
+        thread.start();
+    }
 
     public void leaveAll(){
         for(SERoom s : rooms){
@@ -333,7 +340,7 @@ public class SEChat implements Chat {
             System.err.println("Duplicate averted");
             return;
         }
-        SERoom room = new SERoom(id, this);
+        SERoom room = new SERoom(id, this, cookies);
         addRoom(room);
     }
 
@@ -394,8 +401,8 @@ public class SEChat implements Chat {
 
     @Override
     public List<User> getUsersInServer(long server) {
-        //TODO
-        return null;
+        return rooms.stream().filter(room -> room.getId() == server).findAny().orElseThrow(IllegalArgumentException::new)
+                .getPingableUsers();
     }
 
     public WebSocketContainer getWebSocket(){
