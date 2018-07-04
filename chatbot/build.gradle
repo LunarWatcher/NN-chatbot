@@ -1,8 +1,8 @@
 group 'io.github.lunarwatcher.chatbot'
-version '1.5.7'
+version '1.6'
 
 buildscript {
-    ext.kotlin_version = '1.2.41'
+    ext.kotlin_version = '1.2.50'
 
     repositories {
         mavenCentral()
@@ -49,7 +49,7 @@ task fatJar(type: Jar) {
         configurations.compile.collect {
             it.isDirectory() ? it : zipTree(it)
         }
-        // https://stackoverflow.com/a/51058320/6296561
+        // From https://stackoverflow.com/a/51058320/6296561 - [Konrad Botor](https://stackoverflow.com/users/9624452/)
         project.configurations.runtimeClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
         }
@@ -67,15 +67,11 @@ kotlin {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.21"
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     // The Discord API
     implementation "com.github.austinv11:Discord4J:2.10.1"
-    // Lombok for lazy coding
-    compileOnly 'org.projectlombok:lombok:1.16.18'
     //JSON
-    //compile 'org.json:json:20171018'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.9.4'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.4'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.4'
@@ -84,14 +80,11 @@ dependencies {
     implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.8'
     //Twitch API
     implementation 'com.github.twitch4j:twitch4j:v0.10.1'
-
     implementation group: 'org.glassfish.tyrus.bundles', name: 'tyrus-standalone-client-jdk', version: '1.13.1'
-
     implementation 'com.google.guava:guava:23.5-jre'
     implementation 'joda-time:joda-time:2.9.9'
     implementation 'org.jodd:jodd-all:4.3.0'
-    implementation 'org.jsoup:jsoup:1.11.3'//To get rid of all the HTML char decoding; HTML parsing is still necessary though
-
+    implementation 'org.jsoup:jsoup:1.11.3'
 }
 
 compileKotlin {
