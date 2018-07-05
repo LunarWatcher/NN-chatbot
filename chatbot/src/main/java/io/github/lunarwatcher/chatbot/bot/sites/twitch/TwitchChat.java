@@ -353,7 +353,6 @@ public class TwitchChat implements Chat {
         usernames.addAll(chatters.getAdmins());
         usernames.addAll(chatters.getModerators());
 
-
         return usernames.stream().map((username)-> new User(client.getChannelEndpoint(username).getChannel().getId(), username)).collect(Collectors.toList());
     }
 
@@ -361,4 +360,15 @@ public class TwitchChat implements Chat {
     public Host getHost() {
         return null;
     }
+
+    @Override
+    public boolean editMessage(long messageId, String newContent){
+        return false;
+    }
+
+    @Override
+    public boolean deleteMessage(long messageId) {
+        return false;
+    }
+
 }

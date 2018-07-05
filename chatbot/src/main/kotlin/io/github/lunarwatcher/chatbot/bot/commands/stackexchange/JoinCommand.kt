@@ -14,12 +14,12 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
         "JoinCommand the bot to a room", "Joins a room after $votes votes"){
     var vts: MutableMap<Int, MutableList<Long>> = mutableMapOf();
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
 
         val chat: SEChat = if(message.chat is SEChat){
             message.chat as SEChat
         }else
-            return ReplyMessage("Invalid instance of Chat. BlameCommand ${Configurations.CREATOR}. Debug info: Found ${message.chat::class.java}", true)
+            return listOf(ReplyMessage("Invalid instance of Chat. BlameCommand ${Configurations.CREATOR}. Debug info: Found ${message.chat::class.java}", true))
 
         var votes = this.votes;
 
@@ -31,7 +31,7 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
             val iRoom: Int = raw.toInt();
 
             if(CentralBlacklistStorage.getInstance(chat.database).isBlacklisted(chat.name, iRoom))
-                return ReplyMessage("Not gonna happen.", true);
+                listOf(ReplyMessage("Not gonna happen.", true));
 
             try {
 
@@ -42,15 +42,15 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
                     throw RoomNotFoundException("No write access in the room")
                 }
             } catch (e: RoomNotFoundException) {
-                return ReplyMessage("An exception occured while checking the validity of the room: " + (e.message
-                        ?: "No message"), true);
+                return listOf(ReplyMessage("An exception occured while checking the validity of the room: " + (e.message
+                        ?: "No message"), true));
             } catch (e: Exception) {
                 chat.commands.crash.crash(e)
-                return ReplyMessage("An exception occured when trying to check the validity of the room", true)
+                listOf(ReplyMessage("An exception occured when trying to check the validity of the room", true))
             }
 
             chat.rooms.filter { it.id == iRoom }
-                    .forEach { return ReplyMessage("I'm already in that room", true) }
+                    .forEach { listOf(ReplyMessage("I'm already in that room", true)) }
 
             var users: MutableList<Long>? = vts[iRoom];
 
@@ -62,7 +62,7 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
 
                 for(uid in users){
                     if(uid == message.user.userID){
-                        return ReplyMessage("Can't vote multiple times for joining :D", true);
+                        listOf(ReplyMessage("Can't vote multiple times for joining :D", true));
                     }
                 }
                 users.add(message.user.userID);
@@ -72,18 +72,18 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
             return if(users!!.size >= votes){
                 val reply= chat.joinRoom(iRoom);
                 vts.remove(iRoom);
-                reply
+                listOf(reply)
             }else{
-                ReplyMessage((votes - users.size).toString() + " more " + (if (votes - users.size == 1) "vote" else "votes") + " required", true);
+                listOf(ReplyMessage((votes - users.size).toString() + " more " + (if (votes - users.size == 1) "vote" else "votes") + " required", true));
             }
 
         }catch (e: IndexOutOfBoundsException){
-            return ReplyMessage("You have to specify a room...", true);
+            return listOf(ReplyMessage("You have to specify a room...", true));
         }catch(e: ClassCastException){
-            return ReplyMessage("That's not a valid room ID", true);
+            return listOf(ReplyMessage("That's not a valid room ID", true));
         }catch(e: Exception){
             chat.commands.crash.crash(e);
-            return ReplyMessage("Something bad happened :/", true);
+            return listOf(ReplyMessage("Something bad happened :/", true));
         }
     }
 }

@@ -16,7 +16,7 @@ import org.joda.time.Period
 
 class StatusCommand(val statusListener: StatusListener) : AbstractCommand("status", listOf("leaderboard"), desc="Shows the leading chatters"){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val siteS = message.chat.name
         val site = message.chat
 
@@ -28,21 +28,21 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
             statusListener.users[siteS] = mutableMapOf()
 
         if (statusListener.users.isEmpty() || statusListener.users[siteS]!![room] == null)
-            return ReplyMessage("No users registered yet. Try again later", true)
+            return listOf(ReplyMessage("No users registered yet. Try again later", true))
         if(statusListener.users[siteS]!![room]!!.isEmpty())
-            return ReplyMessage("No users registered yet. Try again later", true)
+            return listOf(ReplyMessage("No users registered yet. Try again later", true))
 
         if(!statusListener.users[siteS]!!.keys.contains(room))
             statusListener.users[siteS]!![room] = mutableMapOf()
 
         if(message.content.contains("--clear")){
             if(Utils.getRank(message.user.userID, site.config) < 9)
-                return ReplyMessage("You need rank 9 or higher to clear the status", true);
+                return listOf(ReplyMessage("You need rank 9 or higher to clear the status", true));
             if(message.content.contains("--confirm")){
                 statusListener.users.clear()
-                return ReplyMessage("Erased like your browser history.", true)
+                return listOf(ReplyMessage("Erased like your browser history.", true))
             }
-            return ReplyMessage("Confirm with --confirm", true)
+            return listOf(ReplyMessage("Confirm with --confirm", true))
         }
 
         val buffer = statusListener.users[siteS]!![room]!!
@@ -78,7 +78,7 @@ class StatusCommand(val statusListener: StatusListener) : AbstractCommand("statu
             reply.fixedInput().append("$who${Strings.repeat(" ", maxLen - who.length + 2)}- $count").nl()
         }
 
-        return ReplyMessage(reply.toString(), false)
+        return listOf(ReplyMessage(reply.toString(), false));
     }
 
 

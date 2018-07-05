@@ -14,7 +14,7 @@ class LearnCommand(val commands: TaughtCommands, val center: CommandCenter) : Ab
                 "* \\ping - pings the user running the command" +
                 "* \\uid - adds the user ID for whoever uses the command", rankRequirement = 1){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         var nsfw = false;
 
         //on Discord there may appear commands that one would consider unwanted on sites like the Stack Exchange network.
@@ -27,13 +27,13 @@ class LearnCommand(val commands: TaughtCommands, val center: CommandCenter) : Ab
 
         println(args)
         if(args.size < 2)
-            return ReplyMessage("You have to supply at least two arguments!", true);
+            listOf(ReplyMessage("You have to supply at least two arguments!", true));
 
-        val split = (args["content"] ?: return ReplyMessage("Supply valid arguments -_-", true))
+        val split = (args["content"] ?: return listOf(ReplyMessage("Supply valid arguments -_-", true)))
                 .split(" ".toRegex(), limit = 2);
 
         if(split.size != 2){
-            return ReplyMessage("Not enough arguments", true);
+            listOf(ReplyMessage("Not enough arguments", true));
         }
 
         var name = "undefined";
@@ -78,24 +78,24 @@ class LearnCommand(val commands: TaughtCommands, val center: CommandCenter) : Ab
         }
 
         if(name == "undefined" || output == "undefined")
-            return ReplyMessage("Something went wrong. ICommand not added", true)
+            listOf(ReplyMessage("Something went wrong. ICommand not added", true))
 
         if(commands.doesCommandExist(name) || center.isBuiltIn(name, message.chat)){
-            return ReplyMessage("That command already exists", true);
+            listOf(ReplyMessage("That command already exists", true));
         }
 
         if(output.contains(percentageArgs) && output.contains(bracketArgs) && !a){
-            return ReplyMessage("Warning: ambiguous arguments detected (%s and {[0-9]+} formats were detected). This is not compatible with the system. Append --noArgs after the command output (with a space between) to disable input.", true);
+            listOf(ReplyMessage("Warning: ambiguous arguments detected (%s and {[0-9]+} formats were detected). This is not compatible with the system. Append --noArgs after the command output (with a space between) to disable input.", true));
         }
 
         if(!a){
             if(output.contains(invalidArguments))
-                return ReplyMessage("Your message contains input arguments in the % format that are invalid. Use %s for all input types, use {itemId} for all formatting (where itemId is a number starting at 0), or add --noArgs if you don't want the message to take input.", true);
+                listOf(ReplyMessage("Your message contains input arguments in the % format that are invalid. Use %s for all input types, use {itemId} for all formatting (where itemId is a number starting at 0), or add --noArgs if you don't want the message to take input.", true));
         }
 
         commands.addCommand(LearnedCommand(name, desc, output, reply, creator, nsfw, message.chat.name, a));
         center.refreshBuckets();
-        return ReplyMessage(Utils.getRandomLearnedMessage(), true);
+        return listOf(ReplyMessage(Utils.getRandomLearnedMessage(), true));
     }
 
     companion object {

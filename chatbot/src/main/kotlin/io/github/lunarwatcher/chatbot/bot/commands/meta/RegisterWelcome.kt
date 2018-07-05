@@ -11,24 +11,24 @@ class RegisterWelcome : AbstractCommand("registerWelcome", listOf("set-welcome-m
         help="Call the command with the string literal \"null\" (without quotation) to remove the current message. " +
                 "Call it with \"get\" (without quotation) to get the current message (if it exists)",
         rankRequirement = 5){
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         if(!canUserRun(message.user, message.chat)){
-            return lowRank()
+            return getLowRankMessage()
         }
         val room = if(message.chat is DiscordChat)
             message.user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (message.chat as DiscordChat).getChannel(message.roomID)?.guild?.longID ?: return null
         else message.roomID
 
-        val content = splitCommand(message.content)["content"] ?: return ReplyMessage("What should I set the welcome message to?", true)
+        val content = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("What should I set the welcome message to?", true))
         if(content == "null"){//The string literal "null" is for clearing the message
             WelcomeMessages.INSTANCE!!.removeMessage(message.chat.name, room)
-            return ReplyMessage("Successfully removed welcome message for channel $room", true)
+            return listOf(ReplyMessage("Successfully removed welcome message for channel $room", true))
         }else if(content == "get"){
-            return ReplyMessage("The current welcome message for this room is: ${WelcomeMessages.INSTANCE!!.getMessage(message.chat.name, room)
-                    ?: "Undefined"}", true)
+            return listOf(ReplyMessage("The current welcome message for this room is: ${WelcomeMessages.INSTANCE!!.getMessage(message.chat.name, room)
+                    ?: "Undefined"}", true))
         }
         WelcomeMessages.INSTANCE!!.addMessage(message.chat.name, room, content)
-        return ReplyMessage("Successfully registered welcome message.", true)
+        return listOf(ReplyMessage("Successfully registered welcome message.", true))
     }
 
 }

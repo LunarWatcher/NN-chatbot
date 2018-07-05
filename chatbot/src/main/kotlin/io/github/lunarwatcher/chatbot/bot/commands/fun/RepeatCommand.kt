@@ -6,13 +6,13 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.utils.Utils
 
 class RepeatCommand : AbstractCommand("echo", listOf("repeat", "say")){
-    override fun handleCommand(message: Message): ReplyMessage?{
-        val content = splitCommand(message.content)["content"] ?: return ReplyMessage("What?", true)
-        if(content.trim().isEmpty()) return ReplyMessage("What?", true)
+    override fun handleCommand(message: Message): List<ReplyMessage>?{
+        val content = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("What?", true))
+        if(content.trim().isEmpty()) return listOf(ReplyMessage("What?", true))
 
         if(message.chat.name == "twitch" && content.startsWith("/") && Utils.getRank(message.user.userID, message.chat.config) < 9)
-            return ReplyMessage("No", true)
+            return listOf(ReplyMessage("No", true))
 
-        return ReplyMessage(content, false)
+        return listOf(ReplyMessage(content, false));
     }
 }

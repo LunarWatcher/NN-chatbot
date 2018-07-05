@@ -19,7 +19,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                 "Call `${CommandCenter.TRIGGER}help trucated` for a small version of the help command, or `${CommandCenter.TRIGGER}help full` for the full version. " +
                 "Note that not passing full or trucated leads to it defaulting to the site specific settings", rankRequirement = 1){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
 
         val center = message.chat.commands
 
@@ -107,7 +107,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                                 .append(listener.value).nl();
                     }
                 }
-                return ReplyMessage(reply.toString(), false);
+                return listOf(ReplyMessage(reply.toString(), false));
             }else{
                 val builder = ReplyBuilder()
                 builder.append("**Commands**: ")
@@ -115,10 +115,10 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                         .append(". **User taught commands:** ")
                         .append(learnedCommands.toSortedSet().joinToString(", "))
                         .append(". **Listeners**: " + listeners.keys.joinToString(", "))
-                return ReplyMessage(builder.toString(), false)
+                return listOf(ReplyMessage(builder.toString(), false));
             }
         }else{
-            val cmd = (`in`["content"] ?: return ReplyMessage("in[content] == null. /cc @Zoe", false)).toLowerCase();
+            val cmd = (`in`["content"] ?: return listOf(ReplyMessage("in[content] == null. /cc @Zoe", false))).toLowerCase();
             val desc: String
             val help: String
             val name: String
@@ -153,13 +153,13 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                     nsfw = CommandCenter.tc.get(cmd)!!.nsfw
                 }
 
-                else -> return ReplyMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true)
+                else -> return listOf(ReplyMessage("The command you tried finding help for (`$cmd`) does not exist. Make sure you've got the name right", true))
             }
 
             val reply = ReplyBuilder(message.chat.name == "discord");
 
             if(nsfw && !message.nsfwSite){
-                return ReplyMessage("The command is not available here", true)
+                return listOf(ReplyMessage("The command is not available here", true))
             }
 
             reply.fixedInput().append(d).append("`${CommandCenter.TRIGGER}")
@@ -175,7 +175,7 @@ class HelpCommand : AbstractCommand("help", listOf("halp", "hilfen", "help"),
                             "(your rank: ${Utils.getRank(message.user.userID, message.chat.config)})")
 
 
-            return ReplyMessage(reply.toString(), true);
+            return listOf(ReplyMessage(reply.toString(), true));
         }
     }
 

@@ -57,7 +57,6 @@
     <orderEntry type="library" name="Gradle: com.google.guava:guava:23.5-jre" level="project" />
     <orderEntry type="library" name="Gradle: joda-time:joda-time:2.9.9" level="project" />
     <orderEntry type="library" name="Gradle: org.jsoup:jsoup:1.11.3" level="project" />
-    <orderEntry type="library" name="Gradle: com.google.code.gson:gson:2.8.5" level="project" />
     <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.2.50" level="project" />
     <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib:1.2.50" level="project" />
     <orderEntry type="library" name="Gradle: ch.qos.logback:logback-classic:1.2.3" level="project" />

@@ -99,7 +99,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
             val g1 = matcher.group(1)
             if(groups == 2){
                 val g2 = matcher.group(2);
-                retval[g1.substring(1, g1.length).prep()] = g2?.substring(1, g2.length)?.trim() ?: "true"
+                retval[g1.substring(1, g1.length).prep()] = g2?.substring(1, g2.length - 1)?.trim() ?: "true"
             }else if(groups == 1){
                 retval[g1.substring(1, g1.length).prep()] = "true"
             }
@@ -127,9 +127,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         return input;
     }
 
-    fun lowRank() : ReplyMessage
-            = ReplyMessage("You need rank $rankRequirement or higher ot use this command.", true)
+    fun getLowRankMessage() = listOf(ReplyMessage("You need rank $rankRequirement or higher ot use this command.", true));
 
-    fun lowRank(reason: String) : ReplyMessage
-            = ReplyMessage("You need rank $rankRequirement or higher ot use this command. Supplied reason: $reason", true)
+    fun getLowRankMessage(reason: String) = listOf(ReplyMessage("You need rank $rankRequirement or higher ot use this command. Supplied reason: $reason", true));
 }

@@ -6,15 +6,15 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 
 class GiveCommand : AbstractCommand("give", listOf(), "Gives someone something"){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val inp = splitCommand(message.content);
-        val split = inp["content"]?.split(" ", limit=2) ?: return ReplyMessage("You have to tell me what to give and to who", false);
+        val split = inp["content"]?.split(" ", limit=2) ?: return listOf(ReplyMessage("You have to tell me what to give and to who", false));
         if(split.size != 2)
-            return ReplyMessage("You have to tell me what to give and to who", true);
+            return listOf(ReplyMessage("You have to tell me what to give and to who", true));
 
         val who = split[0].trim()
         val what = split[1].trim()
-        return ReplyMessage("*gives $what to $who*", false);
+        return listOf(ReplyMessage("*gives $what to $who*", false));
 
     }
 }

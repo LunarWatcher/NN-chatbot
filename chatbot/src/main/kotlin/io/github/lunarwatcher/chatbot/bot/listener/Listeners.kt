@@ -15,7 +15,7 @@ import io.github.lunarwatcher.chatbot.safeGet
 class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock", "The name says it all"){
     var context: Context? = null
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         var input = message.content
         if(!mention.isMentioned(input, message.chat) && context == null){
             if (input.contains(KNOCK_REGEX)) {
@@ -39,7 +39,7 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
         when(context?.index){
             0 ->{
                 context?.next()
-                return ReplyMessage("Who's there?", true);
+                return listOf(ReplyMessage("Who's there?", true));
             }
             1->{
                 if(mention.isMentionedStart(input, message.chat)){
@@ -47,11 +47,11 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
                 }
                 val who = "$input who?"
                 context?.next()
-                return ReplyMessage(who, true);
+                return listOf(ReplyMessage(who, true));
             }
             2->{
                 context = null;
-                return ReplyMessage("Hahaha!", true)
+                return listOf(ReplyMessage("Hahaha!", true))
             }
             else->return null;
         }
@@ -71,12 +71,12 @@ class Context(var index: Int, var user: Long) {
 class TestListener : AbstractListener("Test", description="Is this thing on??"){
     val poked = mutableListOf<Long>();
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         if (message.content.toLowerCase().contains(TEST_REGEX)){
             if (poked.contains(message.user.userID))
                 return null;
             poked.add(message.user.userID);
-            return ReplyMessage("You passed! Congratulations!", false)
+            listOf(ReplyMessage("You passed! Congratulations!", false))
         }
         return null
     }
@@ -89,15 +89,15 @@ class TestListener : AbstractListener("Test", description="Is this thing on??"){
 class WaveListener : AbstractListener("wave", "Waves back when a wave is detected"){
     val pause = 30000;
     var lastWave: Long = 0;
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         if(System.currentTimeMillis() - lastWave >= pause) {
 
             if (message.content == "o/") {
                 lastWave = System.currentTimeMillis();
-                return ReplyMessage("\\o", false);
+                listOf(ReplyMessage("\\o", false));
             }else if (message.content == "\\o") {
                 lastWave = System.currentTimeMillis();
-                return ReplyMessage("o/", false)
+                listOf(ReplyMessage("o/", false))
             }
 
         }
@@ -135,7 +135,7 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
         }
     }
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         val site = message.chat.name
         if(!users.keys.contains(site))
             users[site] = mutableMapOf()
@@ -166,13 +166,13 @@ class StatusListener(val database: Database) : AbstractListener("status", "track
 class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
     private var lastMessages = mutableMapOf<Long, Long>()
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         if(lastMessages[message.roomID] == null || System.currentTimeMillis() - lastMessages[message.roomID]!! > (WAIT * 1000)) {
 
             if(message.content.replace("[.,!\\-~]*".toRegex(), "").toLowerCase()
                             .matches(regex)) {
                 lastMessages[message.roomID] = System.currentTimeMillis()
-                return ReplyMessage(message.content, false)
+                return listOf(ReplyMessage(message.content, false));
             }
         }
         return null
@@ -197,9 +197,9 @@ class MorningListener : AbstractListener("Morning", "GOOOOOOD MORNING!"){
 class BasicListener(val output: String, val pattern: Regex, name: String, description: String, val reply: Boolean = false) : AbstractListener(name, description){
     constructor(output: String, pattern: String, name: String, description: String) : this(output, pattern.toRegex(), name, description)
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         if(message.content.matches(pattern)){
-            return ReplyMessage(output, reply)
+            return listOf(ReplyMessage(output, reply));
         }
         return null
     }
@@ -217,7 +217,7 @@ class WelcomeListener(center: CommandCenter) : AbstractListener("Welcome", "Send
         }?.toMap()?.toMutableMap() ?: mutableMapOf()
     }
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
 
         val room = if(message.chat is DiscordChat)
             message.user.args.firstOrNull { it.first == "guildID" }?.second?.toLong() ?: (message.chat as DiscordChat).getChannel(message.roomID)?.guild?.longID ?: return null
@@ -232,7 +232,7 @@ class WelcomeListener(center: CommandCenter) : AbstractListener("Welcome", "Send
 
             mappedUsers[message.chat.name]!![room]!!.add(message.user.userID)
             if (WelcomeMessages.INSTANCE!!.hasMessage(message.chat.name, room))
-                return ReplyMessage(WelcomeMessages.INSTANCE!!.messages[message.chat.name]!![room]!!, true)
+                return listOf(ReplyMessage(WelcomeMessages.INSTANCE!!.messages[message.chat.name]!![room]!!, true));
 
         }
         return null

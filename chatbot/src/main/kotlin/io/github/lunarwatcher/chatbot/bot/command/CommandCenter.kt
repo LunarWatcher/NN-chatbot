@@ -104,6 +104,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(DefineCommand())
         addCommand(RegisterWelcome())
         addCommand(TestCommand());
+        addCommand(MultiMessageTest())
+
         statusListener = StatusListener(db)
         welcomeListener = WelcomeListener(this)
 
@@ -132,6 +134,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(AddHome(), CommandGroup.STACKEXCHANGE)
         addCommand(RemoveHome(), CommandGroup.STACKEXCHANGE)
         addCommand(SERooms(), CommandGroup.STACKEXCHANGE)
+
 
         //////////////////////////////////////////////
     }
@@ -172,7 +175,11 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
             val x = c.handleCommand(message)
             if (x != null) {
                 //There are still some commands that could return null here
-                replies.add(x)
+                if(x.isEmpty()){
+                    logger.warn("[MEMORY] Command " + c.name + " returned an empty list. Should return null instead")
+                    return replies;
+                }
+                replies.addAll(x)
                 return replies;
             }
         }
@@ -185,7 +192,11 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
 
                 val x = lc.handleCommand(message)
                 if (x != null) {
-                    replies.add(x)
+                    if(x.isEmpty()){
+                        logger.warn("[MEMORY] Taught command returned an empty list. Should return null instead")
+                        return replies;
+                    }
+                    replies.addAll(x)
                     return replies;
                 }
 
@@ -199,7 +210,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         for (l in listeners) {
             val x = l.handleInput(message)
             if (x != null) {
-                replies.add(x)
+                replies.addAll(x)
             }
         }
         return replies;

@@ -8,7 +8,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import java.net.URLEncoder
 
 class WikiCommand : AbstractCommand("wiki", listOf(), desc="Links to Wikipedia", help="Gets a wikipedia page. Use `--lang \"languagecode\"` to link to a specific site", rankRequirement = 1){
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val split = splitCommand(message.content)
 
         val lang = split["--lang"]?.let{
@@ -17,16 +17,15 @@ class WikiCommand : AbstractCommand("wiki", listOf(), desc="Links to Wikipedia",
             }
             it
         } ?: "en"
-        val content = split["content"]?.replace(" ", "_") ?: return ReplyMessage("https://www.google.com/teapot", true)
+        val content = split["content"]?.replace(" ", "_") ?: return listOf(ReplyMessage("https://www.google.com/teapot", true))
         val article = UrlEscapers.urlPathSegmentEscaper()
                 .escape(content)
-        return ReplyMessage("https://$lang.wikipedia.org/wiki/" + URLEncoder.encode(article, "UTF-8"), false)
+        return listOf(ReplyMessage("https://$lang.wikipedia.org/wiki/" + URLEncoder.encode(article, "UTF-8"), false));
     }
 }
 
 class DefineCommand : AbstractCommand("define", listOf(), desc="Links the definition of a word", help="Do `${CommandCenter.TRIGGER}define word` to get the definition for a word", rankRequirement = 1){
-    override fun handleCommand(message: Message): ReplyMessage?
-            = ReplyMessage("https://en.wiktionary.org/wiki/${URLEncoder.encode(splitCommand(message.content)["content"]
-            ?: "invalid", "UTF-8")}",
-            false)
+    override fun handleCommand(message: Message): List<ReplyMessage>?
+            = listOf(ReplyMessage("https://en.wiktionary.org/wiki/${URLEncoder.encode(splitCommand(message.content)["content"] ?: "invalid", "UTF-8")}",
+            false));
 }

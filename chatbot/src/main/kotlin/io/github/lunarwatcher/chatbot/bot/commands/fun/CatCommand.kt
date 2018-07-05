@@ -8,19 +8,19 @@ import io.github.lunarwatcher.chatbot.utils.HttpHelper
 
 class CatCommand : AbstractCommand("cat", listOf("kitten"), desc = "Sends a random cat picture in chat"){
     private var cookies = mutableMapOf<String, String>()
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         //TODO add support for API keys
         val response = HttpHelper.get(API_URL, cookies)
         if(response.statusCode() > 400)
-            return ReplyMessage("API returned status code ${response.statusCode()}", false)
+            return listOf(ReplyMessage("API returned status code ${response.statusCode()}", false))
         val parsing = response.parse().getElementsByTag("img");
         if(parsing.size == 0)
-            return ReplyMessage("No images found. :c", true)
+            return listOf(ReplyMessage("No images found. :c", true))
 
         val imgElement = parsing[0].absUrl("src")
-                ?: return ReplyMessage("Image not found. Blame ${Configurations.CREATOR}", true)
+                ?: return listOf(ReplyMessage("Image not found. Blame ${Configurations.CREATOR}", true))
 
-        return ReplyMessage(imgElement, false)
+        return listOf(ReplyMessage(imgElement, false));
     }
 
     companion object {

@@ -8,26 +8,26 @@ import io.github.lunarwatcher.chatbot.utils.Utils
 
 class UnlearnCommand(val commands: TaughtCommands, val center: CommandCenter) : AbstractCommand("unlearn", listOf("forget"), "Forgets a taught command", rankRequirement = 1){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
 
         val `in` = splitCommand(message.content)
 
-        val name = `in`["content"] ?: return ReplyMessage("I need to know what to forget", true);
+        val name = `in`["content"] ?: return listOf(ReplyMessage("I need to know what to forget", true));
 
         if(center.isBuiltIn(name, message.chat)){
-            return ReplyMessage("You can't make me forget something that's hard-coded. :>", true);
+            listOf(ReplyMessage("You can't make me forget something that's hard-coded. :>", true));
         }
 
         if(!commands.doesCommandExist(name)){
-            return ReplyMessage("I can't forget what I never knew", true);
+            listOf(ReplyMessage("I can't forget what I never knew", true));
         }
 
         if(commands.get(name)!!.nsfw && !message.nsfwSite)
-            return ReplyMessage("Can't forget a command that's not available to this site", true)
+            listOf(ReplyMessage("Can't forget a command that's not available to this site", true))
 
         commands.removeCommand(name);
         center.refreshBuckets()
 
-        return ReplyMessage(Utils.getRandomForgottenMessage(), true);
+        return listOf(ReplyMessage(Utils.getRandomForgottenMessage(), true))
     }
 }

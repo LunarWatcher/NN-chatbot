@@ -15,27 +15,27 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
         "`-get` as an argument without content displays all the available timezones.\n" +
         "Supplying a timezone (see `${CommandCenter.TRIGGER}time -get` for the available ones) shows the current time in that timezone"){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val raw = splitCommand(message.content)
         val content = raw["content"]
         if(content == null && raw.size == 1)
-            return ReplyMessage(formatter.format(System.currentTimeMillis()), true);
+            return listOf(ReplyMessage(formatter.format(System.currentTimeMillis()), true));
 
         if(content != null && (content.trim().toLowerCase().contains("139") || content.trim().toLowerCase().contains("java"))){
-            return ReplyMessage("Morning", true)
+            return listOf(ReplyMessage("Morning", true))
         }else if(raw["--get"] != null)
-            return ReplyMessage("Available timezones: " + DateTimeZone.getAvailableIDs(), false)
+            return listOf(ReplyMessage("Available timezones: " + DateTimeZone.getAvailableIDs(), false))
         else if(content != null && (content.trim().toLowerCase().contains("internet")))
-            return ReplyMessage("Morning UIT (Universal Internet Time)", true);
+            return listOf(ReplyMessage("Morning UIT (Universal Internet Time)", true));
 
         return try{
             val applicable = DateTimeZone.forID(content)
             val formatter = DateTimeFormat.forPattern(DATE_PATTERN)
                     .withLocale(Locale.ENGLISH)
                     .withZone(applicable)
-            ReplyMessage(Instant().toString(formatter), true)
+            return listOf(ReplyMessage(Instant().toString(formatter), true))
         }catch(e: IllegalArgumentException){
-            ReplyMessage(e.message, true)
+            return listOf(ReplyMessage(e.message, true))
         }
     }
 }

@@ -11,13 +11,13 @@ class GetRankCommand : AbstractCommand("getRank", listOf(), "Checks as user's ro
         "Supported roles: `admin`, `normal`, `privileged`(/`priv`) and `banned`. Unknown roles defaults to a normal check." +
                 " Example usage: `" + CommandCenter.TRIGGER + "check admin 6296561`"){
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val site = message.chat
 
-        val content = splitCommand(message.content)["content"] ?: return ReplyMessage("You have to tell me who to check the rank of, and to what", true)
+        val content = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("You have to tell me who to check the rank of, and to what", true))
         val split = content.split(" ")
         if(split.size != 1)
-            return ReplyMessage("Requires 1 argument. found ${split.size}. (Pro tip: usernames are written without spaces)", true);
+            return listOf(ReplyMessage("Requires 1 argument. found ${split.size}. (Pro tip: usernames are written without spaces)", true));
         try {
             val username = split[0]
             var uid = username.toLongOrNull()
@@ -25,9 +25,9 @@ class GetRankCommand : AbstractCommand("getRank", listOf(), "Checks as user's ro
             if (uid == null) {
                 val r = site.getUidForUsernameInRoom(username, message.roomID);
                 if (r.isEmpty())
-                    return ReplyMessage("No users with the username `$username` found", true)
+                    return listOf(ReplyMessage("No users with the username `$username` found", true))
                 else if(r.size > 1){
-                    return ReplyMessage("More than one user with the username `$username` found. Please use the UID. (found: $r)", true);
+                    return listOf(ReplyMessage("More than one user with the username `$username` found. Please use the UID. (found: $r)", true));
                 }
                 uid = r[0]!!
             }
@@ -35,11 +35,11 @@ class GetRankCommand : AbstractCommand("getRank", listOf(), "Checks as user's ro
             val rank: Int = Utils.getRank(uid, site.config)
             val final = if(username.toLongOrNull() == null) username else uid.toString()
             if (rank == 0)
-                return ReplyMessage((if (final.toLongOrNull() == null) final else "The user $final").toString() + " is ${Constants.Ranks.getRank(rank).toLowerCase()}", true)
+                return listOf(ReplyMessage((if (final.toLongOrNull() == null) final else "The user $final").toString() + " is ${Constants.Ranks.getRank(rank).toLowerCase()}", true))
 
-            return ReplyMessage((if (final.toLongOrNull() == null) final else "The user $final").toString() + "'s rank is ${Constants.Ranks.getRank(rank).toLowerCase()}", true)
+            return listOf(ReplyMessage((if (final.toLongOrNull() == null) final else "The user $final").toString() + "'s rank is ${Constants.Ranks.getRank(rank).toLowerCase()}", true))
         }catch(e: IndexOutOfBoundsException){
-            return ReplyMessage("Not enough arguments!", true)
+            return listOf(ReplyMessage("Not enough arguments!", true))
         }
     }
 

@@ -21,7 +21,7 @@ interface ICommand{
     /**
      * Handle a given command
      */
-    fun handleCommand(message: Message) : ReplyMessage?;
+    fun handleCommand(message: Message) : List<ReplyMessage>?;
     fun canUserRun(user: User, chat: Chat) : Boolean
 
 }

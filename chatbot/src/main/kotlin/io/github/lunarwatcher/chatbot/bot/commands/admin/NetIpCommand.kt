@@ -6,17 +6,17 @@ import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
 import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 
 class NetIpCommand : AbstractCommand("ip", listOf(), rankRequirement = 10){
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         if(!canUserRun(message.user, message.chat))
-            return ReplyMessage("I'm afraid I can't let you do that, User", true)
+            return listOf(ReplyMessage("I'm afraid I can't let you do that, User", true))
         val content = (splitCommand(message.content)["content"]?.trim()) ?: "You have to supply a new IP"
         println(content)
         if(!"""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""".toRegex().containsMatchIn(content) || !containsOutOfRange(content)){
-            return ReplyMessage("Invalid IP", true)
+            return listOf(ReplyMessage("Invalid IP", true))
         }
 
         Configurations.NEURAL_NET_IP = content;
-        return ReplyMessage("NN IP set to $content", true)
+        return listOf(ReplyMessage("NN IP set to $content", true))
     }
 
     private fun containsOutOfRange(input: String) : Boolean{

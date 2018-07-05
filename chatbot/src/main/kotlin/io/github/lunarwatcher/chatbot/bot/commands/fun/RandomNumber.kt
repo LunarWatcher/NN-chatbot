@@ -9,23 +9,23 @@ import java.util.*
 class RandomNumber : AbstractCommand("random", listOf("dice"), "Generates a random number"){
     val random: Random = Random(System.currentTimeMillis());
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         try {
             val split = message.content.split(" ");
-            when {
-                split.size == 1 -> return ReplyMessage(randomNumber(6, 1), true)
-                split.size == 2 -> return ReplyMessage(randomNumber(split[1].toInt(), 1), true)
-                split.size >= 3 -> return ReplyMessage(randomNumber(split[1].toInt(), split[2].toInt()), true)
+            return when {
+                split.size == 1 -> listOf(ReplyMessage(randomNumber(6, 1), true));
+                split.size == 2 -> listOf(ReplyMessage(randomNumber(split[1].toInt(), 1), true));
+                split.size >= 3 -> listOf(ReplyMessage(randomNumber(split[1].toInt(), split[2].toInt()), true));
                 else -> {
-                    return ReplyMessage("Too many arguments", true)
+                    listOf(ReplyMessage("Too many arguments", true))
                 }
             }
         }catch(e: NumberFormatException){
-            return ReplyMessage("Invalid number", true)
+            return listOf(ReplyMessage("Invalid number", true))
         }catch(e: ClassCastException){
-            return ReplyMessage("Invalid number", true)
+            return listOf(ReplyMessage("Invalid number", true))
         }catch(e: Exception){
-            return ReplyMessage("Something went terribly wrong", true);
+            return listOf(ReplyMessage("Something went terribly wrong", true));
         }
     }
 

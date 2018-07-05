@@ -11,11 +11,11 @@ class LeaveCommand(val votes: Int) : AbstractCommand("unsummon", listOf("leave",
         "Makes the bot leave a specified room", "Leaves a room after $votes votes"){
     var vts: MutableMap<Int, MutableList<Long>> = mutableMapOf();
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val chat: SEChat = if(message.chat is SEChat){
             message.chat as SEChat
         }else
-            return ReplyMessage("Invalid instance of Chat. BlameCommand ${Configurations.CREATOR}. Debug info: Found ${message.chat::class.java}", true)
+            return listOf(ReplyMessage("Invalid instance of Chat. BlameCommand ${Configurations.CREATOR}. Debug info: Found ${message.chat::class.java}", true))
         if(!matchesCommand(message.content)){
             return null;
         }
@@ -32,11 +32,11 @@ class LeaveCommand(val votes: Int) : AbstractCommand("unsummon", listOf("leave",
                 raw[1].toInt()
 
             if(chat.getRoom(iRoom) == null){
-                return ReplyMessage("I'm not in that room...", true);
+                return listOf(ReplyMessage("I'm not in that room...", true));
             }
 
             if(Utils.isHome(iRoom, chat.config)){
-                return ReplyMessage(Utils.getRandomHRMessage(), true);
+                return listOf(ReplyMessage(Utils.getRandomHRMessage(), true));
             }
 
             var users: MutableList<Long>? = vts[iRoom];
@@ -49,7 +49,7 @@ class LeaveCommand(val votes: Int) : AbstractCommand("unsummon", listOf("leave",
 
                 for(uid in users){
                     if(uid == message.user.userID){
-                        return ReplyMessage("Can't vote multiple times for leaving :D", true);
+                        return listOf(ReplyMessage("Can't vote multiple times for leaving :D", true));
                     }
                 }
                 users.add(message.user.userID);
@@ -61,21 +61,21 @@ class LeaveCommand(val votes: Int) : AbstractCommand("unsummon", listOf("leave",
 
                 vts.remove(iRoom);
                 if(!succeeded){
-                    ReplyMessage("Something happened when trying to leave", true);
+                    listOf(ReplyMessage("Something happened when trying to leave", true));
                 }else{
-                    ReplyMessage(Utils.getRandomLeaveMessage(), true)
+                    listOf(ReplyMessage(Utils.getRandomLeaveMessage(), true))
                 }
 
             }else{
-                ReplyMessage((votes - users.size).toString() + " more " + (if (votes - users.size == 1) "vote" else "votes") + " required", true);
+                listOf(ReplyMessage((votes - users.size).toString() + " more " + (if (votes - users.size == 1) "vote" else "votes") + " required", true));
             }
 
         }catch (e: IndexOutOfBoundsException){
-            return ReplyMessage("You have to specify a room...", true);
+            return listOf(ReplyMessage("You have to specify a room...", true));
         }catch(e: ClassCastException){
-            return ReplyMessage("That's not a valid room ID", true);
+            return listOf(ReplyMessage("That's not a valid room ID", true));
         }catch(e: Exception){
-            return ReplyMessage("Something bad happened :/", true);
+            return listOf(ReplyMessage("Something bad happened :/", true));
         }
     }
 }

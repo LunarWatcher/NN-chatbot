@@ -10,11 +10,11 @@ import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 
 @Suppress("UNCHECKED_CAST")
 class SERooms : AbstractCommand("inRooms", listOf()){
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val site : SEChat = if(message.chat is SEChat){
             message.chat as SEChat
         }else
-            return ReplyMessage("Invalid site. BlameCommand ${Configurations.CREATOR}", true)
+            return listOf(ReplyMessage("Invalid site. BlameCommand ${Configurations.CREATOR}", true))
         val sechats: List<SEChat> = CommandCenter.bot.chats.filter { it is SEChat } as List<SEChat>
 
         val (ids, sites) =
@@ -42,10 +42,10 @@ class SERooms : AbstractCommand("inRooms", listOf()){
         res.append("[")
         mse.forEachIndexed{ k,v-> res.append("$v" + if(k == mse.size - 2) ", and " else if (k < mse.size - 2) ", " else "] on MSE") }
 
-        return ReplyMessage(
+        return listOf(ReplyMessage(
                 ReplyBuilder(false)
                         .append("""I am currently in these rooms: $res""")
                         .build(),
-                true)
+                true));
     }
 }

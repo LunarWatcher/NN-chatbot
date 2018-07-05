@@ -333,4 +333,14 @@ public class DiscordChat implements Chat{
         return host;
     }
 
+    @Override
+    public boolean editMessage(long messageId, String newContent) {
+        return false;
+    }
+
+    @Override
+    public boolean deleteMessage(long messageId) {
+        return false;
+    }
+
 }

@@ -7,14 +7,14 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 class FollowThanks : AbstractCommand("follow-thanks", listOf("followThx", "followThanks"),
         help="Takes an argument; whether or not to enable. Only settable by stream broadcaster or rank 8 users",
         rankRequirement = 8){
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         if(!canUserRun(message.user, message.chat)){
             val cache = message.user.args.firstOrNull{it.first == "permissions"}
 
             if(cache != null){
 
             }else{
-                return ReplyMessage("I'm afraid I can't let you do that, User.", true)
+                listOf(ReplyMessage("I'm afraid I can't let you do that, User.", true))
             }
         }
         TODO("Not finished")

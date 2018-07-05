@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory
 class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep", "die"), "Shuts down the bot. Rank 10 only", rankRequirement = 10){
     val logger = LoggerFactory.getLogger(this::class.java)
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         val site = message.chat
 
         if(Utils.getRank(message.user.userID, site.config) < 10)
-            return ReplyMessage("I'm afraid I can't let you do that, User.", true)
+            return listOf(ReplyMessage("I'm afraid I can't let you do that, User.", true))
         val content = splitCommand(message.content);
         val location: String? = content["--location"]
         val timehash: String? = content["--timehash"]
@@ -25,7 +25,7 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
         val confirmed = message.content.contains("--confirm") && content["--confirm"] != null
 
         if(!confirmed){
-            return ReplyMessage("You sure 'bout that? Run the command with --confirm to shut me down", true)
+            return listOf(ReplyMessage("You sure 'bout that? Run the command with --confirm to shut me down", true))
         }
         if(location != null && timehash != null){
             if(location.contains(Configurations.INSTANCE_LOCATION) && timehash.contains(BotCore.LOCATION)){
@@ -50,6 +50,6 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
         }else{
             System.exit(0);
         }
-        return CommandCenter.NO_MESSAGE;
+        return listOf(CommandCenter.NO_MESSAGE)
     }
 }

@@ -27,8 +27,11 @@ import org.jsoup.nodes.Document;
 import javax.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -170,6 +173,7 @@ public class SEChat implements Chat {
 
         Connection.Response checkResponse = HttpHelper.get(host.getMainSiteHost() + "/users/current", cookies);
         if (checkResponse.parse().getElementsByClass("js-inbox-button").first() == null) {
+            System.out.println(response.body());
             throw new IllegalStateException("Unable to login to Stack Exchange.");
         }
     }
@@ -371,6 +375,11 @@ public class SEChat implements Chat {
 
     public void stop(){
         newMessages.add(stopMessage);
+        try {
+            thread.join(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -476,4 +485,30 @@ public class SEChat implements Chat {
         return cookies;
     }
 
+    @Override
+    public boolean editMessage(long messageId, String newContent){
+        if(rooms.size() == 0)
+            return false;
+        rooms.get(0).edit(messageId, newContent);
+        return true;
+    }
+    @Override
+    public boolean deleteMessage(long messageId){
+        if(rooms.size() == 0)
+            return false;
+        rooms.get(0).delete(messageId);
+        return true;
+    }
+
+    public CompletionStage<Boolean> editMessageCallback(long messageId, String newContent){
+        if(rooms.size() == 0)
+            return  CompletableFuture.supplyAsync(() -> false);
+        return rooms.get(0).edit(messageId, newContent);
+    }
+
+    public CompletionStage<Boolean> deleteMessageCallback(long messageId){
+        if(rooms.size() == 0)
+            return  CompletableFuture.supplyAsync(() -> false);
+        return rooms.get(0).delete(messageId);
+    }
 }

@@ -9,9 +9,9 @@ import java.util.*
 class WakeCommand : AbstractCommand("wake", listOf(), desc="HEY! Wake up!"){
     val random = Random()
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
 
-        val who = splitCommand(message.content)["content"] ?: return ReplyMessage("You have to tell me who to wake up!", true)
-        return ReplyMessage(Constants.wakeMessages[random.nextInt(Constants.wakeMessages.size)].format(who), true)
+        val who = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("You have to tell me who to wake up!", true))
+        return listOf(ReplyMessage(Constants.wakeMessages[random.nextInt(Constants.wakeMessages.size)].format(who), true));
     }
 }

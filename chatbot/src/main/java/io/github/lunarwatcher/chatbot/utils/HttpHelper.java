@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Originally, this class used Apache Http.
  */
 public class HttpHelper {
-    public static final int TIMEOUT = 10000;
+    public static final int TIMEOUT = 15000;
     public static final String USERAGENT = "Mozilla";
     private static final Pattern response409Regex = Pattern.compile("\\d+");
 

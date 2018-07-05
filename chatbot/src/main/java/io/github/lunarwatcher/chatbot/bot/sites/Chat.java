@@ -40,5 +40,7 @@ public interface Chat {
     @NotNull
     List<User> getUsersInServer(long server);
     Host getHost();
+    boolean editMessage(long messageId, String newContent);
+    boolean deleteMessage(long messageId);
 
 }

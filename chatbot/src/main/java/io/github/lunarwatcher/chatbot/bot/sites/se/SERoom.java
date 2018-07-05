@@ -22,14 +22,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class SERoom implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
-    private static final Pattern pattern409 = Pattern.compile("again in (\\d+) seconds");
+    private static final Pattern pattern409 = Pattern.compile("again in (\\d+) seconds?");
 
     public static final int MAX_RETRIES = 5;
     private static final int MAX_TIMEOUT = 30000;
@@ -150,15 +149,17 @@ public class SERoom implements Closeable {
             JsonNode node = JsonUtils.convertToJson(input);
 
             Iterator<Map.Entry<String, JsonNode>> values = node.fields();
-            List<Map.Entry<String, JsonNode>> listedValues = new ArrayList<>();
-            values.forEachRemaining(listedValues::add);
-
-            listedValues.stream().filter(n -> n.getKey().equals("r" + id))
-                    .filter(Objects::nonNull)
-                    .filter(n -> n.getKey().equals("e"))
-                    .filter(Objects::nonNull).forEach(event -> {
-                System.out.println(event.getKey() + " -> " + event.getValue());
+            values.forEachRemaining(event->{
+                if(event.getKey().equals("r" + id)){
+                    JsonNode eventNode = event.getValue().get("e");
+                    if(eventNode != null) {
+                        System.err.println("Event ------");
+                        System.err.println(eventNode.toString());
+                        System.err.println("/Event ------");
+                    }
+                }
             });
+
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode actualObj = mapper.readTree(input).get("r" + id);
@@ -374,23 +375,21 @@ public class SERoom implements Closeable {
         latestMessages.add(messageId);
     }
 
-    public long postForUid(int retries, @NotNull String message){
-
+    public JsonNode post(@NotNull String url, int retries, String... data){
         Connection.Response response;
-
         try {
-            response = HttpHelper.post(parent.getHost().getChatHost() + "/chats/" + id + "/messages/new", true, cookies,
-                    "text", message,
-                    "fkey", fkey
+            response = HttpHelper.post(url, true, cookies,
+                    data
             );
-            System.err.println(response.body());
+            System.out.println(response.body());
         }catch(IOException e){
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+
         if(response.statusCode() == 200){
             try{
-                return JsonUtils.convertToJson(response.body()).get("id").asLong();
+                return JsonUtils.convertToJson(response.body());
             }catch(IOException e){
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -405,11 +404,45 @@ public class SERoom implements Closeable {
             }catch(InterruptedException ignored){
 
             }
-            return postForUid(retries - 1, message);
+            return post(url, retries - 1, data);
         }else{
             throw new RuntimeException("Failed to send message");
         }
 
+    }
+
+    public long postForUid(int retries, @NotNull String message){
+        return post(parent.getHost().getChatHost() + "/chats/" + id + "/messages/new", retries, "text", message, "fkey", fkey).get("id").longValue();
+    }
+
+    public boolean postForSuccess(String url, int retries, String... data){
+        return post(url, retries, data).asText().equals("ok");
+    }
+
+    public CompletionStage<Boolean> delete(long messageId){
+        return  CompletableFuture.supplyAsync(() -> postForSuccess(parent.getHost().getChatHost() + "/messages/" + messageId + "/delete", MAX_RETRIES, "fkey", fkey), taskExecutor)
+                .whenComplete((res, throwable) -> {
+            if (res != null){
+                System.out.println(res ? "Deleted message" : "Failed to delete message");
+            }
+            if (throwable != null){
+                parent.commands.getCrash().crash(throwable);
+                throwable.printStackTrace();
+            }
+        });
+    }
+
+    public CompletionStage<Boolean> edit(long messageId, String newContent){
+        return  CompletableFuture.supplyAsync(() -> postForSuccess(parent.getHost().getChatHost() + "/messages/" + messageId, MAX_RETRIES, "fkey", fkey, "text", newContent), taskExecutor)
+                .whenComplete((res, throwable) -> {
+                    if (res != null){
+                        System.out.println(res ? "Edited message" : "Failed to edit message");
+                    }
+                    if (throwable != null){
+                        parent.commands.getCrash().crash(throwable);
+                        throwable.printStackTrace();
+                    }
+                });
     }
 
     public List<User> getPingableUsers() {

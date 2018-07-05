@@ -30,9 +30,9 @@ class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for scr
 
     }
 
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
         if (!canUserRun(message.user, message.chat)){
-            return ReplyMessage("You need rank 5 or higher to view crash logs.", true);
+            return listOf(ReplyMessage("You need rank 5 or higher to view crash logs.", true));
         }
         if (logs.size != 0){
             val reply = ReplyBuilder()
@@ -43,10 +43,10 @@ class CrashLogs : AbstractCommand("logs", listOf(), "Prints logs. Useful for scr
                 }
             }
             logs.clear()
-            return ReplyMessage(reply.toString(), false)
+            return listOf(ReplyMessage(reply.toString(), false));
 
         }
-        return ReplyMessage("No logs. All good! :D", true)
+        return listOf(ReplyMessage("No logs. All good! :D", true))
     }
 }
 

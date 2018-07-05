@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils
 
 class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much command."){
     val doges = mutableListOf("such", "very", "much", "so", "many")
-    override fun handleCommand(message: Message): ReplyMessage? {
+    override fun handleCommand(message: Message): List<ReplyMessage>? {
 
         val raw = message.content.split(" ", limit=2)
         val converted = if (raw.size < 2) defaultMsg else raw[1]
@@ -18,7 +18,7 @@ class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much comm
         val msg = ReplyBuilder()
         val what = converted.split(",").map{ it.trim() }.filter{ it.isNotEmpty() && it.isNotBlank() }
         if (what.isEmpty()){
-            return ReplyMessage("Much message.user. Few arguments. Such attempt", true)
+            return listOf(ReplyMessage("Much message.user. Few arguments. Such attempt", true))
         }
 
 
@@ -29,7 +29,7 @@ class DogeCommand : AbstractCommand("doge", listOf(), desc="Such doge. Much comm
         for (i in 0 until maxIndex){
             msg.fixedInput().append(StringUtils.repeat(" ", Utils.random.nextInt(15))).append(doges.randomItem()).append(" " + what[i]).nl()
         }
-        return ReplyMessage(msg.toString(), false)
+        return listOf(ReplyMessage(msg.toString(), false));
     }
 
     companion object {

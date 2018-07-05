@@ -10,6 +10,6 @@ interface Listener{
     val description: String;
     var commandGroup: CommandGroup
 
-    fun handleInput(message: Message) : ReplyMessage?;
+    fun handleInput(message: Message) : List<ReplyMessage>?;
 }
 

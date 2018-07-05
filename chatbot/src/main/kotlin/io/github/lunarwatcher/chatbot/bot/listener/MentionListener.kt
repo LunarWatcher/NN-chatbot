@@ -24,7 +24,7 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
 
     }
 
-    override fun handleInput(message: Message): ReplyMessage? {
+    override fun handleInput(message: Message): List<ReplyMessage>? {
         val site = message.chat
 
         if(!isMentioned(message.content, site)){
@@ -32,7 +32,7 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
         }
         if(ignoreNext){
             ignoreNext = false;
-            return null;
+            return null
         }
 
         if(isMentionedFull(message.content, site)){
@@ -47,7 +47,7 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
                                 ?: "127.0.0.1"}:" + Constants.FLASK_PORT + "/predict", cookies, "message", split)
                         val reply: String = response.body().substring(1, response.body().length - 2)
                         netStat.alive = true;
-                        return ReplyMessage(reply, true)
+                        return listOf(ReplyMessage(reply, true));
                     } catch (e: IOException) {
                         netStat.alive = false
                     } catch (e: SocketException) {
@@ -57,11 +57,11 @@ class MentionListener(val netStat: NetStat) : AbstractListener("ping", "Reacts t
 
                 val res = site.commands.handleCommands(message.prefixTriggerAndRemovePing())
                 if (res.isNotEmpty())
-                    return res[0]
+                    return listOf(res[0])
             }
         }
 
-        return ReplyMessage("How can I `${if (message.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true)
+        return listOf(ReplyMessage("How can I `${if (message.chat is TwitchChat) "!!" else CommandCenter.TRIGGER}help`?", true))
 
     }
 
