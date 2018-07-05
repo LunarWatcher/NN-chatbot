@@ -1,8 +1,9 @@
 package io.github.lunarwatcher.chatbot.socket
 
 import com.fasterxml.jackson.databind.JsonNode
+import io.github.lunarwatcher.chatbot.bot.sites.se.SERoom
 
-
+// Event ID reference //
 //1: message
 //2: edited
 //3: join
@@ -10,31 +11,16 @@ import com.fasterxml.jackson.databind.JsonNode
 //5: room name/description changed
 //6: star
 //7: Debug message (?)
-//8: ping - if called, ensure that the content does not contain a ping to the bot name if 1 is called
-//        - WARNING: Using event 8 will trigger in every single active room.
-//9:
+//8: ping
 //10: deleted
-//11:
-//12:
-//13:
-//14:
 //15: Access level changed (kicks, RO added, read/write status changed, etc)
-//16:
 //17: Invite
 //18: reply
 //19: message moved out
 //20: message moved in
-
 //34: Username/profile picture changed
 
-open class SESocketEvent(val eventID: Int, private var function: JsonNode.() -> Unit){
-    open fun invoke(event: JsonNode){
-        function.invoke(event)
-    }
+interface EventHandler{
+    fun onEventReceived(origin: SERoom, eventId: Int, rawEvent: JsonNode, eventNode: JsonNode)
 }
 
-class JoinEvent(function: JsonNode.() -> Unit) : SESocketEvent(3, function){
-    override fun invoke(event: JsonNode){
-
-    }
-}

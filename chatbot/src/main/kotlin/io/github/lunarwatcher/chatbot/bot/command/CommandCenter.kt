@@ -146,16 +146,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         val replies = mutableListOf<ReplyMessage>()
         try {
             if (isCommand(message.content)) {
-                println("Command")
                 replies.addAll(handleCommands(message));
             }
-
             replies.addAll(handleListeners(message));
-
             mentionListener.done()
-
-            if (replies.size == 0)
-                return null
         } catch (e: Exception) {
             crash.crash(e)
             replies.add(ReplyMessage("Something bad happened while processing. Do `" + TRIGGER + "logs` to see the logs", true))
@@ -165,14 +159,15 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     }
 
     fun handleCommands(message: Message) : List<ReplyMessage> {
+        val localMessage = message.clone()
         val replies = mutableListOf<ReplyMessage>()
-        message.substring(TRIGGER.length)
+        localMessage.substring(TRIGGER.length)
 
-        val name = message.content.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+        val name = localMessage.content.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
 
-        val c = get(name, message.chat)
+        val c = get(name, localMessage.chat)
         if (c != null) {
-            val x = c.handleCommand(message)
+            val x = c.handleCommand(localMessage)
             if (x != null) {
                 //There are still some commands that could return null here
                 if(x.isEmpty()){
@@ -187,10 +182,10 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         val lc = tc.get(name)
         if (lc != null) {
             //If the command is NSFW but the site doesn't allow it, don't handle the command
-            if (lc.nsfw && !message.nsfwSite){}
+            if (lc.nsfw && !localMessage.nsfwSite){}
             else {
 
-                val x = lc.handleCommand(message)
+                val x = lc.handleCommand(localMessage)
                 if (x != null) {
                     if(x.isEmpty()){
                         logger.warn("[MEMORY] Taught command returned an empty list. Should return null instead")

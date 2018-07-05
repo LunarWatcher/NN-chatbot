@@ -1,6 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.sites.se;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.lunarwatcher.chatbot.Constants;
 import io.github.lunarwatcher.chatbot.Database;
 import io.github.lunarwatcher.chatbot.SiteConfig;
@@ -11,33 +12,40 @@ import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.events.ScheduledEvent;
-import io.github.lunarwatcher.chatbot.bot.exceptions.LoginException;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.Host;
+import io.github.lunarwatcher.chatbot.bot.sites.se.data.StarMessage;
+import io.github.lunarwatcher.chatbot.bot.sites.se.data.UserAction;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
+import io.github.lunarwatcher.chatbot.socket.EventHandler;
 import io.github.lunarwatcher.chatbot.utils.HttpHelper;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
-import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.github.lunarwatcher.chatbot.Constants.stopMessage;
 
 public class SEChat implements Chat {
+    private Map<Integer, List<EventHandler>> callbacks = new HashMap<>();
+
+    private static final Logger logger = LoggerFactory.getLogger(SEChat.class);
     private static final boolean truncated = false;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
     private Map<String, String> cookies = new HashMap<>();
@@ -47,13 +55,12 @@ public class SEChat implements Chat {
     public static WebSocketContainer webSocket;
 
     public BlockingQueue<Message> newMessages = new LinkedBlockingQueue<>();
-    public List<SERoom.StarMessage> starredMessages = new ArrayList<>();
-    public List<SERoom.UserAction> actions = new ArrayList<>();
+    public List<StarMessage> starredMessages = new ArrayList<>();
+    public List<UserAction> actions = new ArrayList<>();
     List<Integer> notifiedBanned = new ArrayList<>();
 
     public List<Integer> roomsToleave = new ArrayList<>();
     private List<SERoom> rooms = new ArrayList<>();
-    public List<Integer> mentionIds = new ArrayList<>();
 
     CommandCenter commands;
     private Database db;
@@ -66,6 +73,7 @@ public class SEChat implements Chat {
     private Timer timer = new Timer();
     private Host host;
     private SiteConfig credentialManager;
+    private SEEventImpl events;
 
     public SEChat(Properties botProps, Database database, Host host, SiteConfig credentialManager) throws Exception {
         this.db = database;
@@ -76,6 +84,8 @@ public class SEChat implements Chat {
         logIn();
 
         startThread();
+        events = new SEEventImpl(this);
+        events.registerAll();
 
         commands = CommandCenter.Companion.getINSTANCE();
 
@@ -124,6 +134,7 @@ public class SEChat implements Chat {
 
             }
         }
+        //noinspection UnusedAssignment
         data = null;
     }
 
@@ -157,6 +168,7 @@ public class SEChat implements Chat {
             String TUREG = "(var target = .*?;)";
             Pattern pattern = Pattern.compile(TUREG);
             Matcher m = pattern.matcher(response.body());
+            //noinspection ConstantConditions
             response = HttpHelper.get(m.find() ? m.group(0).replace("var target = ", "").replace("'", "").replace(";", "") : null, cookies);
         }else{
            response = HttpHelper.post(targetUrl, cookies, "email", credentialManager.getEmail(),
@@ -237,14 +249,22 @@ public class SEChat implements Chat {
                 return false;
 
         try{
-            for(int i = rooms.size() - 1; i >= 0; i--){
-                if(rooms.get(i).getId() == rid){
-                    roomsToleave.add(rooms.get(i).getId());
-                    save();
-                    return true;
+            List<SERoom> matches = rooms.stream().filter((item) -> item.getId() == rid).collect(Collectors.toList());
+            if(matches == null || matches.isEmpty())
+                return false;
+            matches.forEach((room) -> {
+                try{
+                    room.close();
+                }catch(IOException e){
+                    e.printStackTrace();
                 }
-            }
-        }catch(Exception ignored){}
+            });
+            return rooms.removeIf((item) -> item.getId() == rid);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+
         return false;
     }
 
@@ -302,22 +322,6 @@ public class SEChat implements Chat {
                             break;
                         handleMessage(m);//To keep this thread clean, use a separate method for message handling
 
-                        if (roomsToleave.size() != 0) {
-                            for (int r = roomsToleave.size() - 1; r >= 0; r--) {
-                                if (r == 0 && roomsToleave.size() == 0)
-                                    break;
-                                for (int i = rooms.size() - 1; i >= 0; i--) {
-                                    if (rooms.get(i).getId() == roomsToleave.get(r)) {
-                                        int rtl = roomsToleave.get(r);
-                                        roomsToleave.remove(r);
-                                        rooms.get(i).close();
-                                        rooms.remove(i);
-                                        System.out.println("Left room " + rtl);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
                     } catch (Exception e) {
                         commands.getCrash().crash(e);
                     }
@@ -340,7 +344,7 @@ public class SEChat implements Chat {
     }
 
     public void join(int id) throws Exception{
-        if(rooms.stream().filter((room) -> room.getId() == id).findAny().isPresent()){
+        if(rooms.stream().anyMatch((room) -> room.getId() == id)){
             System.err.println("Duplicate averted");
             return;
         }
@@ -408,6 +412,7 @@ public class SEChat implements Chat {
         return credentialManager;
     }
 
+    @NotNull
     @Override
     public List<User> getUsersInServer(long server) {
         return rooms.stream().filter(room -> room.getId() == server).findAny().orElseThrow(IllegalArgumentException::new)
@@ -441,6 +446,7 @@ public class SEChat implements Chat {
                     SERoom s = getRoom((int)message.getRoomID());
                     System.out.println(message.getUser().getUserName() + " : " + message.getContent());
                     if (s != null) {
+                        logger.debug("Notifying banned user...");
                         s.reply(Constants.BANNED_REPLY, message.getMessageID());
                     }
                 }
@@ -450,8 +456,10 @@ public class SEChat implements Chat {
 
         List<ReplyMessage> replies = commands.parseMessage(message);
 
-        if (replies != null && getRoom((int)message.getRoomID()) != null) {
+        if (replies != null && getRoom((int)message.getRoomID()) != null && replies.size() != 0) {
+            logger.debug("Sending messages");
             for (ReplyMessage replyMessage : replies) {
+                logger.debug("Sending message: \"" + replyMessage.getContent() + "\"");
                 if(replyMessage == Constants.bStopMessage)
                     return;
                 if(replyMessage == CommandCenter.Companion.getNO_MESSAGE()){
@@ -510,5 +518,20 @@ public class SEChat implements Chat {
         if(rooms.size() == 0)
             return  CompletableFuture.supplyAsync(() -> false);
         return rooms.get(0).delete(messageId);
+    }
+
+    public void registerCallback(int eventId, EventHandler eventCallback){
+        List<EventHandler> callbacksForEvent = callbacks.get(eventId);
+        if(callbacksForEvent == null)
+            callbacksForEvent = new ArrayList<>();
+        callbacksForEvent.add(eventCallback);
+        callbacks.put(eventId, callbacksForEvent);
+    }
+
+    public void dispatchEventToCallback(SERoom origin, int eventId, JsonNode rawNode, JsonNode node){
+        List<EventHandler> eventCallbacks = callbacks.get(eventId);
+        if(eventCallbacks == null || eventCallbacks.isEmpty())
+            return;
+        eventCallbacks.forEach((callback) -> callback.onEventReceived(origin, eventId, rawNode, node));
     }
 }

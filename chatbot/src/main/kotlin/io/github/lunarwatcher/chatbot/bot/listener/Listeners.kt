@@ -87,17 +87,17 @@ class TestListener : AbstractListener("Test", description="Is this thing on??"){
 }
 
 class WaveListener : AbstractListener("wave", "Waves back when a wave is detected"){
-    val pause = 30000;
+    val pause = 60000;
     var lastWave: Long = 0;
     override fun handleInput(message: Message): List<ReplyMessage>? {
         if(System.currentTimeMillis() - lastWave >= pause) {
 
             if (message.content == "o/") {
                 lastWave = System.currentTimeMillis();
-                listOf(ReplyMessage("\\o", false));
+                return listOf(ReplyMessage("\\o", false));
             }else if (message.content == "\\o") {
                 lastWave = System.currentTimeMillis();
-                listOf(ReplyMessage("o/", false))
+                return listOf(ReplyMessage("o/", false))
             }
 
         }

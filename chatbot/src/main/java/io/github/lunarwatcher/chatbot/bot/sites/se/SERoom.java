@@ -3,7 +3,6 @@ package io.github.lunarwatcher.chatbot.bot.sites.se;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lunarwatcher.chatbot.User;
-import io.github.lunarwatcher.chatbot.bot.chat.Message;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.utils.HttpHelper;
@@ -27,6 +26,8 @@ import java.util.regex.Pattern;
 
 
 public class SERoom implements Closeable {
+
+
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
     private static final Pattern pattern409 = Pattern.compile("again in (\\d+) seconds?");
 
@@ -44,10 +45,7 @@ public class SERoom implements Closeable {
 
     private String fkey;
     private Long lastMessage;
-    boolean disconnected = false;
-    private boolean intended = false;
     private int kickCount = 0;
-    private boolean breakRejoin = false;
     private int tries = 0;
     private List<Long> latestMessages = new ArrayList<>();
 
@@ -58,7 +56,7 @@ public class SERoom implements Closeable {
         this.cookies = cookies;
 
         createSession();
-        stayAlive();
+        persistentSocket();
 
         refreshPingableUsers();
     }
@@ -92,25 +90,31 @@ public class SERoom implements Closeable {
             public void onError(Session session, Throwable error){
                 System.out.println("Error (src: " + id + " @ " + parent.getName() + ": Error. " + error.getMessage());
 
+                error.printStackTrace();
+                parent.commands.getCrash().crash(error);
+
             }
 
         }, config, new URI(getWSURL()));
     }
 
-    public void stayAlive(){
+    public void persistentSocket(){
         taskExecutor.scheduleAtFixedRate(() -> {
             if (System.currentTimeMillis() - lastMessage > MAX_TIMEOUT) {
                 try {
-                    close();
+                    closeSocket();
                 }catch(IOException e){
                     e.printStackTrace();
                 }
                 try {
                     Thread.sleep(2000);
-                } catch (InterruptedException e) { }
+                } catch (InterruptedException ignored) {
+
+                }
                 try {
                     createSession();
                 }catch(Exception e){
+
                     e.printStackTrace();
                 }
             }
@@ -153,135 +157,19 @@ public class SERoom implements Closeable {
                 if(event.getKey().equals("r" + id)){
                     JsonNode eventNode = event.getValue().get("e");
                     if(eventNode != null) {
-                        System.err.println("Event ------");
-                        System.err.println(eventNode.toString());
-                        System.err.println("/Event ------");
+                        for (JsonNode dataNode : eventNode) {
+                            JsonNode eventType = dataNode.get("event_type");
+
+                            parent.dispatchEventToCallback(this, eventType.asInt(), event.getValue(), dataNode);
+
+                        }
                     }
                 }
             });
 
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode actualObj = mapper.readTree(input).get("r" + id);
-
-            if(actualObj == null)
-                return;
-
-            actualObj = actualObj.get("e");
-            if(actualObj == null)
-                return;
-
-            for(JsonNode event : actualObj) {
-                JsonNode et = event.get("event_type");
-                if (et == null)
-                    continue;
-
-                int eventCode = et.asInt();
-
-
-                if (eventCode == 1 || eventCode == 2) {
-                    String content = event.get("content").toString();
-                    content = removeQuotation(content);
-                    content = correctBackslash(content);
-
-                    //New message or edited message
-
-                    long messageID = event.get("message_id").asLong();
-                    int userid = event.get("user_id").asInt();
-                    String username = event.get("user_name").toString();
-
-                    username = removeQuotation(username);
-                    User user = new User(userid, username);
-                    Message message = new Message(content, messageID, id, user, false, parent, parent.getHost());
-
-                    parent.newMessages.add(message);
-                } else if (eventCode == 3 || eventCode == 4) {
-                    int userid = event.get("user_id").asInt();
-                    String username = event.get("user_name").toString();
-                    username = removeQuotation(username);
-
-                    UserAction action = new UserAction(eventCode, userid, username, id);
-                    parent.actions.add(action);
-                } else if (eventCode == 6) {
-                    long messageID = event.get("message_id").asLong();
-                    int stars = event.get("message_stars").asInt();
-
-                    StarMessage message = new StarMessage(messageID, id, stars);
-                    parent.starredMessages.add(message);
-                }else if(eventCode == 8){
-                    try {
-                        if (!parent.mentionIds.contains(event.get("message_id").asInt())) {
-                            parent.mentionIds.add(event.get("message_id").asInt());
-                        }
-                    }catch(Exception e){
-                        parent.commands.getCrash().crash(e);
-                    }
-                }else if(eventCode == 10){
-                    //The message was deleted. Ignore it
-
-                }else if(eventCode == 15){
-                    try {
-                        if (event.get("target_user_id").intValue() != parent.getCredentialManager().getUserID())
-                            return;
-                    }catch(NullPointerException e){
-                        //No target user; meaning the state of the room was changed.
-                        return;
-                    }
-
-                    System.out.println(event.get("content"));
-                    System.out.println(event);
-                    if(event.get("content").textValue().matches("((?i)priv \\d+ created)")){
-                        System.out.println("Kicked");
-                        kickCount++;
-                        if(kickCount == 2){
-                            breakRejoin = true;
-                            close();
-                        }
-
-                    }else if(event.get("content").textValue().matches("((?i)access now [a-zA-Z]+)")){
-                        System.out.println(event.get("content").textValue());
-                    }
-                }else{
-                    //These are printed using the error stream to make sure they are easy to spot. These are critical
-                    //to find more events in the SE network
-                    System.err.println("Unknown event:");
-                    System.err.println(event.toString());
-                }
-
-                // Event reference sheet:,
-                //1: message
-                //2: edited
-                //3: join
-                //4: leave
-                //5: room name/description changed
-                //6: star
-                //7: Debug message (?)
-                //8: ping - if called, ensure that the content does not contain a ping to the bot name if 1 is called
-                //        - WARNING: Using event 8 will trigger in every single active room.
-                //9:
-                //10: deleted
-                //11:
-                //12:
-                //13:
-                //14:
-                //15: Access level changed (kicks, RO added, read/write status changed, etc)
-                //16:
-                //17: Invite
-                //18: reply
-                //19: message moved out
-                //20: message moved in
-
-                //34: Username/profile picture changed
-
-            }
-
         }catch(IOException e){
             e.printStackTrace();
         }
-    }
-
-    public String removeQuotation(String input){
-        return input.substring(1, input.length() - 1);
     }
 
     public CompletionStage<Long> sendMessage(@NotNull String message) {
@@ -306,9 +194,16 @@ public class SERoom implements Closeable {
 
     @Override
     public void close() throws IOException {
-        intended = true;
+        leave();
+        closeSocket();
+    }
+
+    public void leave() throws IOException{
         HttpHelper.post(SEEvents.leaveRoom(parent.getHost().getChatHost(), id), cookies,
                 "fkey", fkey);
+    }
+
+    public void closeSocket() throws IOException{
         session.close();
     }
 
@@ -327,24 +222,12 @@ public class SERoom implements Closeable {
         return id;
     }
 
-    public String correctBackslash(String input){
-        return input.replace("\\\\", "\\");
-    }
-
     public SEChat getParent(){
         return parent;
     }
 
     public String getFKey(){
         return fkey;
-    }
-
-    public boolean getDisconnected(){
-        return disconnected;
-    }
-
-    public boolean getIntended(){
-        return intended;
     }
 
     public Session getSession(){
@@ -453,7 +336,7 @@ public class SERoom implements Closeable {
         return refreshPingableUsers();
     }
 
-    private List<User> refreshPingableUsers(){
+    List<User> refreshPingableUsers(){
         try {
             List<User> users = new ArrayList<>();
 
@@ -480,30 +363,16 @@ public class SERoom implements Closeable {
         }
     }
 
-    public class UserAction{
-        public int eventID, userID;
-        public String username;
-        public int room;
-
-        public UserAction(int eventID, int userID, String username, int room){
-            this.eventID = eventID;
-            this.userID = userID;
-            this.username = username;
-            this.room = room;
-        }
-
+    public int getKickCount(){
+        return kickCount;
     }
 
-    public class StarMessage{
-        public long messageID;
-        public int room;
-        public int stars;
+    public void setKickCount(int newVal){
+        this.kickCount = newVal;
+    }
 
-        public StarMessage(long messageID, int room, int stars){
-            this.messageID = messageID;
-            this.room = room;
-            this.stars = stars;
-        }
+    public void incrementKickCount(){
+        kickCount++;
     }
 
 }

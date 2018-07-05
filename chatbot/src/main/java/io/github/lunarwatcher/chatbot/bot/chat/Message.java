@@ -91,4 +91,8 @@ public class Message {
         return this;
     }
 
+    public Message clone(){
+        return new Message(content, messageID, roomID, user, nsfwSite, chat, host);
+    }
+
 }

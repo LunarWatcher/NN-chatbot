@@ -278,4 +278,12 @@ public final class Utils {
         }else return Constants.DEFAULT_RANK;
     }
 
+    public static String removeQuotation(String input){
+        return input.substring(1, input.length() - 1);
+    }
+
+    public static String correctBackslash(String input){
+        return input.replace("\\\\", "\\");
+    }
+
 }

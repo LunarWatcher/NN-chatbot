@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 import static io.github.lunarwatcher.chatbot.Constants.DEFAULT_NSFW;
 
-public class DiscordChat implements Chat{
+public class DiscordChat implements Chat {
     public static final Host host = Host.DISCORD;
 
     private static final boolean truncated = true;
@@ -335,12 +335,28 @@ public class DiscordChat implements Chat{
 
     @Override
     public boolean editMessage(long messageId, String newContent) {
-        return false;
+        try {
+            client.getMessageByID(messageId).edit(newContent);
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     @Override
     public boolean deleteMessage(long messageId) {
-        return false;
+        try {
+            client.getMessageByID(messageId).delete();
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public IDiscordClient getClient(){
+        return client;
     }
 
 }

@@ -1,8 +1,6 @@
 package io.github.lunarwatcher.chatbot.bot.chat;
 
 
-import java.util.List;
-
 /**
  * Extremely basic message not containing any information about where it is, where it's going, etc
  */

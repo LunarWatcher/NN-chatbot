@@ -18,12 +18,17 @@ class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the sta
         }
         lastRun = System.currentTimeMillis()
         return try {
-            InetAddress.getByName("${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT);
+            checkForHostExistence();
             alive = true;
-            return listOf(ReplyMessage("The server is booting, or is online.", true));
+            listOf(ReplyMessage("The server is booting, or is online.", true));
         }catch(e: UnknownHostException){
             alive = false;
-            return listOf(ReplyMessage("The server is offline.", true));
+            listOf(ReplyMessage("The server is offline.", true));
         }
+    }
+
+    @Throws(UnknownHostException::class)
+    fun checkForHostExistence(){
+        InetAddress.getByName("${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT);
     }
 }
