@@ -89,6 +89,7 @@ public class HttpHelper {
                 .cookies(cookies)
                 .timeout(TIMEOUT).ignoreContentType(true)
                 .ignoreHttpErrors(ignoreHttpErrors)
+                .userAgent(USERAGENT)
                 .data(data);
         try {
             Response response = connection.execute();
