@@ -29,6 +29,7 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
         }
         if(location != null && timehash != null){
             if(location.contains(Configurations.INSTANCE_LOCATION) && timehash.contains(BotCore.LOCATION)){
+                CommandCenter.bot.kill()
                 System.exit(0);
             }else{
                 "Shutdown ignored: a different instance instance and timestamp was requested".info(logger)
@@ -36,6 +37,7 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
             }
         }else if(location != null){
             if(location.contains(Configurations.INSTANCE_LOCATION)){
+                CommandCenter.bot.kill()
                 System.exit(0);
             }else{
                 "Shutdown ignored; a different instance was requested".info(logger);
@@ -43,11 +45,13 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
             }
         }else if(timehash != null){
             if(timehash.contains(BotCore.LOCATION)){
+                CommandCenter.bot.kill()
                 System.exit(0);
             }else{
                 "Shutdown ignored: a different timestamp was requested (this: ${BotCore.LOCATION}, found $location)".info(logger)
             }
         }else{
+            CommandCenter.bot.kill()
             System.exit(0);
         }
         return listOf(CommandCenter.NO_MESSAGE)

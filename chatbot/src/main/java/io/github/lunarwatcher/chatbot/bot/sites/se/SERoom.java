@@ -53,7 +53,7 @@ public class SERoom implements Closeable {
         System.out.println("Room created: " + id + " at " + parent.getName());
         this.id = id;
         this.parent = parent;
-        this.cookies = cookies;
+        this.cookies = new HashMap<>(cookies);
 
         createSession();
         persistentSocket();
@@ -122,19 +122,10 @@ public class SERoom implements Closeable {
     }
 
     public String getWSURL() throws IOException{
-        Connection.Response response = HttpHelper.post(parent.getHost().getChatHost() + "/ws-auth", true, cookies,
-                "roomid", Integer.toString(id),
-                "fkey", fkey
-        );
-
-        String url = null;
-        try {
-            url = new ObjectMapper().readTree(response.body()).get("url").asText();
-        }catch(Exception e){
-            e.printStackTrace();
-            System.err.println("Response code: " + response.statusCode());
-            System.err.println(response.body());
-        }
+        String url = post(parent.getHost().getChatHost() + "/ws-auth", 10,
+                "fkey", fkey,
+                "roomid", Integer.toString(id)
+        ).get("url").asText();
 
         if(url == null)
             throw new NullPointerException();
@@ -263,9 +254,7 @@ public class SERoom implements Closeable {
     public JsonNode post(@NotNull String url, int retries, String... data){
         Connection.Response response;
         try {
-            response = HttpHelper.post(url, true, cookies,
-                    data
-            );
+            response = HttpHelper.post(url, true, cookies, data);
             System.out.println(response.body());
         }catch(IOException e){
             e.printStackTrace();
@@ -291,7 +280,7 @@ public class SERoom implements Closeable {
             }
             return post(url, retries - 1, data);
         }else{
-            throw new RuntimeException("Failed to send message");
+            throw new RuntimeException("Failed to send POST request");
         }
 
     }
