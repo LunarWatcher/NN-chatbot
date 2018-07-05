@@ -8,9 +8,6 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 abstract class AbstractListener(override val name: String, override val description: String,
                                 override var commandGroup: CommandGroup = CommandGroup.COMMON) : Listener{
 
-
-    fun isCommand(input: String) : Boolean = input.startsWith(CommandCenter.TRIGGER)
-
     fun splitCommand(input: String) : Map<String, String>{
         val iMap = parseArguments(input);
         val initialSplit = input.split(FLAG_REGEX.toRegex())[0];

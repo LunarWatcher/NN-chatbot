@@ -3,7 +3,7 @@ package io.github.lunarwatcher.chatbot.socket
 import com.fasterxml.jackson.databind.JsonNode
 import io.github.lunarwatcher.chatbot.bot.sites.se.SERoom
 
-// Event ID reference //
+// ##### Event ID reference ##### //
 //1: message
 //2: edited
 //3: join
@@ -20,6 +20,9 @@ import io.github.lunarwatcher.chatbot.bot.sites.se.SERoom
 //20: message moved in
 //34: Username/profile picture changed
 
+/**
+ * EventHandler interface; the primary handler for SE socket events.
+ */
 interface EventHandler{
     fun onEventReceived(origin: SERoom, eventId: Int, rawEvent: JsonNode, eventNode: JsonNode)
 }
