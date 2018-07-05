@@ -414,7 +414,6 @@ public class SEChat implements Chat {
     private void initConnections(){
         if(webSocket == null) {
             ClientManager wsClient = ClientManager.createClient(JdkClientContainer.class.getName());
-            wsClient.setDefaultMaxSessionIdleTimeout(0);
             wsClient.getProperties().put(ClientProperties.RETRY_AFTER_SERVICE_UNAVAILABLE, true);
             webSocket = wsClient;
         }

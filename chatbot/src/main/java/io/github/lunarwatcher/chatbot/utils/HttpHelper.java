@@ -83,6 +83,7 @@ public class HttpHelper {
      */
     @NotNull
     public static Response send(Method method, @NotNull String url, boolean ignoreHttpErrors, Map<String, String> cookies, String... data) throws IOException {
+        System.out.println(cookies);
         Connection connection = Jsoup.connect(url)
                 .method(method)
                 .cookies(cookies)
@@ -92,6 +93,7 @@ public class HttpHelper {
         try {
             Response response = connection.execute();
             cookies.putAll(response.cookies());
+            System.out.println(cookies);
             return response;
         }catch(IOException e){
             System.out.println(url);
