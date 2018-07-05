@@ -48,7 +48,6 @@ public class SEChat implements Chat {
     private static final boolean truncated = false;
     private static final List<CommandGroup> groups = Arrays.asList(CommandGroup.STACKEXCHANGE);
     private Map<String, String> cookies = new HashMap<>();
-    private static final Pattern OPEN_ID_PATTERN = Pattern.compile("(https://openid.stackexchange.com/user/.*?)\"");
     public static final String FKEY_SELECTOR = "input[name='fkey']";
     private String fkey;
     public static WebSocketContainer webSocket;

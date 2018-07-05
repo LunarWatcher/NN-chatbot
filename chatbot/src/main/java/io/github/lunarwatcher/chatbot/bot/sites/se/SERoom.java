@@ -53,7 +53,7 @@ public class SERoom implements Closeable {
         System.out.println("Room created: " + id + " at " + parent.getName());
         this.id = id;
         this.parent = parent;
-        this.cookies = new HashMap<>(cookies);
+        this.cookies = cookies;
 
         createSession();
         persistentSocket();
@@ -122,6 +122,9 @@ public class SERoom implements Closeable {
     }
 
     public String getWSURL() throws IOException{
+        String time = JsonUtils.convertToJson(HttpHelper.post(parent.getHost()
+                .getChatHost() + "/chats/" + id  + "/events", true, cookies, "fkey", fkey)).get("time").toString();
+
         String url = post(parent.getHost().getChatHost() + "/ws-auth", 10,
                 "fkey", fkey,
                 "roomid", Integer.toString(id)
@@ -130,13 +133,6 @@ public class SERoom implements Closeable {
         if(url == null)
             throw new NullPointerException();
 
-
-        /**
-         * This should be a better approach than System.currentTimeMillis. If it's in any way behind, connection
-         * fails.
-         */
-        String time = JsonUtils.convertToJson(HttpHelper.post(parent.getHost()
-                .getChatHost() + "/chats/" + id  + "/events", true, cookies, "fkey", fkey)).get("time").toString();
         return url + "?l=" + time;
     }
 
