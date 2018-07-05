@@ -3,16 +3,15 @@ package io.github.lunarwatcher.chatbot;
 import io.github.lunarwatcher.chatbot.bot.Bot;
 import org.joda.time.Instant;
 
-import javax.swing.*;
-import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Scanner;
 
 import static io.github.lunarwatcher.chatbot.Constants.*;
 import static io.github.lunarwatcher.chatbot.utils.Utils.assertion;

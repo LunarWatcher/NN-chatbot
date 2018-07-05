@@ -11,7 +11,6 @@ import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage;
 import io.github.lunarwatcher.chatbot.bot.chat.SEEvents;
 import io.github.lunarwatcher.chatbot.bot.command.CommandCenter;
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
-import io.github.lunarwatcher.chatbot.bot.events.ScheduledEvent;
 import io.github.lunarwatcher.chatbot.bot.exceptions.RoomNotFoundException;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.Host;
@@ -389,16 +388,6 @@ public class SEChat implements Chat {
     @Override
     public void leaveServer(long serverId) {
         leaveRoom((int) serverId);
-    }
-
-    private void scheduleEvent(ScheduledEvent event){
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                event.run();
-                scheduleEvent(event);
-            }
-        }, event.planNext());
     }
 
     public boolean getTruncated(){
