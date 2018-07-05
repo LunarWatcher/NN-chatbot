@@ -132,6 +132,8 @@ public class SERoom implements Closeable {
             url = new ObjectMapper().readTree(response.body()).get("url").asText();
         }catch(Exception e){
             e.printStackTrace();
+            System.err.println("Response code: " + response.statusCode());
+            System.err.println(response.body());
         }
 
         if(url == null)
