@@ -11,10 +11,9 @@ import io.github.lunarwatcher.chatbot.bot.sites.se.SEChat
 @Suppress("UNCHECKED_CAST")
 class SERooms : AbstractCommand("inRooms", listOf()){
     override fun handleCommand(message: Message): List<ReplyMessage>? {
-        val site : SEChat = if(message.chat is SEChat){
-            message.chat as SEChat
-        }else
+         if(message.chat !is SEChat)
             return listOf(ReplyMessage("Invalid site. BlameCommand ${Configurations.CREATOR}", true))
+
         val sechats: List<SEChat> = CommandCenter.bot.chats.filter { it is SEChat } as List<SEChat>
 
         val (ids, sites) =

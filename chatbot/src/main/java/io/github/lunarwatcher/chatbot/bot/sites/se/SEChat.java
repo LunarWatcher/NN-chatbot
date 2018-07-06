@@ -176,8 +176,8 @@ public class SEChat implements Chat {
 
         int statusCode = response.statusCode();
 
-        //SE doesn't redirect automatically, but the page does exist. Allow both 200 and 302 status codes.
-        if(statusCode != 200 && statusCode != 302){
+        logger.debug("Status code at login: " + statusCode);
+        if(statusCode != 302 && statusCode != 200){
             throw new IllegalAccessError();
         }
 
