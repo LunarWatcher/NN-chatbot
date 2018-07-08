@@ -25,6 +25,8 @@ import org.glassfish.tyrus.client.ClientProperties;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public class SEChat implements Chat {
 
     public List<Integer> roomsToleave = new ArrayList<>();
     private List<SERoom> rooms = new ArrayList<>();
+    private Map<Long, String> usernames = new HashMap<>();
 
     CommandCenter commands;
     private Database db;
@@ -355,7 +358,53 @@ public class SEChat implements Chat {
     }
 
     public String getUsername(long uid){
-        return Long.toString(uid);
+        if(uid < 1)
+            return String.valueOf(uid);
+
+        String username = usernames.get(uid);
+        if(username == null){
+            logger.warn("Username for UID " + uid + " not found on " + host.getName());
+
+            if(!host.getName().equals("stackexchange")){
+                try {
+                    Connection.Response response = HttpHelper.get(host.getMainSiteHost() + "/users/" + uid + "/?tab=topactivity", cookies);
+                    Element cache = response.parse().getElementsByClass("name").first();
+                    if(cache == null)
+                        return String.valueOf(uid);
+                    username = cache.text();
+                    if(username != null){
+                        addUsername(uid, username);
+                    }else{
+                        return String.valueOf(uid);
+                    }
+                }catch(IOException e){
+                    return String.valueOf(uid);
+                }
+
+            }else{
+                try{
+                    Connection.Response response = HttpHelper.get(host.getMainSiteHost() + "/users/" + uid, cookies);
+                    Elements cache = response.parse().getElementsByClass("user-details");
+                    if(cache != null) {
+                        Element header = cache.select("h1").first();
+                        if(header != null){
+                            username = header.select("a").text();
+                            if(username != null){
+                                addUsername(uid, username);
+                            }else return String.valueOf(uid);
+                        }else{
+                            return String.valueOf(uid);
+                        }
+                    }else{
+                        return String.valueOf(uid);
+                    }
+                }catch(IOException e){
+                    return String.valueOf(uid);
+                }
+            }
+        }
+
+        return username;
     }
 
     @Override
@@ -521,4 +570,22 @@ public class SEChat implements Chat {
             return;
         eventCallbacks.forEach((callback) -> callback.onEventReceived(origin, eventId, rawNode, node));
     }
+
+    public void addUsernames(List<User> users){
+        if(users == null) return;
+        users.forEach((user) -> addUsername(user.getUserID(), user.getUserName()));
+    }
+
+    public void addUsernames(Map<Long, String> users){
+        if(users == null) return;
+        users.forEach(this::addUsername);
+    }
+
+    public void addUsername(long id, String username){
+        if(usernames.get(id) == null)
+            usernames.put(id, username);
+        else if(!usernames.get(id).equalsIgnoreCase(username))
+            usernames.put(id, username);
+    }
+
 }

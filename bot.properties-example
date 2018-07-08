@@ -9,6 +9,7 @@ bot.site.stackexchange=https://chat.stackexchange.com
 # It runs using tokens through the unofficial API, which is handled through the API. The name is simply used as an
 # identifier
 bot.site.discord=discord
+# Same applies to Twitch
 bot.site.twitch=twitch
 
 # Hard-coded home rooms. These cannot be removed through a command

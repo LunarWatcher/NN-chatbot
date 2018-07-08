@@ -26,8 +26,6 @@ import java.util.regex.Pattern;
 
 
 public class SERoom implements Closeable {
-
-
     private static final Logger logger = LoggerFactory.getLogger(SERoom.class);
     private static final Pattern pattern409 = Pattern.compile("again in (\\d+) seconds?");
 
@@ -59,6 +57,8 @@ public class SERoom implements Closeable {
         persistentSocket();
 
         refreshPingableUsers();
+
+
     }
 
     public void createSession() throws Exception{
@@ -343,6 +343,7 @@ public class SERoom implements Closeable {
                 users.add(new User(userId, username));
             });
             this.pingableUsers = users;
+            parent.addUsernames(pingableUsers);
             return users;
 
         } catch (IOException e) {

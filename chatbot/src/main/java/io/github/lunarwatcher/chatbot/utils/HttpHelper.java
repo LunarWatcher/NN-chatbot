@@ -96,7 +96,7 @@ public class HttpHelper {
             return response;
         }catch(IOException e){
             System.out.println(url);
-            throw new RuntimeException(e);
+            throw e;
         }
     }
 

@@ -76,7 +76,7 @@ class TestListener : AbstractListener("Test", description="Is this thing on??"){
             if (poked.contains(message.user.userID))
                 return null;
             poked.add(message.user.userID);
-            listOf(ReplyMessage("You passed! Congratulations!", false))
+            return listOf(ReplyMessage("You passed! Congratulations!", false))
         }
         return null
     }

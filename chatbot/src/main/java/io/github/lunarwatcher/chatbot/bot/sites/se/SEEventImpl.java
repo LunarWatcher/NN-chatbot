@@ -64,6 +64,8 @@ public class SEEventImpl {
                     origin.refreshPingableUsers();
                 }
             }
+
+            chat.addUsername(userid, username);
         }
     };
 
