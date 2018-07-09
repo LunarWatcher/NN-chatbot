@@ -64,10 +64,10 @@ class NSFWState : AbstractCommand("nsfwtoggle", listOf(),
         }
 
         return if(chat.getNsfw(guild) == newState){
-            return listOf(ReplyMessage("The guild already has NSFW mode " + (if (newState) "enabled" else "disabled"), false));
+            listOf(ReplyMessage("The guild already has NSFW mode " + (if (newState) "enabled" else "disabled"), false));
         }else{
             chat.setNsfw(guild, newState);
-            return listOf(ReplyMessage("Successfully changed NSFW mode", false));
+            listOf(ReplyMessage("Successfully changed NSFW mode", false));
         }
     }
 

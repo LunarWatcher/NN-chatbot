@@ -47,9 +47,9 @@ class RemoveHome : AbstractCommand("remhome", listOf(),
         if(Constants.LEAVE_ROOM_ON_UNHOME){
             val bmwrap = site.leaveRoom(iRoom);
             return if(!bmwrap){
-                return listOf(ReplyMessage("Room was removed as a home room, but I could not leave the room!", true))
+                listOf(ReplyMessage("Room was removed as a home room, but I could not leave the room!", true))
             }else{
-                return listOf(ReplyMessage("Room successfully removed as a home room and left", true));
+                listOf(ReplyMessage("Room successfully removed as a home room and left", true));
             }
 
         }

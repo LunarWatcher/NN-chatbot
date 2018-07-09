@@ -47,12 +47,12 @@ class SetRankCommand : AbstractCommand("setRank", listOf("demote", "promote"), "
                         ReplyMessage("You can't ban yourself", true)
                     if(command["--confirm"] != null){
                         site.config.addRank(uid, newRank)
-                        return listOf(ReplyMessage("Successfully lowered your rank from $cuRank to $newRank", true))
+                        listOf(ReplyMessage("Successfully lowered your rank from $cuRank to $newRank", true))
                     }else{
-                        return listOf(ReplyMessage("Warning: You're attempting to lower your own rank. If you do, an admin has to promote you if you want your previous rank. Add --confirm to the end of the message to confirm this action.", true))
+                        listOf(ReplyMessage("Warning: You're attempting to lower your own rank. If you do, an admin has to promote you if you want your previous rank. Add --confirm to the end of the message to confirm this action.", true))
                     }
                 }else{
-                    return listOf(ReplyMessage("Can't increase your own rank. Nice try though.", true))
+                    listOf(ReplyMessage("Can't increase your own rank. Nice try though.", true))
                 }
             }
             if ((newRank == 0 || currentRank == 0) && cuRank < 8) {

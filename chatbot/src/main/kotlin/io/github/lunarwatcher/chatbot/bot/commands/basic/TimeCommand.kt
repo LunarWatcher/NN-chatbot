@@ -33,9 +33,9 @@ class TimeCommand : AbstractCommand("time", listOf(), "What time is it?", help="
             val formatter = DateTimeFormat.forPattern(DATE_PATTERN)
                     .withLocale(Locale.ENGLISH)
                     .withZone(applicable)
-            return listOf(ReplyMessage(Instant().toString(formatter), true))
+            listOf(ReplyMessage(Instant().toString(formatter), true))
         }catch(e: IllegalArgumentException){
-            return listOf(ReplyMessage(e.message, true))
+            listOf(ReplyMessage(e.message, true))
         }
     }
 }

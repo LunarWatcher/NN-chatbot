@@ -9,6 +9,7 @@ import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.info
 import io.github.lunarwatcher.chatbot.utils.Utils
 import org.slf4j.LoggerFactory
+import java.awt.Container
 
 class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway", "sleep", "die"), "Shuts down the bot. Rank 10 only", rankRequirement = 10){
     val logger = LoggerFactory.getLogger(this::class.java)
@@ -19,32 +20,40 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
         if(Utils.getRank(message.user.userID, site.config) < 10)
             return listOf(ReplyMessage("I'm afraid I can't let you do that, User.", true))
         val content = splitCommand(message.content);
-        val location: String? = content["--location"]
-        val timehash: String? = content["--timehash"]
+        var location: String? = content["--location"]
+        var timehash: String? = content["--timehash"]
+        val caseInsensitive = content["--notCaseInsensitive"] == null
+
+        println(content);
 
         val confirmed = message.content.contains("--confirm") && content["--confirm"] != null
 
         if(!confirmed){
+            if(location != null)
+                if(!Configurations.INSTANCE_LOCATION.contains(location, caseInsensitive))
+                    return listOf(CommandCenter.NO_MESSAGE);
+            if(timehash != null)
+                if(!BotCore.LOCATION.startsWith(timehash, caseInsensitive))
+                    return listOf(CommandCenter.NO_MESSAGE)
             return listOf(ReplyMessage("You sure 'bout that? Run the command with --confirm to shut me down", true))
         }
         if(location != null && timehash != null){
-            if(location.contains(Configurations.INSTANCE_LOCATION) && timehash.contains(BotCore.LOCATION)){
+            if(Configurations.INSTANCE_LOCATION.contains(location, caseInsensitive) && BotCore.LOCATION.contains(timehash, caseInsensitive)){
                 CommandCenter.bot.kill()
                 System.exit(0);
             }else{
                 "Shutdown ignored: a different instance instance and timestamp was requested".info(logger)
-                return null;
             }
         }else if(location != null){
-            if(location.contains(Configurations.INSTANCE_LOCATION)){
+            logger.info("requested location: " + location)
+            if(Configurations.INSTANCE_LOCATION.contains(location, caseInsensitive)){
                 CommandCenter.bot.kill()
                 System.exit(0);
             }else{
                 "Shutdown ignored; a different instance was requested".info(logger);
-                return null;
             }
         }else if(timehash != null){
-            if(timehash.contains(BotCore.LOCATION)){
+            if(BotCore.LOCATION.startsWith(timehash, caseInsensitive)){
                 CommandCenter.bot.kill()
                 System.exit(0);
             }else{

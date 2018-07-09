@@ -26,6 +26,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
     }
 
     override fun matchesCommand(input: String): Boolean{
+        @Suppress("NAME_SHADOWING")
         val input = input.toLowerCase();
         val split = input.split(" ");
         if(split[0].toLowerCase() == name.toLowerCase()){
