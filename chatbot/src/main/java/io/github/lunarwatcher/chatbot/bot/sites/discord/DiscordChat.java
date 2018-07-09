@@ -15,6 +15,8 @@ import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 import static io.github.lunarwatcher.chatbot.Constants.DEFAULT_NSFW;
 
 public class DiscordChat implements Chat {
+    private static final Logger logger = LoggerFactory.getLogger(DiscordChat.class);
     public static final Host host = Host.DISCORD;
 
     private static final boolean truncated = true;
@@ -38,7 +41,6 @@ public class DiscordChat implements Chat {
     IDiscordClient client;
     Properties botProps;
     private Database db;
-    private List<IChannel> channels;
     private BotConfig config;
     public List<Long> hardcodedAdmins = new ArrayList<>();
     List<Long> notifiedBanned = new ArrayList<>();
@@ -54,7 +56,6 @@ public class DiscordChat implements Chat {
         logIn();
 
         commands = CommandCenter.INSTANCE;
-        channels = new ArrayList<>();
         config = new BotConfig(this);
 
         load();
@@ -146,18 +147,7 @@ public class DiscordChat implements Chat {
             }
 
             try {
-                IChannel channel = null;
-
-                for (IChannel chnl : channels) {
-                    if (chnl.getLongID() == event.getChannel().getLongID()) {
-                        channel = chnl;
-                        break;
-                    }
-                }
-
-                if (channel == null) {
-                    channels.add(event.getChannel());
-                }
+                IChannel channel = event.getChannel();
 
                 User user = new User(event.getAuthor().getLongID(), event.getAuthor().getName(),
                         new Pair<>("guildID", Long.toString(event.getGuild().getLongID())));
@@ -168,8 +158,9 @@ public class DiscordChat implements Chat {
 
                 List<ReplyMessage> replies = commands.parseMessage(message);
 
-                if (replies == null) {
+                if (replies == null || replies.size() == 0) {
                     if (CommandCenter.Companion.isCommand(msg)) {
+                        logger.info("Sending invalid command message...");
                         event.getChannel().sendMessage(Constants.INVALID_COMMAND + " (//help)");
                     }
                 } else {
