@@ -23,8 +23,9 @@ class ShutdownCommand : AbstractCommand("shutdown", listOf("gotosleep", "goaway"
         var location: String? = content["--location"]
         var timehash: String? = content["--timehash"]
         val caseInsensitive = content["--notCaseInsensitive"] == null
-
-        println(content);
+        if(content["content"] != null && location == null){
+            location = content["content"]?.trim();
+        }
 
         val confirmed = message.content.contains("--confirm") && content["--confirm"] != null
 

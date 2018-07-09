@@ -383,18 +383,14 @@ public class SEChat implements Chat {
 
             }else{
                 try{
-                    Connection.Response response = HttpHelper.get(host.getMainSiteHost() + "/users/" + uid, cookies);
-                    Elements cache = response.parse().getElementsByClass("user-details");
+                    Connection.Response response = HttpHelper.get(host.getChatHost() + "/users/" + uid, cookies);
+                    Element cache = response.parse().getElementsByClass("user-status").first();
                     if(cache != null) {
-                        Element header = cache.select("h1").first();
-                        if(header != null){
-                            username = header.select("a").text();
-                            if(username != null){
-                                addUsername(uid, username);
-                            }else return String.valueOf(uid);
-                        }else{
-                            return String.valueOf(uid);
-                        }
+                        username = cache.text();
+                        if(username != null){
+                            addUsername(uid, username);
+                        }else return String.valueOf(uid);
+
                     }else{
                         return String.valueOf(uid);
                     }
