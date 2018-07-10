@@ -6,7 +6,10 @@ import io.github.lunarwatcher.chatbot.bot.chat.Message
 import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
 import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.utils.Utils
+import java.io.IOException
 import java.net.InetAddress
+import java.net.Socket
+import java.net.URL
 import java.net.UnknownHostException
 
 class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the status of the neural network", rankRequirement = 1){
@@ -22,6 +25,7 @@ class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the sta
             alive = true;
             listOf(ReplyMessage("The server is booting, or is online.", true));
         }catch(e: UnknownHostException){
+            e.printStackTrace()
             alive = false;
             listOf(ReplyMessage("The server is offline.", true));
         }
@@ -29,6 +33,17 @@ class NetStat : AbstractCommand("netStat", listOf("netstat"), "Tells you the sta
 
     @Throws(UnknownHostException::class)
     fun checkForHostExistence(){
-        InetAddress.getByName("${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT);
+        var socket: Socket? = null
+        try{
+            val url = URL("http://${Configurations.NEURAL_NET_IP}:" + Constants.FLASK_PORT)
+            socket = Socket(url.host, url.port)
+
+        }catch(e: IOException){
+            throw UnknownHostException(e.message);
+        }finally {
+            socket?.close()
+        }
+
+
     }
 }
