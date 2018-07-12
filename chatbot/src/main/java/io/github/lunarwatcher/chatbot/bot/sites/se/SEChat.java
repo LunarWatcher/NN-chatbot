@@ -390,7 +390,6 @@ public class SEChat implements Chat {
                         if(username != null){
                             addUsername(uid, username);
                         }else return String.valueOf(uid);
-
                     }else{
                         return String.valueOf(uid);
                     }

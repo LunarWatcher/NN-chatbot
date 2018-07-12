@@ -1,8 +1,7 @@
 package io.github.lunarwatcher.chatbot.bot.listener
 
-import io.github.lunarwatcher.chatbot.ARGUMENT_PATTERN
+import io.github.lunarwatcher.chatbot.FLAG_PATTERN
 import io.github.lunarwatcher.chatbot.FLAG_REGEX
-import io.github.lunarwatcher.chatbot.bot.command.CommandCenter
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 
 abstract class AbstractListener(override val name: String, override val description: String,
@@ -42,7 +41,7 @@ abstract class AbstractListener(override val name: String, override val descript
         }
 
         val retval: MutableMap<String, String> = mutableMapOf()
-        val matcher = ARGUMENT_PATTERN.matcher(input);
+        val matcher = FLAG_PATTERN.matcher(input);
         while(matcher.find()){
             val groups = matcher.groupCount()
             if(groups == 2){

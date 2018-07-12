@@ -46,6 +46,7 @@ public class SERoom implements Closeable {
     private int kickCount = 0;
     private int tries = 0;
     private List<Long> latestMessages = new ArrayList<>();
+    ScheduledFuture<?> respawnTask;
 
     public SERoom(int id, SEChat parent, Map<String, String> cookies) throws Exception {
         System.out.println("Room created: " + id + " at " + parent.getName());
@@ -99,7 +100,7 @@ public class SERoom implements Closeable {
     }
 
     public void persistentSocket(){
-        taskExecutor.scheduleAtFixedRate(() -> {
+        respawnTask = taskExecutor.scheduleAtFixedRate(() -> {
             if (System.currentTimeMillis() - lastMessage > MAX_TIMEOUT) {
                 try {
                     closeSocket();
@@ -185,6 +186,8 @@ public class SERoom implements Closeable {
     public void close() throws IOException {
         leave();
         closeSocket();
+        respawnTask.cancel(true);
+        taskExecutor.shutdownNow();
     }
 
     public void leave() throws IOException{

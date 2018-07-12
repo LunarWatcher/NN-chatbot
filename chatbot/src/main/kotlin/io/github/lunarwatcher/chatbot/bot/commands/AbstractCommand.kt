@@ -94,7 +94,7 @@ abstract class AbstractCommand(override val name: String, override val aliases: 
         }
 
         val retval: MutableMap<String, String> = mutableMapOf()
-        val matcher = ARGUMENT_PATTERN.matcher(input);
+        val matcher = FLAG_PATTERN.matcher(input);
         while(matcher.find()){
             val groups = matcher.groupCount()
             val g1 = matcher.group(1)

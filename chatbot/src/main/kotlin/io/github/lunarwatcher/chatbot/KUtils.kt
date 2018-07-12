@@ -16,8 +16,10 @@ const val DATE_PATTERN = "E, d MMMM HH:mm:ss.SSSS Y z ('GMT' ZZ)"
 
 val formatter = SimpleDateFormat(DATE_PATTERN, Locale.ENGLISH)
 const val FLAG_REGEX = """(?i)((?:\s|^)--[a-z\-\d]+)(?:\s*(".+?"))?""";
-var ARGUMENT_PATTERN = Pattern.compile(FLAG_REGEX)!!
+var FLAG_PATTERN = Pattern.compile(FLAG_REGEX)!!
 const val NO_DEFINED_RANK = -1
+const val ARGUMENT_REGEX = "(?:\"(.*?)(?<!\\\\)\"| *([a-z0-9]+) *)"
+val ARGUMENT_PATTERN = Pattern.compile(ARGUMENT_REGEX)
 
 val mapped = mutableListOf(
         "\\\"" to "\"",
