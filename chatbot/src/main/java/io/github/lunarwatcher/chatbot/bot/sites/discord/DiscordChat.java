@@ -11,6 +11,7 @@ import io.github.lunarwatcher.chatbot.bot.command.CommandGroup;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.data.BotConfig;
+import io.github.lunarwatcher.chatbot.data.CentralBlacklistStorage;
 import io.github.lunarwatcher.chatbot.utils.Utils;
 import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEditEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.*;
@@ -118,6 +120,16 @@ public class DiscordChat implements Chat {
         MessageReceivedEvent rEvent = new MessageReceivedEvent(event.getMessage());
         this.onMessageReceived(rEvent);
     }
+
+    @EventSubscriber
+    public void onGuildCreateEvent(GuildCreateEvent event){
+        logger.info("Joined guild: {}. Owner: {}", event.getGuild().getName(), event.getGuild().getOwner().getName());
+        if(CentralBlacklistStorage.Companion.getInstance(db).isBlacklisted(getName(), event.getGuild().getLongID())){
+            event.getGuild().leave();
+            logger.warn("Left blacklisted guild: " + event.getGuild().getLongID());
+        }
+    }
+
 
     @EventSubscriber
     public void onMessageReceived(MessageReceivedEvent event){

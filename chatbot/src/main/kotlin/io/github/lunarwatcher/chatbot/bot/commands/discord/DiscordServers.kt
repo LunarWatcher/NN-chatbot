@@ -49,7 +49,7 @@ class LeaveGuildCommand : AbstractCommand("leaveGuild", listOf(), "Leaves a guil
             val id = splitCommand(message.content)["content"]?.toLongOrNull() ?: return listOf(ReplyMessage("Failed to infer arguments: could not convert server ID to long"));
             val guild: IGuild = client.getGuildByID(id) ?: return listOf(ReplyMessage("Failed to find guild."));
             guild.leave()
-            return listOf(ReplyMessage("Sucecssfully left guild"))
+            return listOf(ReplyMessage("Successfully left guild"))
         }else{
             return listOf(ReplyMessage("Invalid site for this command", false));
         }
