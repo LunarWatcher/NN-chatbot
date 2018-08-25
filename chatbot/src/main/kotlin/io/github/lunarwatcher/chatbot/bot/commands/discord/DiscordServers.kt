@@ -46,7 +46,7 @@ class LeaveGuildCommand : AbstractCommand("leaveGuild", listOf(), "Leaves a guil
         }
         if(message.chat is DiscordChat){
             val client = (message.chat as? DiscordChat)?.client ?: return listOf(ReplyMessage("Failed to infer arguments.", true));
-            val id = message.content.toLongOrNull() ?: return listOf(ReplyMessage("Failed to infer arguments: could not convert server ID to long"));
+            val id = splitCommand(message.content)["content"]?.toLongOrNull() ?: return listOf(ReplyMessage("Failed to infer arguments: could not convert server ID to long"));
             val guild: IGuild = client.getGuildByID(id) ?: return listOf(ReplyMessage("Failed to find guild."));
             guild.leave()
             return listOf(ReplyMessage("Sucecssfully left guild"))
