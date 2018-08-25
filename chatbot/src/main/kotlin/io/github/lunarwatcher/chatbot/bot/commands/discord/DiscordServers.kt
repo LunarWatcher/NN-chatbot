@@ -29,7 +29,8 @@ class ListGuildsCommand : AbstractCommand("listGuilds", listOf(), "Lists joined 
                 }
                 builder.append("${it.name} (UID ${it.stringID}), ")
             }
-
+            val finalMessage = builder.toString()
+            messages.add(ReplyMessage(if(finalMessage.trim().endsWith(",")) finalMessage.substring(0, finalMessage.length - 1) else finalMessage))
             return messages;
         }else{
             return listOf(ReplyMessage("Invalid site for this command", false));
