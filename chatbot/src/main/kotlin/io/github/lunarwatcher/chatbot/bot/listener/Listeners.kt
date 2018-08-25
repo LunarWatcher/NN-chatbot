@@ -18,13 +18,13 @@ class KnockKnock(val mention: MentionListener) : AbstractListener("Knock knock",
     override fun handleInput(message: Message): List<ReplyMessage>? {
         var input = message.content
         if(!mention.isMentioned(input, message.chat) && context == null){
-            if (input.contains(KNOCK_REGEX)) {
+            if (input.matches(KNOCK_REGEX)) {
                 context = Context(0, message.user.userID)
             }else
                 return null
         }else if(mention.isMentioned(input, message.chat) && context == null) {
             input = input.split(" ", limit = 2).safeGet(1) ?: ""
-            if (input.contains(KNOCK_REGEX)) {
+            if (input.matches(KNOCK_REGEX)) {
                 context = Context(0, message.user.userID)
             }else
                 return null

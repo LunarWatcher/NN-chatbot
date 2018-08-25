@@ -5,6 +5,7 @@ import io.github.lunarwatcher.chatbot.User;
 import io.github.lunarwatcher.chatbot.bot.sites.Chat;
 import io.github.lunarwatcher.chatbot.bot.sites.Host;
 import io.github.lunarwatcher.chatbot.bot.sites.twitch.TwitchChat;
+import org.jetbrains.annotations.NotNull;
 
 import static io.github.lunarwatcher.chatbot.bot.command.CommandCenter.TRIGGER;
 
@@ -32,6 +33,8 @@ public class Message {
     public void cleanContentAndSet(String original){
         content = KUtilsKt.cleanInput(original);
     }
+
+    @NotNull
     public Chat getChat(){
         return chat;
     }

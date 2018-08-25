@@ -3,7 +3,7 @@ package io.github.lunarwatcher.chatbot.data
 import io.github.lunarwatcher.chatbot.Database
 
 class CentralBlacklistStorage private constructor(var database: Database){
-    var list: MutableMap<String, MutableList<Int>>
+    var list: MutableMap<String, MutableList<Long>>
     init{
         println("Creating new Central Blacklist Storage")
         val existing = database.getMap("blacklisted-rooms")
@@ -13,13 +13,13 @@ class CentralBlacklistStorage private constructor(var database: Database){
                 if (roomList is List<*>) {
 
                     @Suppress("UNCHECKED_CAST")
-                    list[site] = (roomList.map { it.toString().toIntOrNull() }.filter { it != null } as List<Int>).toMutableList()
+                    list[site] = (roomList.map { it.toString().toLongOrNull() }.filter { it != null } as List<Long>).toMutableList()
                 }
             }
         }
     }
 
-    fun blacklist(where: String, which: Int) : Boolean{
+    fun blacklist(where: String, which: Long) : Boolean{
         if(!list.containsKey(where))
             list[where] = mutableListOf()
         if(list[where]!!.contains(which))
@@ -29,7 +29,7 @@ class CentralBlacklistStorage private constructor(var database: Database){
         return true
     }
 
-    fun unblacklist(where: String, which: Int) : Boolean{
+    fun unblacklist(where: String, which: Long) : Boolean{
         if(!list.containsKey(where)) {
             list[where] = mutableListOf()
             return false
@@ -44,7 +44,7 @@ class CentralBlacklistStorage private constructor(var database: Database){
         database.put("blacklisted-rooms", list)
     }
 
-    fun isBlacklisted(where: String, which: Int) : Boolean{
+    fun isBlacklisted(where: String, which: Long) : Boolean{
         if(!list.keys.contains(where))
             list[where] = mutableListOf()
         return list[where]!!.contains(which)

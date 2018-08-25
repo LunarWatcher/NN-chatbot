@@ -9,6 +9,10 @@ public class ReplyMessage {
     private String content;
     private boolean replyIfPossible;
 
+
+    public ReplyMessage(String content){
+        this(content, false);
+    }
     /**
      *
      * @param content The content of a message to send

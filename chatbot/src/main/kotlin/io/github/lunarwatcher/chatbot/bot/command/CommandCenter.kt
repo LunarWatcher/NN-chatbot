@@ -13,6 +13,8 @@ import io.github.lunarwatcher.chatbot.bot.commands.`fun`.*
 import io.github.lunarwatcher.chatbot.bot.commands.admin.*
 import io.github.lunarwatcher.chatbot.bot.commands.basic.*
 import io.github.lunarwatcher.chatbot.bot.commands.discord.DiscordSummon
+import io.github.lunarwatcher.chatbot.bot.commands.discord.LeaveGuildCommand
+import io.github.lunarwatcher.chatbot.bot.commands.discord.ListGuildsCommand
 import io.github.lunarwatcher.chatbot.bot.commands.discord.NSFWState
 import io.github.lunarwatcher.chatbot.bot.commands.learn.LearnCommand
 import io.github.lunarwatcher.chatbot.bot.commands.learn.TaughtCommands
@@ -127,6 +129,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         ///////////////////////////////////////////////
         addCommand(NSFWState(), CommandGroup.DISCORD)
         addCommand(DiscordSummon(), CommandGroup.DISCORD)
+        addCommand(ListGuildsCommand(), CommandGroup.DISCORD)
+        addCommand(LeaveGuildCommand(), CommandGroup.DISCORD)
 
         //////////////////////////////////////////////
         addCommand(JoinCommand(RELOCATION_VOTES), CommandGroup.STACKEXCHANGE)

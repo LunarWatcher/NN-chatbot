@@ -12,7 +12,7 @@ class BlacklistRoom : AbstractCommand("ban-room", listOf(), "Blacklists a room")
         val site = message.chat
         val content = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("You have to tell me which room", true));
         val where = site.name
-        val which = content.toIntOrNull() ?: return listOf(ReplyMessage("You have to tell me which room to blacklist", true))
+        val which = content.toLongOrNull() ?: return listOf(ReplyMessage("You have to tell me which room to blacklist", true))
         val rank = Utils.getRank(message.user.userID, site.config)
 
         if(rank < 8)
@@ -31,7 +31,7 @@ class UnblacklistRoom : AbstractCommand("unban-room", listOf(), "Removes the bla
         val site = message.chat
         val content = splitCommand(message.content)["content"] ?: return listOf(ReplyMessage("You have to tell me which room", true));
         val where = site.name
-        val which = content.toIntOrNull() ?: return listOf(ReplyMessage("You have to tell me which room to unblock", true))
+        val which = content.toLongOrNull() ?: return listOf(ReplyMessage("You have to tell me which room to unblock", true))
         val rank = Utils.getRank(message.user.userID, site.config)
 
         if(rank < 8)

@@ -30,7 +30,7 @@ class JoinCommand(val votes: Int) : AbstractCommand("summon", listOf("join"),
             val raw = message.content.split(" ")[1];
             val iRoom: Int = raw.toInt();
 
-            if(CentralBlacklistStorage.getInstance(chat.database).isBlacklisted(chat.name, iRoom))
+            if(CentralBlacklistStorage.getInstance(chat.database).isBlacklisted(chat.name, iRoom.toLong()))
                 listOf(ReplyMessage("Not gonna happen.", true));
 
             try {
