@@ -1,20 +1,15 @@
 package io.github.lunarwatcher.chatbot.bot.commands.`fun`
 
 import com.github.natanbc.reliqua.limiter.factory.RateLimiterFactory
-import com.sun.corba.se.impl.util.RepositoryId.cache
 import io.github.lunarwatcher.chatbot.bot.chat.Message
 import io.github.lunarwatcher.chatbot.bot.chat.ReplyMessage
 import io.github.lunarwatcher.chatbot.bot.command.CommandGroup
 import io.github.lunarwatcher.chatbot.bot.commands.AbstractCommand
 import io.github.lunarwatcher.chatbot.randomItem
-import me.philippheuer.twitch4j.message.commands.Command
 import okhttp3.OkHttpClient
-import pw.aru.api.nekos4j.NekosInfo
 import pw.aru.api.nekos4j.image.ImageCache
 import pw.aru.api.nekos4j.internal.Nekos4JImpl
-import pw.aru.api.nekos4j.text.Neko8Ball
 import java.io.File
-import java.io.InputStream
 
 class NekosCommand : AbstractCommand("neko", listOf(), "NEKOS!!!!", "Run with no args for a random picture, or use a supported category.", 1, false, CommandGroup.COMMON){
     val nekos: Nekos4JImpl
