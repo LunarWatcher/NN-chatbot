@@ -47,6 +47,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     var crash: CrashLogs
     var welcomeListener: WelcomeListener
     var mentionListener: MentionListener
+    val nekos: NekosCommand
 
     init {
         logger.info("Alive!");
@@ -107,6 +108,9 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(RegisterWelcome())
         addCommand(TestCommand());
         addCommand(MultiMessageTest())
+        addCommand(HugCommand());
+        nekos = NekosCommand()
+        addCommand(nekos);
 
         statusListener = StatusListener(db)
         welcomeListener = WelcomeListener(this)
@@ -222,6 +226,8 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
     fun save() {
         statusListener.save()
         welcomeListener.save()
+
+        nekos.destroy()
     }
 
     fun addCommand(c: ICommand, group: CommandGroup = CommandGroup.COMMON) {

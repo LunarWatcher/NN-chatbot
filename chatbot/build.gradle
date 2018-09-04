@@ -85,6 +85,9 @@ dependencies {
     implementation 'joda-time:joda-time:2.9.9'
     implementation 'org.jsoup:jsoup:1.11.3'
 
+    // Nekos :3
+    implementation 'pw.aru.api:nekos4j:1.0'
+
 }
 
 compileKotlin {

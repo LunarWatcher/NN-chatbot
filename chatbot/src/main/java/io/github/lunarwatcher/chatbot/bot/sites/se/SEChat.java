@@ -404,7 +404,13 @@ public class SEChat implements Chat {
 
     @Override
     public List<Long> getUidForUsernameInRoom(String username, long server) {
-        return Collections.singletonList(0L);
+        SERoom room = getRoom((int)server);
+        if(room == null)
+            return Collections.singletonList(-1L);
+        return room.getPingableUsers().stream()
+                .filter((user) -> user.getUserName().replace(" ", "").equalsIgnoreCase(username.toLowerCase().replace(" ", "")))
+                .map(User::getUserID)
+                .collect(Collectors.toList());
     }
 
     public CommandCenter getCommands(){
