@@ -18,7 +18,7 @@ The documentation is currently beign written, and some of it is completely outda
 * tensorboard (will be added layer)
 * asyncio
 * nltk
-* Python 3.6 (anything under 3.5 requires code edits because of the async keyword and type hints. However, 3.6 is the only tested version)
+* Python 3.6 (anything under 3.5 requires code edits because of the async keyword and type hints. However, 3.6 is the only tested version). Note that 3.7 is currently not supported by Tensorflow, which will cause problems with that dependency. 
 * Java 8 - The Java module downloads its dependencies as .jars using Gradle. Just run it, Gradle will take care of the rest
 
 ### Please note:
@@ -35,29 +35,26 @@ The [Corell Movie Dialog Corpus](http://www.cs.cornell.edu/~cristian/Cornell_Mov
 
 The text files in the corell movie dialog corpus goes in a directory called `raw_data`. 
 
-Rename `Config.py_example` to `Config.py` and fill in the necessary values. The bot is designed to run on all three sites, in addition to inthe console, so there is currently no system to handle missing sites. You can of course run it in the console and not deal with websites and API's.
-
 And finally, when all the data is added, run `bot.py`. It'll set up the necessary files and start training once it's done. Checkpoints are saved every epoch (and it overrides the past save).
 
 ## Running it
 
-The bot is split in three:
+The bot is split in two parts:
 
 * NN backend
-* Python bot
 * Java bot
 
-The Java bot and Python bot both depend on the NN backend, but can also be run without it. The Python bot has to be run in order to use the console feature.
+The Java bot has support for the NN backend, but can also be run without it. 
 
-After training, run BotCore.java in `chatbot/` to use the Java core. Or use `bot.py` with `--training false --mode 1` to use the Python one. It's the Java-core that's actively being developed (with new commands) but the Python one also works. 
+Note that you don't have to train the network before using BotCore.java. If you decide to use the neural net, you can train it while running the Java bot, but the chat feature won't be available until after the Flask server comes online. 
 
 The `bot.py` file supports CLI arguments. They are:
 
     --help     | shows the help message and exits
     --training | whether or not the bot trains (boolean)
-    --mode     | The mode to run in (int). 0 for console, 1 for python bot, 2 for flask server.
+    --mode     | The mode to run in (int). 0 for console, 1 for the flask server.
     
-Running with mode 2 also makes the Java program not create a new instance of the nn backend, but the server has to be up for this to happen. The server doesn't have to be manually booted at all though, as the Java program takes care of it
+
 
 ### ***NOTE:***
 
@@ -86,11 +83,11 @@ Train more.
 
 [Image showing the differences between some of the core chatbot types](https://www.marutitech.com/wp-content/uploads/2017/04/Chatbot-conversation-framework.png) (not embedded because it didn't load properly)
 
-General chatbots are incredibly hard to make. Creating knowledge-based generative models isn't exactly something that's documented in the tensorflow documentation (or keras for that matter). For now, getting sensible replies is the top priority, along with expandable vocabulary. Adding generative memory (not retrieval-based) with context is a task for later
+General chatbots are incredibly hard to make. Creating knowledge-based generative models isn't exactly something that's documented in the tensorflow documentation (or anywhere else for that matter). For now, getting sensible replies is the top priority, along with expandable vocabulary. Adding generative memory (not retrieval-based) with context is a task for later
 
 * Training is slow
 
-Use a GPU if possible. If you already are, use more. Or decrease the vocab size, it speeds it up a little.
+Use a GPU if possible. If you already are, you'll either need more GPU's, or more powerful ones. Hardware is unfortunately a problem when it comes to neural networks. Or decrease the vocab size, it speeds it up a little.
 
 
 # Notes
