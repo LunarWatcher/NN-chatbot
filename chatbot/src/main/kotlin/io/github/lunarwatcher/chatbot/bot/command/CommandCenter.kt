@@ -109,6 +109,7 @@ class CommandCenter private constructor(botProps: Properties, val db: Database) 
         addCommand(TestCommand());
         addCommand(MultiMessageTest())
         addCommand(HugCommand());
+        addCommand(Spongebobify())
         nekos = NekosCommand()
         addCommand(nekos);
 
